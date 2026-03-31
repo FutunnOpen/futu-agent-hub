@@ -1,7 +1,3 @@
-<p align="center">
-  <img src="assets/logo.png" alt="Futu Agent Hub" width="200" />
-</p>
-
 <h1 align="center">Futu Agent Hub</h1>
 <p align="center">
   <b>将 AI 助手连接到富途/moomoo — 用自然语言交易、查行情、获取投资洞察。</b>
@@ -17,9 +13,7 @@
   <a href="#快速开始">快速开始</a> · <a href="#skills-概览">Skills 概览</a> · <a href="#futu-api-skill">Futu API Skill</a> · <a href="#内容-skills">内容 Skills</a> · <a href="#使用示例">使用示例</a>
 </p>
 
-<p align="center">
-  <a href="README.md">English</a> | 简体中文
-</p>
+
 
 ---
 
@@ -37,10 +31,10 @@ Futu Agent Hub 提供 **4 个开箱即用的 Skills**，分为两大类：
 
 | Skill | 类别 | 说明 |
 |-------|------|------|
-| [**Futu API**](#futu-api-skill) | 交易 & 行情 | 封装 Futu API 全部能力 — 实时报价、K 线、下单、持仓、账户管理等 |
-| [**资讯搜索**](#资讯搜索) | 内容 | 搜索富途平台上的新闻、公告、研报 |
-| [**个股解读**](#个股解读) | 内容 | 围绕标的推送最新事实信息与核心解读 |
-| [**情绪温度计**](#情绪温度计) | 内容 | 聚合社区情绪、大V观点，输出标准化情绪参考 |
+| Futu API | 交易 & 行情 | 封装 Futu API 全部能力 — 实时报价、K 线、下单、持仓、账户管理等 |
+| 资讯搜索 | 内容 | 搜索富途平台上的新闻、公告、研报 |
+| 个股解读 | 内容 | 围绕标的推送最新事实信息与核心解读 |
+| 情绪温度计 | 内容 | 聚合社区情绪、大V观点，输出标准化情绪参考 |
 
 ---
 
