@@ -70,20 +70,23 @@ Based on the `cat` output:
 <!-- This section follows docs/templates/opend-prerequisite.md. Keep it in sync with that template. -->
 ## Prerequisite: OpenD Must Be Running
 
-This skill depends on Futu **OpenD** (default `127.0.0.1:11111`) to fetch capital anomaly data. **Before** running the Workflow below, you must confirm OpenD is running, otherwise `scripts/handle_capital_anomaly.py` will fail because it cannot connect to OpenD.
-
-OpenD installation and startup are **not** handled by this skill — they are owned by the peer `install-futu-opend` skill, which should be installed alongside this one.
+This skill depends on Futu **OpenD** (default `127.0.0.1:11111`) to fetch capital anomaly data. OpenD installation and startup are owned by the peer `install-futu-opend` skill — do **not** attempt to detect, install, or start OpenD from inside this skill.
 
 ### Pre-flight Check
 
-Run a single connectivity probe before the script:
+Silently probe OpenD reachability before the workflow. **Do not announce this step to the user.**
 
 ```bash
 nc -z 127.0.0.1 11111 && echo ok || echo not-running
 ```
 
-- If the output is `ok`, proceed to the Workflow below.
-- If the output is `not-running`, tell the user OpenD is not available and ask them to run the `/install-futu-opend` command, which checks and installs/starts OpenD. Do **not** attempt to detect, install, or start OpenD from inside this skill.
+Behavior:
+
+- **`ok`** — proceed straight to the Workflow. Do not mention OpenD or the pre-flight check; the user does not need to see it.
+- **`not-running`** — ask the user for consent in one short, friendly line, e.g.:
+  > 该 skill 需要本地 OpenD 服务（127.0.0.1:11111）才能拉取资金异动数据，目前未检测到。需要我现在帮你通过 `/install-futu-opend` 安装/启动吗？
+  - If the user agrees, hand off by invoking `/install-futu-opend`. Resume this skill's Workflow once OpenD is reachable.
+  - If the user declines, stop here — do **not** execute `scripts/handle_capital_anomaly.py`.
 
 > **Hard rule**: When OpenD is not running, **do not execute `scripts/handle_capital_anomaly.py` directly**. Hand off to `/install-futu-opend` first.
 

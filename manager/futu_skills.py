@@ -968,6 +968,24 @@ def _refresh_discovery_skill(
     lines.append("do NOT use another installed skill as a substitute — prompt the user to install")
     lines.append("the correct skill instead. Each skill has a distinct purpose.")
     lines.append("")
+    lines.append("## 多技能匹配处理（Multi-match handling）")
+    lines.append("")
+    lines.append("**当用户的请求同时匹配下方多个未安装技能时，绝对不要一次性全部安装。**")
+    lines.append("必须先列出所有匹配的技能（slug + 简要描述），然后询问用户希望安装哪些，例如：")
+    lines.append("")
+    lines.append("> 您的请求匹配到多个可安装的技能：`a`、`b`、`c`。")
+    lines.append("> 请使用 `--skill a` 安装单个，或 `--skill a,b` 安装多个（逗号分隔，无空格）；")
+    lines.append("> 也可以回复 `--skill all` 表示全部安装。")
+    lines.append("")
+    lines.append("解析用户回复中的 `--skill` 参数：")
+    lines.append("- `--skill <slug>`：仅安装该单个 slug 对应的技能。")
+    lines.append("- `--skill <slug1>,<slug2>,...`：仅安装逗号分隔列表中明确列出的 slug。")
+    lines.append("- `--skill all`：安装所有匹配项（仅当用户显式声明时才执行）。")
+    lines.append("- 未指定 `--skill` 或用户未明确确认 → **不要安装任何技能**，再次询问。")
+    lines.append("")
+    lines.append("对于用户指定的每个 slug，依次执行其下方对应的 `npx skills add` 命令；")
+    lines.append("**严禁** 把未在 `--skill` 列表中出现的 slug 一并安装。")
+    lines.append("")
 
     for s in uninstalled:
         slug = s.get("slug", "")
@@ -1239,8 +1257,7 @@ def install_from_source(
         )
         raise SystemExit(3)
 
-    if dest_skill.exists():
-        shutil.rmtree(dest_skill)
+    _remove_skill_path(dest_skill)
     dest_skill.parent.mkdir(parents=True, exist_ok=True)
     shutil.copytree(src, dest_skill, ignore=shutil.ignore_patterns(".git"))
 
@@ -1264,6 +1281,25 @@ def _locate_skill_dir(repo: Path, slug: str) -> Optional[Path]:
     return None
 
 
+def _remove_skill_path(dest: Path) -> bool:
+    """Remove *dest* whether it's a directory, file, or (possibly broken) symlink.
+
+    Returns True if anything was removed. ``Path.is_dir()`` returns False for
+    broken symlinks, so callers that only checked ``is_dir()`` would silently
+    leave dangling links behind and later trip ``shutil.copytree`` on reinstall.
+    """
+    if dest.is_symlink() or dest.is_file():
+        try:
+            dest.unlink()
+            return True
+        except FileNotFoundError:
+            return False
+    if dest.is_dir():
+        shutil.rmtree(dest)
+        return True
+    return False
+
+
 def cmd_uninstall(args: argparse.Namespace) -> None:
     meta, skills = load_index()
     slug = args.slug
@@ -1271,8 +1307,7 @@ def cmd_uninstall(args: argparse.Namespace) -> None:
         print(f"warning: slug {slug!r} not in index (continuing)", file=sys.stderr)
     install_root = Path(args.dir).expanduser().resolve()
     dest = install_root / slug
-    if dest.is_dir():
-        shutil.rmtree(dest)
+    if _remove_skill_path(dest):
         print(f"removed {dest}")
     else:
         print(f"not found (skipped): {dest}")
@@ -1529,8 +1564,7 @@ def cmd_upgrade(args: argparse.Namespace) -> None:
     removed = 0
     for slug in deprecated_slugs:
         dest = install_root / slug
-        if dest.is_dir():
-            shutil.rmtree(dest)
+        _remove_skill_path(dest)
         if slug in lock.get("skills", {}):
             del lock["skills"][slug]
         removed += 1
