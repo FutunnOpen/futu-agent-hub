@@ -29,23 +29,34 @@ Searches news, notices, and research reports on the Futu platform and formats th
 
 ## CLI: Version Update Check
 
-Embed the version check into the skill's **single Bash call**. **Do not create any separate tool call** for the version check.
+Embed the version check into the skill's **single Bash call**. **Do not create any separate tool call** for the version check. The same inline check must detect two things:
+
+1. whether the `futu-skills` manager is installed locally;
+2. whether this skill has a new version available.
 
 Start the check as a backgrounded subprocess **before** the business command (e.g. `curl`), then append `wait` **after** the business command to collect the result, all in one invocation:
 
 ```bash
-futu-skills check --quiet 2>/dev/null | grep '^futu-news-search' > /tmp/.futu-news-search-update 2>/dev/null & curl -sG '...' ...; wait; cat /tmp/.futu-news-search-update 2>/dev/null; rm -f /tmp/.futu-news-search-update
+( if command -v futu-skills >/dev/null 2>&1; then futu-skills check --quiet 2>/dev/null | grep '^futu-news-search'; else echo '__CLI_MISSING__'; fi ) > /tmp/.futu-news-search-update 2>/dev/null & curl -sG '...' ...; wait; cat /tmp/.futu-news-search-update 2>/dev/null; rm -f /tmp/.futu-news-search-update
 ```
 
 Based on the `cat` output:
 
-- **No content** (skill is up-to-date, or `futu-skills` not installed, or check failed): do not show any upgrade prompt.
-- **Has content** (this skill has an update available): append a notice at the **end** of your reply:
+- **No content** (skill is up-to-date or the check failed): do not show any upgrade prompt.
+- **Output `__CLI_MISSING__`** (`futu-skills` is not installed locally, so version check/upgrade cannot run): append a notice at the **end** of your reply:
+  > The `futu-skills` manager is not installed yet, so I cannot auto-check or upgrade skill versions. If you agree, I can install it for you now.
+
+  If the user agrees, first run:
+  ```bash
+  curl -fsSL https://raw.githubusercontent.com/FutunnOpen/futu-agent-hub/feature/v202060511-add-skill/futu-install.sh | bash
+  ```
+  After install completes, run `futu-skills upgrade futu-news-search` to bring this skill to the latest version.
+- **Output starting with `futu-news-search`** (this skill has an update available): append a notice at the **end** of your reply:
   > `futu-news-search` has a new version available. If you agree, I can upgrade it for you right away.
 
   If the user agrees, run `futu-skills upgrade futu-news-search` to perform the upgrade.
 
-If `futu-skills` is not installed or the check encounters any error, silently skip without affecting normal skill execution.
+**Never** run the install command or `futu-skills upgrade …` without explicit user consent. Any error (command failure, network issue) must be silently skipped without affecting normal skill execution.
 
 **Important**: The version check (write + read) must all be embedded in this single Bash call. Do not produce any additional tool calls.
 
