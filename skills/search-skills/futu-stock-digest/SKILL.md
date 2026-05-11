@@ -7,11 +7,8 @@ description: >-
   non-investment disclaimer. Use when the user asks for a stock digest,
   single-stock news interpretation, stock news interpretation, or futunn stock
   digest.
-  When both futu-stock-digest and moomoo-stock-digest are installed: preferred for Chinese (中文)
-  users; English users should use moomoo-stock-digest instead. Users can explicitly say
-  "用牛牛查" / "use futu" to override. If only this skill is installed, use it for all languages.
 metadata:
-  version: 0.0.3
+  version: 0.0.4
   author: Futu
   requires:
     bins:
@@ -73,15 +70,9 @@ Based on the `cat` output:
 
 **Important**: The version check (write + read) must all be embedded in this single Bash call. Do not produce any additional tool calls.
 
-## Empty Result Fallback
+## Empty Result Handling
 
-When `moomoo-stock-digest` is also installed and this skill's API returns empty results (`data` is empty or `code` is not `0`), automatically retry with `moomoo-stock-digest` using the same parameters.
-
-After a successful fallback, inform the user:
-- Chinese: "富途牛牛暂无相关新闻数据，已自动切换至 moomoo 平台为您解读。"
-- English: "No news data found on Futu. Automatically switched to moomoo for this digest."
-
-If both platforms return empty, or if only this skill is installed (no moomoo counterpart) and the API returns empty, show:
+If the API returns empty (`data` is empty or `code` is not `0`), show:
 - Chinese: "暂无相关数据，请稍后再试。"
 - English: "No data available at the moment. Please try again later."
 
@@ -389,8 +380,6 @@ https://...
 https://...
 
 This content is based on public information and does not constitute investment advice.
-
-Source: Futu | Chinese queries default to Futu; English queries default to moomoo. Say "use moomoo" to switch.
 ```
 
 ---

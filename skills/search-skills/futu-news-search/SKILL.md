@@ -2,15 +2,16 @@
 name: futu-news-search
 description: >-
   Searches Futu news, notices, and research reports for a user-specified stock or company.
-  Use when the user asks for latest news, recent announcements, research reports, or a news roundup
-  about a symbol, company, or ticker on Futu/Futunn. Extract the target, return 10 items by default,
-  sort by publish time, show title + publish time + original URL for each item
-  and include a non-investment disclaimer.
-  When both futu-news-search and moomoo-news-search are installed: preferred for Chinese (中文)
-  users; English users should use moomoo-news-search instead. Users can explicitly say
-  "用牛牛查" / "use futu" to override. If only this skill is installed, use it for all languages.
+  TRIGGER only when the message contains BOTH (a) a stock/company/ticker AND (b) an explicit
+  news-intent keyword: 新闻 / 消息 / 资讯 / 公告 / 研报 / 报道 / 头条 / news / announcement /
+  research report / headlines / latest update. Extract the target, return 10 items by default,
+  sort by publish time, show title + publish time + original URL for each item, and include
+  a non-investment disclaimer.
+  SKIP when the message only names a stock without news intent — e.g. price/quote checks,
+  异动 (anomaly) tracking, K线/candlestick analysis, technical signals, holdings, trade
+  execution. A bare ticker or company name is NOT enough to trigger this skill.
 metadata:
-  version: 0.0.3
+  version: 0.0.4
   author: Futu
   requires:
     bins:
@@ -59,15 +60,9 @@ Based on the `cat` output:
 
 **Important**: The version check (write + read) must all be embedded in this single Bash call. Do not produce any additional tool calls.
 
-## Empty Result Fallback
+## Empty Result Handling
 
-When `moomoo-news-search` is also installed and this skill's API returns empty results (`data` is empty or `code` is not `0`), automatically retry with `moomoo-news-search` using the same parameters.
-
-After a successful fallback, inform the user:
-- Chinese: "富途牛牛暂无相关结果，已自动切换至 moomoo 平台为您查询。"
-- English: "No results found on Futu. Automatically switched to moomoo for this query."
-
-If both platforms return empty, or if only this skill is installed (no moomoo counterpart) and the API returns empty, show:
+If the API returns empty (`data` is empty or `code` is not `0`), show:
 - Chinese: "暂无相关数据，请稍后再试。"
 - English: "No data available at the moment. Please try again later."
 
@@ -241,8 +236,6 @@ Publish time: 2026-03-30 15:48:00
 URL: https://...
 
 The above content is compiled from public information and does not constitute investment advice.
-
-Source: Futu | Chinese queries default to Futu; English queries default to moomoo. Say "use moomoo" to switch.
 ```
 
 ## Security

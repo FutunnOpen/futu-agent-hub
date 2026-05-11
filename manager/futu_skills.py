@@ -751,14 +751,22 @@ def run_update_check(install_root: Path, *, timeout: int) -> Dict[str, Any]:
             if out["cli"]["outdated"]:
                 out["outdated"] = True
 
-    lock = read_lock(install_root, meta)
-    installed = lock.get("skills") or {}
     curl = skill_catalog_url()
     catalog: Optional[Dict[str, Any]] = None
     if curl:
         catalog = fetch_json_url(curl, timeout=timeout)
         if not catalog:
             out["catalog_error"] = f"could not fetch skill catalog ({curl})"
+
+    try:
+        _, idx_skills = load_index()
+        reconcile_lockfile_with_disk(install_root, meta, idx_skills, catalog)
+    except SystemExit:
+        raise
+    except Exception as e:
+        verbose(f"reconcile skipped: {e}")
+    lock = read_lock(install_root, meta)
+    installed = lock.get("skills") or {}
 
     for slug, info in installed.items():
         # Skip skills belonging to a different product
@@ -827,6 +835,51 @@ def read_lock(install_root: Path, meta: Dict[str, Any]) -> Dict[str, Any]:
 
 def write_lock(install_root: Path, meta: Dict[str, Any], lock: Dict[str, Any]) -> None:
     save_json(lockfile_path(install_root, meta), lock)
+
+
+def reconcile_lockfile_with_disk(
+    install_root: Path,
+    meta: Dict[str, Any],
+    skills: List[Dict[str, Any]],
+    catalog: Optional[Dict[str, Any]] = None,
+) -> int:
+    """Adopt skills installed outside this CLI (e.g. via ``npx skills add``)
+    into the lockfile so subsequent list/upgrade/check commands manage them.
+
+    Scans *install_root* for sibling directories with a ``SKILL.md`` whose
+    name matches a slug in this hub's index and is not yet locked. Returns
+    the number of newly tracked entries.
+    """
+    if not install_root.is_dir():
+        return 0
+    lock = read_lock(install_root, meta)
+    locked = lock.setdefault("skills", {})
+    by_slug = {s.get("slug"): s for s in skills if s.get("slug")}
+    reserved = {DISCOVERY_DIR_NAME, "_futu-skill-guard"}
+    added = 0
+    for child in install_root.iterdir():
+        slug = child.name
+        if slug in reserved or slug.startswith(".") or slug in locked:
+            continue
+        if not child.is_dir() or not (child / "SKILL.md").is_file():
+            continue
+        entry = by_slug.get(slug)
+        if not entry:
+            continue
+        ver = resolve_skill_version(child, slug, catalog)
+        locked[slug] = {
+            "name": entry.get("name") or slug,
+            "version": ver,
+            "source": "futu-skillhub",
+            "source_url": resolve_repo_url(meta, entry),
+            "product": entry.get("product"),
+            "adopted": True,
+        }
+        added += 1
+    if added:
+        write_lock(install_root, meta, lock)
+        verbose(f"reconciled {added} skill(s) into lockfile")
+    return added
 
 
 # ---------------------------------------------------------------------------
@@ -1232,9 +1285,11 @@ def cmd_uninstall(args: argparse.Namespace) -> None:
 
 
 def cmd_list(args: argparse.Namespace) -> None:
-    meta, _ = load_index()
+    meta, idx_skills = load_index()
     own_product = _hub_product(meta)
     install_root = Path(args.dir).expanduser().resolve()
+    catalog = _fetch_catalog(timeout=10)
+    reconcile_lockfile_with_disk(install_root, meta, idx_skills, catalog)
     lock = read_lock(install_root, meta)
     skills = lock.get("skills") or {}
     # Filter to only skills belonging to this product
@@ -1246,7 +1301,6 @@ def cmd_list(args: argparse.Namespace) -> None:
     if not skills:
         print("(no skills in lockfile)")
         return
-    catalog = _fetch_catalog(timeout=10)
     headers = ("Skill", "Version")
     rows = []
     need_lock_update = False
@@ -1382,6 +1436,7 @@ def cmd_upgrade(args: argparse.Namespace) -> None:
     meta, skills = load_index()
     own_product = _hub_product(meta)
     install_root = Path(args.dir).expanduser().resolve()
+    reconcile_lockfile_with_disk(install_root, meta, skills)
     lock = read_lock(install_root, meta)
     installed = lock.get("skills") or {}
     # Filter to only skills belonging to this product

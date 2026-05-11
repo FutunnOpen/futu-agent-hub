@@ -24,9 +24,9 @@
     }
   },
   "skills": {
-    "futu-news-search": "0.0.4",
-    "futu-stock-digest": "0.0.3",
-    "futu-comment-sentiment": "0.0.5",
+    "futu-news-search": "0.0.6",
+    "futu-stock-digest": "0.0.6",
+    "futu-comment-sentiment": "0.0.6",
     "futuapi": "0.1.1",
     "install-futu-opend": "0.1.1",
     "futu-capital-anomaly": "0.0.4",

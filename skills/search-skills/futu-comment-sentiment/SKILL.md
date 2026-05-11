@@ -7,12 +7,8 @@ description: >-
   stock or a multi-symbol portfolio. Use when the user asks for stock community
   sentiment, retail discussion tone, portfolio sentiment snapshot, bullish vs
   bearish discussion, or futu-comment-sentiment.
-  When both futu-comment-sentiment and moomoo-comment-sentiment are installed: preferred for
-  Chinese (中文) users; English users should use moomoo-comment-sentiment instead. Users can
-  explicitly say "用牛牛查" / "use futu" to override. If only this skill is installed, use it
-  for all languages.
 metadata:
-  version: 0.0.3
+  version: 0.0.4
   author: Futu
   requires:
     bins:
@@ -77,15 +73,9 @@ Based on the `cat` output:
 
 **Important**: The version check (write + read) must all be embedded in this single Bash call. Do not produce any additional tool calls.
 
-## Empty Result Fallback
+## Empty Result Handling
 
-When `moomoo-comment-sentiment` is also installed and this skill's API returns empty results (`data` is empty or `code` is not `0`), automatically retry with `moomoo-comment-sentiment` using the same parameters.
-
-After a successful fallback, inform the user:
-- Chinese: "富途牛牛暂无相关社区讨论数据，已自动切换至 moomoo 平台为您查询。"
-- English: "No community data found on Futu. Automatically switched to moomoo for this query."
-
-If both platforms return empty, or if only this skill is installed (no moomoo counterpart) and the API returns empty, show:
+If the API returns empty (`data` is empty or `code` is not `0`), show:
 - Chinese: "暂无相关数据，请稍后再试。"
 - English: "No data available at the moment. Please try again later."
 
