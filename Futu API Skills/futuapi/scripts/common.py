@@ -13,6 +13,8 @@ import os
 import subprocess
 import sys
 import json
+import tempfile
+import time
 from dataclasses import dataclass
 from typing import Optional
 
@@ -89,16 +91,115 @@ _ensure_utf8_io()
 
 SDK_MODULE_NAME = "futu"  # 固定品牌模块名
 
+# 与 install-futu-opend SKILL.md 的 metadata.version 保持一致
+# 使用 /install-futu-opend 技能安装完 OpenD 后会自动生成版本戳文件
+SKILL_VERSION = "0.1.1"
+STAMP_FILE = os.path.join(os.path.expanduser("~"), ".futu_skill_version")
 
-def ensure_futu_api():
-    """确保 futu-api 已安装，未安装则自动安装"""
+MIN_SDK_VERSION = "10.4.6408"
+
+# ai_type 参数需要 SDK >= MIN_SDK_VERSION，低版本不传此参数
+_sdk_supports_ai_type = True
+
+# 环境检查缓存：首次完整检查后写入临时文件，TTL 内跳过
+_ENV_CHECK_CACHE_FILE = os.path.join(tempfile.gettempdir(), ".futu_env_ok")
+_ENV_CHECK_TTL = 3600  # 1 小时
+
+
+def _parse_version(ver_str):
+    """将版本字符串解析为可比较的元组，如 '10.4.6408' -> (10, 4, 6408)"""
+    try:
+        return tuple(int(x) for x in ver_str.strip().split("."))
+    except (ValueError, AttributeError):
+        return (0,)
+
+
+def _env_check_is_cached():
+    """检查是否有近期的成功环境检查缓存"""
+    try:
+        mtime = os.path.getmtime(_ENV_CHECK_CACHE_FILE)
+        return (time.time() - mtime) < _ENV_CHECK_TTL
+    except OSError:
+        return False
+
+
+def _env_check_mark_ok():
+    """标记环境检查通过"""
+    try:
+        with open(_ENV_CHECK_CACHE_FILE, "w") as f:
+            f.write(str(time.time()))
+    except OSError:
+        pass
+
+
+def _check_version_stamp():
+    """检查版本戳文件，确保 OpenD 和 SDK 已通过 install skill 正确安装（仅警告，不阻断）"""
+    try:
+        with open(STAMP_FILE, "r", encoding="utf-8") as f:
+            installed = f.read().strip()
+    except FileNotFoundError:
+        print(f"[WARN] 未检测到版本戳文件 {STAMP_FILE}，建议运行 /install-futu-opend 安装", file=sys.stderr)
+        return
+    if installed != SKILL_VERSION:
+        print(f"[WARN] 版本戳不匹配: 已安装 {installed}, 当前要求 {SKILL_VERSION}，建议运行 /install-futu-opend 更新", file=sys.stderr)
+
+
+def _check_opend_reachable():
+    """检查 OpenD 是否可连接"""
+    import socket
+    config = get_config()
+    host, port = config.opend_host, config.opend_port
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.settimeout(2)
+    try:
+        sock.connect((host, port))
+    except (ConnectionRefusedError, OSError) as e:
+        print(f"[ERROR] 无法连接 OpenD ({host}:{port}): {e}")
+        print("请先启动 OpenD 客户端")
+        sys.exit(1)
+    finally:
+        sock.close()
+
+
+def _detect_ai_type_support():
+    """检测当前 SDK 是否支持 ai_type 参数（仅检查版本，不打印警告）"""
+    global _sdk_supports_ai_type
     try:
         import futu
-        return True
+        current = getattr(futu, "__version__", "0")
+        if _parse_version(current) < _parse_version(MIN_SDK_VERSION):
+            _sdk_supports_ai_type = False
     except ImportError:
         pass
-    print("正在安装 futu-api...")
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "futu-api"])
+
+
+def ensure_futu_api():
+    """环境检查（带缓存）：SDK 版本 + 版本戳 + OpenD 连通性。首次完整检查，TTL 内跳过。"""
+    # 1. 缓存命中时仅做轻量 ai_type 支持检测
+    if _env_check_is_cached():
+        _detect_ai_type_support()
+        return True
+
+    # 2. 版本戳检查
+    _check_version_stamp()
+
+    # 3. SDK 导入 + 版本检查
+    global _sdk_supports_ai_type
+    try:
+        import futu
+        current = getattr(futu, "__version__", "0")
+        if _parse_version(current) < _parse_version(MIN_SDK_VERSION):
+            _sdk_supports_ai_type = False
+            print(f"[WARN] futu-api 版本过低: {current} < {MIN_SDK_VERSION}，ai_type 参数将被跳过，建议运行 /install-futu-opend 升级 SDK", file=sys.stderr)
+    except ImportError:
+        print("[ERROR] futu-api 未安装，请运行 /install-futu-opend 安装")
+        sys.exit(1)
+
+    # 4. OpenD 连通性检查
+    _check_opend_reachable()
+
+    # 5. 标记检查通过
+    _env_check_mark_ok()
     return True
 
 ensure_futu_api()
@@ -113,6 +214,7 @@ from futu import (
         OrderType,
         ModifyOrderOp,
         SubType,
+        Session,
         KLType,
         AuType,
         Market,
@@ -133,6 +235,16 @@ except ImportError:
     TradeDateMarket = None
 
 from futu import SecurityFirm
+
+try:
+    from futu import OpenCryptoTradeContext
+except ImportError:
+    OpenCryptoTradeContext = None
+
+try:
+    from futu import TimeInForce
+except ImportError:
+    TimeInForce = None
 
 
 # ============================================================
@@ -166,7 +278,10 @@ def create_quote_context():
     """创建行情上下文"""
     host, port = get_opend_config()
     _check_opend_alive(host, port)
-    return OpenQuoteContext(host=host, port=port)
+    kwargs = dict(host=host, port=port)
+    if _sdk_supports_ai_type:
+        kwargs["ai_type"] = 1
+    return OpenQuoteContext(**kwargs)
 
 
 def parse_security_firm(firm_str):
@@ -191,13 +306,47 @@ def create_trade_context(market=None, security_firm=None):
     _check_opend_alive(host, port)
     trd_market = parse_market(market) if market else get_default_market()
     kwargs = dict(host=host, port=port, filter_trdmarket=trd_market)
+    if _sdk_supports_ai_type:
+        kwargs["ai_type"] = 1
     if security_firm is not None:
         kwargs["security_firm"] = security_firm
     else:
         default_firm = get_default_security_firm()
-        if default_firm is not None:
-            kwargs["security_firm"] = default_firm
+        kwargs["security_firm"] = default_firm if default_firm is not None else SecurityFirm.NONE
     return OpenSecTradeContext(**kwargs)
+
+
+# 加密货币交易对象仅支持 FUTUSECURITIES(香港)、FUTUINC(美国)、FUTUSG(新加坡)
+CRYPTO_SUPPORTED_FIRMS = ("FUTUSECURITIES", "FUTUINC", "FUTUSG")
+
+
+def create_crypto_trade_context(security_firm=None):
+    """创建加密货币交易上下文（OpenCryptoTradeContext）。
+
+    security_firm 仅支持 FUTUSECURITIES、FUTUINC、FUTUSG。
+    传入不支持的券商会被报错退出。
+    """
+    if OpenCryptoTradeContext is None:
+        print("错误: 当前 SDK 不支持 OpenCryptoTradeContext，请升级 futu-api >= 10.4.6408")
+        sys.exit(1)
+    host, port = get_opend_config()
+    _check_opend_alive(host, port)
+
+    firm_enum = security_firm
+    if firm_enum is None:
+        firm_enum = get_default_security_firm()
+    if firm_enum is None:
+        firm_enum = SecurityFirm.FUTUSECURITIES
+
+    firm_name = format_enum(firm_enum)
+    if firm_name not in CRYPTO_SUPPORTED_FIRMS:
+        print(f"错误: 加密货币交易仅支持 {', '.join(CRYPTO_SUPPORTED_FIRMS)}，当前 security_firm={firm_name}")
+        sys.exit(1)
+
+    kwargs = dict(host=host, port=port, security_firm=firm_enum)
+    if _sdk_supports_ai_type:
+        kwargs["ai_type"] = 1
+    return OpenCryptoTradeContext(**kwargs)
 
 
 # ============================================================
@@ -217,12 +366,16 @@ def parse_market(market_str):
         return TrdMarket.US
     mapping = {
         "NONE": TrdMarket.NONE,
+        "N/A": TrdMarket.NONE,
         "US": TrdMarket.US,
         "HK": TrdMarket.HK,
         "CN": TrdMarket.CN,
         "HKCC": TrdMarket.HKCC,
         "SG": TrdMarket.SG,
     }
+    if hasattr(TrdMarket, "CRYPTO"):
+        mapping["CRYPTO"] = TrdMarket.CRYPTO
+        mapping["CC"] = TrdMarket.CRYPTO
     return mapping.get(str(market_str).upper(), TrdMarket.US)
 
 
@@ -233,7 +386,36 @@ _CODE_PREFIX_TO_MARKET = {
     "SH": "CN",
     "SZ": "CN",
     "SG": "SG",
+    "CC": "CRYPTO",
 }
+
+
+def is_crypto_code(code):
+    """判断是否为加密货币代码（前缀 CC.）"""
+    if not code or "." not in code:
+        return False
+    return code.split(".")[0].upper() == "CC"
+
+
+def parse_qty(qty_str, code=None):
+    """解析订单数量：加密货币支持小数，其他市场仅整数。
+
+    - 加密货币（CC. 前缀）：允许浮点数
+    - 其他：必须为正整数，否则抛出 ValueError
+    """
+    if qty_str is None:
+        raise ValueError("数量不能为空")
+    try:
+        val = float(qty_str)
+    except (TypeError, ValueError):
+        raise ValueError(f"数量格式错误: {qty_str}")
+    if val <= 0:
+        raise ValueError("数量必须为正数")
+    if is_crypto_code(code):
+        return val
+    if float(val).is_integer():
+        return int(val)
+    raise ValueError(f"非加密货币订单数量必须为整数，收到: {qty_str}")
 
 
 def infer_market_from_code(code):
@@ -314,9 +496,12 @@ def safe_float(val, default=0.0):
 
 def safe_int(val, default=0):
     """安全转换为 int，遇到 N/A、空串、None 等非数值时返回默认值。
-    优先直接 int(val) 避免大整数（如 18 位 acc_id）经 float64 转换后精度丢失。"""
+    处理 numpy 标量类型，避免大整数（如 18 位 acc_id）经 float64 转换后精度丢失。"""
     if val is None:
         return default
+    # numpy 标量: 提取原生 Python 类型，避免 float64 精度丢失
+    if hasattr(val, 'item'):
+        val = val.item()
     try:
         return int(val)
     except (ValueError, TypeError):
@@ -468,5 +653,14 @@ def df_to_records(df, limit=None):
     records = []
     for i in range(n):
         row = df.iloc[i] if hasattr(df, "iloc") else df[i]
-        records.append({k: to_jsonable(row.get(k)) for k in row.index})
+        if hasattr(row, "index"):
+            keys = row.index
+        elif isinstance(row, dict):
+            keys = row.keys()
+        else:
+            keys = [k for k in dir(row) if not k.startswith("_")]
+        records.append({
+            k: to_jsonable(row.get(k) if hasattr(row, "get") else getattr(row, k, None))
+            for k in keys
+        })
     return records

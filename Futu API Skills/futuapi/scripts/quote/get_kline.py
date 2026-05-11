@@ -39,8 +39,17 @@ from common import (
     KLType,
     SubType,
     AuType,
+    Session,
     RET_OK,
 )
+
+# session 仅用于美股历史 K 线，不支持 OVERNIGHT
+HISTORY_SESSION_MAP = {
+    "NONE": Session.NONE,
+    "RTH": Session.RTH,
+    "ETH": Session.ETH,
+    "ALL": Session.ALL,
+}
 
 KTYPE_MAP = {
     "1m": KLType.K_1M,
@@ -77,9 +86,11 @@ KTYPE_TO_SUBTYPE = {
 }
 
 
-def get_kline(code, ktype="1d", num=10, start=None, end=None, rehab="forward", max_page=None, output_json=False):
+def get_kline(code, ktype="1d", num=10, start=None, end=None, rehab="forward",
+              max_page=None, session_str="NONE", output_json=False):
     kl_type = KTYPE_MAP.get(ktype, KLType.K_DAY)
     au_type = REHAB_MAP.get(rehab, AuType.QFQ)
+    session = HISTORY_SESSION_MAP.get(session_str.upper(), Session.NONE)
 
     ctx = None
     try:
@@ -92,6 +103,7 @@ def get_kline(code, ktype="1d", num=10, start=None, end=None, rehab="forward", m
                 code, start=start, end=end,
                 ktype=kl_type, autype=au_type,
                 max_count=page_size,
+                session=session,
             )
             check_ret(ret, data, ctx, "获取K线")
             all_data = data
@@ -104,6 +116,7 @@ def get_kline(code, ktype="1d", num=10, start=None, end=None, rehab="forward", m
                     ktype=kl_type, autype=au_type,
                     max_count=page_size,
                     page_req_key=page_req_key,
+                    session=session,
                 )
                 check_ret(ret, data, ctx, "获取K线(翻页)")
                 if not is_empty(data):
@@ -181,7 +194,10 @@ if __name__ == "__main__":
     parser.add_argument("--max-page", type=int, default=None, help="历史 K 线最大翻页次数，不传则拉取全部")
     parser.add_argument("--rehab", choices=["none", "forward", "backward"], default="forward",
                         help="复权类型: none(不复权), forward(前复权), backward(后复权)")
+    parser.add_argument("--session", choices=["NONE", "RTH", "ETH", "ALL"],
+                        default="NONE", help="美股分时段历史K线（仅美股，不支持 OVERNIGHT）")
     parser.add_argument("--json", action="store_true", dest="output_json", help="输出 JSON 格式")
     args = parser.parse_args()
     get_kline(args.code, args.ktype, args.num, start=args.start, end=args.end,
-              rehab=args.rehab, max_page=args.max_page, output_json=args.output_json)
+              rehab=args.rehab, max_page=args.max_page, session_str=args.session,
+              output_json=args.output_json)

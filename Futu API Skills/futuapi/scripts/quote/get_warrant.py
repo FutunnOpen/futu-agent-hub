@@ -27,9 +27,14 @@ def get_warrant(stock_owner, output_json=False):
     try:
         ctx = create_quote_context()
         ret, data = ctx.get_warrant(stock_owner=stock_owner)
-        check_ret(ret, data, ctx, "获取窝轮列表")
+        # data 是元组: (DataFrame, has_next, total_count)
+        if isinstance(data, tuple):
+            df, has_next, total_count = data
+        else:
+            df, has_next, total_count = data, False, 0
+        check_ret(ret, df, ctx, "获取窝轮列表")
 
-        if is_empty(data):
+        if is_empty(df):
             if output_json:
                 print(json.dumps({"stock_owner": stock_owner, "data": []}))
             else:
@@ -37,15 +42,17 @@ def get_warrant(stock_owner, output_json=False):
             return
 
         if output_json:
-            print(json.dumps({"stock_owner": stock_owner, "data": df_to_records(data)}, ensure_ascii=False))
+            result = {"stock_owner": stock_owner, "total_count": total_count, "data": df_to_records(df)}
+            print(json.dumps(result, ensure_ascii=False))
         else:
             print("=" * 70)
-            print(f"窝轮/牛熊证 - 正股: {stock_owner}")
+            print(f"窝轮/牛熊证 - 正股: {stock_owner}（共 {total_count} 条）")
             print("=" * 70)
-            cols = [c for c in ['code', 'name', 'wrt_type', 'strike_price',
-                                'maturity_time', 'last_price', 'volume'] if c in data.columns]
-            print(data[cols].to_string(index=False))
-            print(f"\n共 {len(data)} 条记录")
+            cols = [c for c in ['stock', 'name', 'type', 'strike_price',
+                                'maturity_time', 'cur_price', 'volume', 'turnover',
+                                'implied_volatility', 'premium', 'effective_leverage'] if c in df.columns]
+            print(df[cols].to_string(index=False))
+            print(f"\n当前显示 {len(df)} / {total_count} 条记录")
             print("=" * 70)
 
     except Exception as e:

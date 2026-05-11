@@ -41,7 +41,7 @@ def get_margin_ratio(codes, acc_id=None, market=None, trd_env=None, security_fir
     ctx = None
     try:
         ctx = create_trade_context(market, security_firm=parse_security_firm(security_firm))
-        ret, data = ctx.get_margin_ratio(codes, trd_env=trd_env, acc_id=acc_id)
+        ret, data = ctx.get_margin_ratio(codes)
         check_ret(ret, data, ctx, "获取融资融券数据")
 
         if is_empty(data):

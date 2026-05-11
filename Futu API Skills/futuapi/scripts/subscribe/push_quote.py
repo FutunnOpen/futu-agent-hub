@@ -58,7 +58,14 @@ class QuoteHandler(StockQuoteHandlerBase):
             print(json.dumps({"type": "QUOTE", "data": records}, ensure_ascii=False), flush=True)
         else:
             print(f"\n[报价推送] {time.strftime('%H:%M:%S')}")
-            print(data[['code', 'last_price', 'volume', 'turnover']].to_string(index=False))
+            if hasattr(data, "iloc"):
+                print(data[['code', 'last_price', 'volume', 'turnover']].to_string(index=False))
+            else:
+                for row in data:
+                    if hasattr(row, "get"):
+                        print(f"  {row.get('code', '')}\t{row.get('last_price', '')}\t{row.get('volume', '')}\t{row.get('turnover', '')}")
+                    else:
+                        print(f"  {row}")
 
         return RET_OK, data
 

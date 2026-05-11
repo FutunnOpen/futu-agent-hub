@@ -26,6 +26,7 @@ from common import (
     safe_float,
     safe_int,
     format_enum,
+    _sdk_supports_ai_type,
     RET_OK,
     TrdEnv,
     TrdMarket,
@@ -52,9 +53,14 @@ def get_all_accounts(host, port):
     accounts = []
     for firm in ALL_FIRMS:
         try:
-            ctx = OpenSecTradeContext(host=host, port=port, filter_trdmarket=TrdMarket.NONE, security_firm=firm)
-            ret, data = ctx.get_acc_list()
-            ctx.close()
+            kwargs = dict(host=host, port=port, filter_trdmarket=TrdMarket.NONE, security_firm=firm)
+            if _sdk_supports_ai_type:
+                kwargs["ai_type"] = 1
+            ctx = OpenSecTradeContext(**kwargs)
+            try:
+                ret, data = ctx.get_acc_list()
+            finally:
+                safe_close(ctx)
             if ret == RET_OK and not is_empty(data):
                 for i in range(len(data)):
                     row = data.iloc[i]
@@ -75,7 +81,10 @@ def get_all_accounts(host, port):
 def query_portfolio(host, port, acc_id, trd_env):
     """查询单个账户的资金与持仓"""
     from common import OpenSecTradeContext
-    ctx = OpenSecTradeContext(host=host, port=port, filter_trdmarket=TrdMarket.NONE)
+    kwargs = dict(host=host, port=port, filter_trdmarket=TrdMarket.NONE)
+    if _sdk_supports_ai_type:
+        kwargs["ai_type"] = 1
+    ctx = OpenSecTradeContext(**kwargs)
     try:
         # 资金
         ret, acc_data = ctx.accinfo_query(trd_env=trd_env, acc_id=acc_id)

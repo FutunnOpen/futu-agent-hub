@@ -20,6 +20,7 @@
 - fill_outside_rth: 用于港股盘前竞价与美股盘前盘后，盘前盘后时段不支持市价单
 - aux_price: 止损/止盈类订单必传
 - trail_type/trail_value/trail_spread: 跟踪止损类订单必传
+- session: 仅对美股生效，支持 RTH/ETH/OVERNIGHT/ALL
 """
 import argparse
 import json
@@ -38,10 +39,21 @@ from common import (
     safe_close,
     format_enum,
     safe_get,
+    safe_int,
     OrderType,
+    Session,
     RET_OK,
     is_empty,
 )
+
+# 下单 session 仅对美股生效
+ORDER_SESSION_MAP = {
+    "NONE": Session.NONE,
+    "RTH": Session.RTH,
+    "ETH": Session.ETH,
+    "OVERNIGHT": Session.OVERNIGHT,
+    "ALL": Session.ALL,
+}
 
 
 def _audit_log(entry):
@@ -58,7 +70,7 @@ def _audit_log(entry):
 
 def place_order(code, side, quantity, price=None, order_type="NORMAL",
                 acc_id=None, trd_env=None, security_firm=None, output_json=False,
-                confirmed=False):
+                confirmed=False, fill_outside_rth=False, session_str="NONE"):
     acc_id = acc_id or get_default_acc_id()
     trd_env = parse_trd_env(trd_env) if trd_env else get_default_trd_env()
     trd_side = parse_trd_side(side)
@@ -130,8 +142,8 @@ def place_order(code, side, quantity, price=None, order_type="NORMAL",
             if ret == RET_OK and not is_empty(acc_data):
                 for i in range(len(acc_data)):
                     row = acc_data.iloc[i] if hasattr(acc_data, "iloc") else acc_data[i]
-                    row_acc_id = safe_get(row, "acc_id", default=0)
-                    if int(row_acc_id) == int(acc_id):
+                    row_acc_id = safe_int(safe_get(row, "acc_id", default=0))
+                    if row_acc_id == safe_int(acc_id):
                         acc_role = format_enum(safe_get(row, "acc_role", default=""))
                         if acc_role.upper() == "MASTER":
                             msg = "主账户（MASTER）不允许下单，请选择非主账户"
@@ -142,7 +154,8 @@ def place_order(code, side, quantity, price=None, order_type="NORMAL",
                             sys.exit(1)
                         break
 
-        ret, data = ctx.place_order(
+        session = ORDER_SESSION_MAP.get(session_str.upper(), Session.NONE)
+        order_kwargs = dict(
             price=float(price),
             qty=int(quantity),
             code=code,
@@ -151,6 +164,11 @@ def place_order(code, side, quantity, price=None, order_type="NORMAL",
             trd_env=trd_env,
             acc_id=acc_id,
         )
+        if fill_outside_rth:
+            order_kwargs["fill_outside_rth"] = True
+        if session != Session.NONE:
+            order_kwargs["session"] = session
+        ret, data = ctx.place_order(**order_kwargs)
         check_ret(ret, data, ctx, "下单")
 
         if hasattr(data, "iloc"):
@@ -211,10 +229,15 @@ if __name__ == "__main__":
     parser.add_argument("--security-firm",
                         choices=["FUTUSECURITIES", "FUTUINC", "FUTUSG", "FUTUAU", "FUTUCA", "FUTUJP", "FUTUMY"],
                         default=None, help="券商标识")
+    parser.add_argument("--fill-outside-rth", action="store_true",
+                        help="允许盘前盘后成交（美股盘前盘后、港股竞价盘）")
+    parser.add_argument("--session", choices=["NONE", "RTH", "ETH", "OVERNIGHT", "ALL"],
+                        default="NONE", help="美股交易时段（仅对美股生效）")
     parser.add_argument("--confirmed", action="store_true", help="实盘下单确认标志（不传则只预览不执行）")
     parser.add_argument("--json", action="store_true", dest="output_json", help="输出 JSON 格式")
     args = parser.parse_args()
     place_order(code=args.code, side=args.side, quantity=args.quantity, price=args.price,
                 order_type=args.order_type, acc_id=args.acc_id,
                 trd_env=args.trd_env, security_firm=args.security_firm,
-                output_json=args.output_json, confirmed=args.confirmed)
+                output_json=args.output_json, confirmed=args.confirmed,
+                fill_outside_rth=args.fill_outside_rth, session_str=args.session)

@@ -90,11 +90,17 @@ def get_history_orders(acc_id=None, market=None, trd_env=None, code=None,
                 "updated_time": safe_get(row, "updated_time", default=""),
             })
 
+        no_date_filter = not start and not end
         if output_json:
-            print(json.dumps({"count": len(orders), "orders": orders}, ensure_ascii=False))
+            result = {"count": len(orders), "orders": orders}
+            if no_date_filter:
+                result["note"] = "默认仅查询最近90天的订单，如需更早的记录请指定 --start/--end"
+            print(json.dumps(result, ensure_ascii=False))
         else:
             print("=" * 80)
             print(f"历史订单（共 {len(orders)} 条）")
+            if no_date_filter:
+                print("提示：默认仅查询最近90天的订单，如需更早的记录请指定 --start/--end")
             print("=" * 80)
             for o in orders:
                 print(f"  [{o['create_time']}] {o['order_id']}  {o['code']}  {o['side']}  "

@@ -17,6 +17,7 @@
 - subscribe_push: True 启用实时回调推送（必须），False 仅通过主动获取方式取数据（节省性能）
 - is_detailed_orderbook: 仅港股 SF 权限下订阅 ORDER_BOOK 时使用；美股 LV2 不提供详细明细
 - extended_time: 仅用于订阅美股实时 K 线、分时、逐笔
+- session: 仅用于订阅美股实时 K 线、分时、逐笔；不支持 OVERNIGHT
 """
 import argparse
 import json
@@ -28,21 +29,32 @@ from common import (
     check_ret,
     safe_close,
     parse_subtypes,
+    Session,
 )
+
+# session 仅支持以下值（订阅不支持 OVERNIGHT）
+SESSION_MAP = {
+    "NONE": Session.NONE,
+    "RTH": Session.RTH,
+    "ETH": Session.ETH,
+    "ALL": Session.ALL,
+}
 
 
 def subscribe(codes, subtype_names, is_first_push=True, subscribe_push=False,
-              extended_time=False, output_json=False):
+              extended_time=False, session_str="NONE", output_json=False):
     ctx = None
     try:
         ctx = create_quote_context()
         subtypes = parse_subtypes(subtype_names)
+        session = SESSION_MAP.get(session_str.upper(), Session.NONE)
 
         ret, msg = ctx.subscribe(
             codes, subtypes,
             is_first_push=is_first_push,
             subscribe_push=subscribe_push,
             extended_time=extended_time,
+            session=session,
         )
         check_ret(ret, msg, ctx, "订阅")
 
@@ -52,6 +64,7 @@ def subscribe(codes, subtype_names, is_first_push=True, subscribe_push=False,
             "is_first_push": is_first_push,
             "subscribe_push": subscribe_push,
             "extended_time": extended_time,
+            "session": session_str.upper(),
             "status": "subscribed",
         }
 
@@ -83,8 +96,11 @@ if __name__ == "__main__":
     parser.add_argument("--no-first-push", action="store_true", help="不立即推送缓存数据")
     parser.add_argument("--push", action="store_true", help="开启推送回调")
     parser.add_argument("--extended-time", action="store_true", help="美股盘前盘后数据")
+    parser.add_argument("--session", choices=["NONE", "RTH", "ETH", "ALL"],
+                        default="NONE", help="美股交易时段（仅用于美股 K 线/分时/逐笔，不支持 OVERNIGHT）")
     parser.add_argument("--json", action="store_true", dest="output_json", help="输出 JSON 格式")
     args = parser.parse_args()
     subscribe(codes=args.codes, subtype_names=args.types,
               is_first_push=not args.no_first_push, subscribe_push=args.push,
-              extended_time=args.extended_time, output_json=args.output_json)
+              extended_time=args.extended_time, session_str=args.session,
+              output_json=args.output_json)

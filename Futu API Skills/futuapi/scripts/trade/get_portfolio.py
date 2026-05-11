@@ -51,8 +51,8 @@ def get_portfolio(acc_id=None, market=None, trd_env=None, currency=None, securit
     ctx = None
     try:
         ctx = create_trade_context(market, security_firm=parse_security_firm(security_firm))
-        # 查询资金
-        query_kwargs = dict(trd_env=trd_env, acc_id=acc_id)
+        # 查询资金（refresh_cache=True 避免返回过时缓存数据，尤其模拟盘）
+        query_kwargs = dict(trd_env=trd_env, acc_id=acc_id, refresh_cache=True)
         if currency:
             query_kwargs["currency"] = currency
         ret, acc_data = ctx.accinfo_query(**query_kwargs)
@@ -87,8 +87,8 @@ def get_portfolio(acc_id=None, market=None, trd_env=None, currency=None, securit
                 "ca_cash": safe_float(safe_get(row, "ca_cash", default=0)),
             }
 
-        # 查询持仓
-        ret, pos_data = ctx.position_list_query(trd_env=trd_env, acc_id=acc_id)
+        # 查询持仓（refresh_cache=True 避免返回过时缓存数据）
+        ret, pos_data = ctx.position_list_query(trd_env=trd_env, acc_id=acc_id, refresh_cache=True)
         check_ret(ret, pos_data, ctx, "查询持仓")
 
         positions = []
