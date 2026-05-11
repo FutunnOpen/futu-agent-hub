@@ -654,6 +654,19 @@ def resolve_repo_ref(meta: Dict[str, Any], entry: Optional[Dict[str, Any]] = Non
     return r or "main"
 
 
+def _npx_skills_source(repo_url: str) -> str:
+    """Return the shortest form `npx skills add` accepts for this repo URL.
+
+    GitHub HTTPS URLs collapse to `owner/repo` shorthand; anything else
+    (SSH, GitLab, self-hosted) falls back to the original URL.
+    """
+    u = (repo_url or "").strip()
+    m = re.match(r"^https?://github\.com/([^/]+)/([^/]+?)(?:\.git)?/?$", u)
+    if m:
+        return f"{m.group(1)}/{m.group(2)}"
+    return u
+
+
 def get_skill_entry(skills: List[Dict[str, Any]], slug: str) -> Optional[Dict[str, Any]]:
     for s in skills:
         if s.get("slug") == slug:
@@ -909,7 +922,12 @@ def _refresh_discovery_skill(
         hint = s.get("discovery_hint", "")
         s_url = resolve_repo_url(meta, s)
         s_ref = resolve_repo_ref(meta, s)
-        install_cmd = f"npx skills add -y -g {s_url}#{s_ref}"
+        s_src = _npx_skills_source(s_url)
+        install_cmd = (
+            f"npx skills add -y -g {s_src}"
+            if s_ref in ("", "main")
+            else f"npx skills add -y -g {s_src}#{s_ref}"
+        )
         lines.append(f"## {slug}")
         lines.append(f"- **Description**: {desc_short}")
         if hint:

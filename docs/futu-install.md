@@ -21,7 +21,7 @@ Install Futu Skills into your AI client in three steps.
 `futu-skills` manages skill versions and self-upgrades.
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/FutunnOpen/futu-agent-hub/feature/v202060511-add-skill/futu-install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/FutunnOpen/futu-agent-hub/main/futu-install.sh | bash
 ```
 
 Verify:
@@ -40,7 +40,7 @@ If `futu-skills` is not found, ensure `~/.local/bin` (or `/usr/local/bin`) is in
 Install search and anomaly-detection skills into your AI client's skills directory:
 
 ```bash
-npx skills add -y -g https://github.com/FutunnOpen/futu-agent-hub.git#feature/v202060511-add-skill
+npx skills add -y -g FutunnOpen/futu-agent-hub
 ```
 
 > `-y` skips interactive selection; `-g` installs globally (all projects). Drop `-y` to pick skills interactively, or `-g` to install only into the current project.
@@ -49,7 +49,7 @@ Other useful invocations:
 
 ```bash
 # Switch to another branch / tag / commit
-npx skills add -y -g <git-url>#main
+npx skills add -y -g FutunnOpen/futu-agent-hub#<branch-or-tag>
 
 # Upgrade installed skills
 npx skills update futu-skill
@@ -95,7 +95,7 @@ Some clients require a restart or a new chat session to pick up newly installed 
 - Confirm Node.js 18+: `node -v`
 - `command not found: skills` -> upgrade npm: `npm install -g npm@latest`
 - Private-repo clone failure -> ensure an SSH key or HTTPS credential helper is configured for `github.com`; verify with a manual `git clone`
-- Restricted network -> use HTTPS with a token: `npx skills add -y -g https://<token>@github.com/FutunnOpen/futu-agent-hub.git#feature/v202060511-add-skill`
+- Restricted network -> use HTTPS with a token: `npx skills add -y -g https://<token>@github.com/FutunnOpen/futu-agent-hub.git`
 
 </details>
 
