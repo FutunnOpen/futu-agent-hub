@@ -74,9 +74,9 @@ npx skills update futu-skill
 
 OpenAPI Skills and Anomaly Detection Skills need the OpenD service running locally.
 
-After Step 2 completes, invoke `/install-opend` in your AI client to download, install, and start OpenD (Windows / macOS / Linux supported). Always confirm with the user before running it.
+After Step 2 completes, invoke `/install-futu-opend` in your AI client to download, install, and start OpenD (Windows / macOS / Linux supported). Always confirm with the user before running it.
 
-If `/install-opend` is not registered, re-run Step 2 to make sure all skills from this repo are installed.
+If `/install-futu-opend` is not registered, re-run Step 2 to make sure all skills from this repo are installed.
 
 ---
 
@@ -104,6 +104,6 @@ Some clients require a restart or a new chat session to pick up newly installed 
 
 - OpenD must be running and logged in (status: connected)
 - Default port `11111`
-- If OpenD is not installed, run `/install-opend` (see Step 3)
+- If OpenD is not installed, run `/install-futu-opend` (see Step 3)
 
 </details>
