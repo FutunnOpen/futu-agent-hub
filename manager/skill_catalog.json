@@ -1,0 +1,37 @@
+{
+  "updated": "2026-05-06",
+  "note": "Published latest versions for installed skills; bump when a skill ships without requiring a new CLI.",
+  "deprecations": {
+    "news-search": {
+      "action": "migrate",
+      "replace_with": "futu-news-search",
+      "message": "news-search has been renamed to futu-news-search."
+    },
+    "stock-digest": {
+      "action": "migrate",
+      "replace_with": "futu-stock-digest",
+      "message": "stock-digest has been renamed to futu-stock-digest."
+    },
+    "comment-sentiment": {
+      "action": "migrate",
+      "replace_with": "futu-comment-sentiment",
+      "message": "comment-sentiment has been renamed to futu-comment-sentiment."
+    },
+    "install-opend": {
+      "action": "migrate",
+      "replace_with": "install-futu-opend",
+      "message": "install-opend has been renamed to install-futu-opend."
+    }
+  },
+  "skills": {
+    "futu-news-search": "0.0.2",
+    "futu-stock-digest": "0.0.2",
+    "futu-comment-sentiment": "0.0.2",
+    "futuapi": "0.1.1",
+    "install-opend": "latest",
+    "install-futu-opend": "0.1.1",
+    "futu-capital-anomaly": "0.0.1",
+    "futu-derivatives-anomaly": "0.0.1",
+    "futu-technical-anomaly": "0.0.1"
+  }
+}

@@ -1,0 +1,81 @@
+{
+  "version": 1,
+  "skills": [
+    {
+      "slug": "futu-news-search",
+      "name": "futu-news-search",
+      "product": "futu",
+      "path": "futu/search-skills/futu-news-search",
+      "description": "Futu news, notices, and research search",
+      "keywords": ["futu", "news", "search", "富途", "新闻"],
+      "discovery_hint": "用户想了解某只股票或公司的消息、新闻、公告、研报时，包含任何表达如：最新消息、最近消息、近期新闻、有什么新闻、news、latest news等（非个股解读分析）"
+    },
+    {
+      "slug": "futu-stock-digest",
+      "name": "futu-stock-digest",
+      "product": "futu",
+      "path": "futu/search-skills/futu-stock-digest",
+      "description": "Futu single-stock news digest",
+      "keywords": ["futu", "digest", "summary", "摘要"],
+      "discovery_hint": "用户要求对个股做解读、消息面分析、多空研判、新闻总结归纳时（非简单搜索罗列新闻、非社区情绪）"
+    },
+    {
+      "slug": "futu-comment-sentiment",
+      "name": "futu-comment-sentiment",
+      "product": "futu",
+      "path": "futu/search-skills/futu-comment-sentiment",
+      "description": "Futu community comment sentiment",
+      "keywords": ["futu", "sentiment", "情绪", "评论"],
+      "discovery_hint": "用户询问社区讨论情绪、散户情绪、牛熊讨论、评论分析、舆情分析时（基于社区帖子评论，非新闻解读）"
+    },
+    {
+      "slug": "futuapi",
+      "name": "futuapi",
+      "product": "futu",
+      "repo_url": "https://gitlab.futunn.com/FTOpenAPI/ftopend-skills.git",
+      "repo_ref": "master",
+      "path": "skills/futuapi",
+      "description": "Futu OpenAPI quotes and trading",
+      "keywords": ["futu", "openapi", "quote", "trade", "行情", "交易"],
+      "discovery_hint": "用户提到行情、报价、价格、K线、快照、买卖盘、交易、持仓、资金、账户、期权、下单、撤单、选股、板块等 OpenAPI 相关功能时"
+    },
+    {
+      "slug": "install-futu-opend",
+      "name": "install-futu-opend",
+      "product": "futu",
+      "repo_url": "https://gitlab.futunn.com/FTOpenAPI/ftopend-skills.git",
+      "repo_ref": "master",
+      "path": "skills/install-futu-opend",
+      "description": "Install / upgrade Futu OpenD and Python SDK",
+      "keywords": ["opend", "sdk", "install", "安装"],
+      "discovery_hint": "用户提到安装、下载、启动、运行、配置 OpenD 或升级 futu-api SDK 时"
+    },
+    {
+      "slug": "futu-capital-anomaly",
+      "name": "futu-capital-anomaly",
+      "product": "futu",
+      "path": "futu/anomaly-skills/futu-capital-anomaly",
+      "description": "Futu capital-flow anomaly detection",
+      "keywords": ["futu", "capital", "anomaly", "资金", "异动", "主力", "卖空"],
+      "discovery_hint": "用户询问资金动向、主力行为、大单小单、谁在买谁在卖、买卖经纪商、卖空/做空/沽空、主力是否在进场或离场，或给出宽泛的异动请求如'英伟达异动'时"
+    },
+    {
+      "slug": "futu-derivatives-anomaly",
+      "name": "futu-derivatives-anomaly",
+      "product": "futu",
+      "path": "futu/anomaly-skills/futu-derivatives-anomaly",
+      "description": "Futu derivatives anomaly detection",
+      "keywords": ["futu", "derivatives", "anomaly", "期权", "牛熊证", "衍生品", "异动"],
+      "discovery_hint": "用户询问期权、衍生品、牛熊证、IV、隐含波动率、PCR、期权大单、做多做空情绪、波动率溢价，或给出宽泛的异动请求如'NVDA 异动'时"
+    },
+    {
+      "slug": "futu-technical-anomaly",
+      "name": "futu-technical-anomaly",
+      "product": "futu",
+      "path": "futu/anomaly-skills/futu-technical-anomaly",
+      "description": "Futu technical-analysis anomaly detection",
+      "keywords": ["futu", "technical", "anomaly", "技术面", "K线", "MACD", "RSI", "异动"],
+      "discovery_hint": "用户询问技术面情况、技术信号、K线形态、金叉/死叉、超买超卖、MACD、RSI、KDJ 等技术指标异动，或给出宽泛的异动请求如'腾讯有没有异常'时"
+    }
+  ]
+}

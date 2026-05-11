@@ -1,0 +1,13 @@
+{
+  "hub_name": "futu-skillhub",
+  "index_file": "skill_index.json",
+  "skill_catalog_url": "https://gitlab.futunn.com/futu-common/futu-skills-hub/-/raw/v20260428-futu-cli_v2/internal/futu/futu-skill-manager/skill_catalog.json",
+  "cli_update_manifest_url": "https://gitlab.futunn.com/futu-common/futu-skills-hub/-/raw/v20260428-futu-cli_v2/internal/futu/futu-skill-manager/cli_update_manifest.json",
+  "repo_url": "https://gitlab.futunn.com/futu-common/futu-skills-hub",
+  "repo_ref": "v20260428-futu-cli_v2",
+  "search_url": "",
+  "primary_download_url_template": "",
+  "skills_lock_filename": ".skills_store_lock.json",
+  "config_dirname": ".futu-skillhub",
+  "config_filename": "config.json"
+}
