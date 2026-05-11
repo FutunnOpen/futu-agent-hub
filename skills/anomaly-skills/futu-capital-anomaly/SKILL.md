@@ -50,51 +50,25 @@ If `futu-skills` is not installed or the check encounters any error, silently sk
 
 **Important**: The version check (write + read) must all be embedded in this single Bash call. Do not produce any additional tool calls.
 
+<!-- This section follows docs/templates/opend-prerequisite.md. Keep it in sync with that template. -->
 ## Prerequisite: OpenD Must Be Running
 
-This skill depends on Futu **OpenD** (default `127.0.0.1:11111`) to fetch capital anomaly data. **Before** running the Workflow below, you must confirm OpenD is installed and running, otherwise `scripts/handle_capital_anomaly.py` will fail because it cannot connect to OpenD.
+This skill depends on Futu **OpenD** (default `127.0.0.1:11111`) to fetch capital anomaly data. **Before** running the Workflow below, you must confirm OpenD is running, otherwise `scripts/handle_capital_anomaly.py` will fail because it cannot connect to OpenD.
+
+OpenD installation and startup are **not** handled by this skill — they are owned by the peer `install-futu-opend` skill, which should be installed alongside this one.
 
 ### Pre-flight Check
 
-**Before** calling the script, complete the checks in the following order:
+Run a single connectivity probe before the script:
 
-1. **Detect whether OpenD is installed**
+```bash
+nc -z 127.0.0.1 11111 && echo ok || echo not-running
+```
 
-   **MacOS**:
+- If the output is `ok`, proceed to the Workflow below.
+- If the output is `not-running`, tell the user OpenD is not available and ask them to run the `/install-futu-opend` command, which checks and installs/starts OpenD. Do **not** attempt to detect, install, or start OpenD from inside this skill.
 
-   ```bash
-   ls /Applications/*OpenD-GUI*.app 2>/dev/null || mdfind "kMDItemFSName == '*OpenD-GUI*'" 2>/dev/null | head -1
-   ```
-
-   **Windows**:
-
-   ```powershell
-   Get-ChildItem -Path "C:\Users\$env:USERNAME\Desktop","C:\Program Files","C:\Program Files (x86)","D:\" -Recurse -Filter "*OpenD-GUI*.exe" -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty FullName
-   ```
-
-2. **Branch based on the result**:
-
-   | Situation | Handling |
-   |-----------|----------|
-   | OpenD not found | Tell the user "OpenD was not detected and needs to be installed first". After obtaining consent, directly run the `npx skills add` command below to install the `install-futu-opend` skill and trigger OpenD installation; then return to step 1. |
-   | Installed but process not running | MacOS: `open "<found path>.app"`; Windows: `Start-Process "<found exe path>"`. Wait 5–10 seconds after launching. |
-   | Installed and running | Proceed directly to the Workflow below. |
-
-   **Install command to run when OpenD is not found**:
-
-   ```bash
-   npx skills add -y -g https://gitlab.futunn.com/FTOpenAPI/ftopend-skills.git#master --path skills/install-futu-opend
-   ```
-
-3. **Connectivity check** (recommended):
-
-   ```bash
-   nc -z 127.0.0.1 11111 && echo ok || echo not-running
-   ```
-
-   If the output is `not-running`, return to the startup flow in step 2.
-
-> **Hard rule**: When OpenD detection fails, or OpenD is not installed or not running, **do not execute `scripts/handle_capital_anomaly.py` directly**. You must first complete the pre-flight checks above and ensure OpenD is ready before proceeding.
+> **Hard rule**: When OpenD is not running, **do not execute `scripts/handle_capital_anomaly.py` directly**. Hand off to `/install-futu-opend` first.
 
 ---
 

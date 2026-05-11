@@ -10,3 +10,7 @@ __pycache__/
 *.egg-info/
 .venv/
 venv/
+skill-self-upgrade.md
+
+# Local-only authoring templates
+docs/templates/
