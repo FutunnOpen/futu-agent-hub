@@ -1,5 +1,5 @@
 {
-  "updated": "2026-05-06",
+  "updated": "2026-05-11",
   "note": "Published latest versions for installed skills; bump when a skill ships without requiring a new CLI.",
   "deprecations": {
     "news-search": {
@@ -24,14 +24,13 @@
     }
   },
   "skills": {
-    "futu-news-search": "0.0.2",
-    "futu-stock-digest": "0.0.2",
-    "futu-comment-sentiment": "0.0.2",
+    "futu-news-search": "0.0.4",
+    "futu-stock-digest": "0.0.3",
+    "futu-comment-sentiment": "0.0.5",
     "futuapi": "0.1.1",
-    "install-opend": "latest",
     "install-futu-opend": "0.1.1",
-    "futu-capital-anomaly": "0.0.1",
+    "futu-capital-anomaly": "0.0.4",
     "futu-derivatives-anomaly": "0.0.1",
-    "futu-technical-anomaly": "0.0.1"
+    "futu-technical-anomaly": "0.0.6"
   }
 }

@@ -12,7 +12,7 @@ description: >-
   explicitly say "用牛牛查" / "use futu" to override. If only this skill is installed, use it
   for all languages.
 metadata:
-  version: 0.0.2
+  version: 0.0.3
   author: Futu
   requires:
     bins:
