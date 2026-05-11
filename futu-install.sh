@@ -1,15 +1,12 @@
 #!/usr/bin/env bash
 # Futu Skills Hub CLI — one-line installer (deploys CLI under ~/.futu-skillhub, adds ~/.local/bin to PATH).
 # Usage:
-#   curl -fsSL "https://gitlab.futunn.com/futu-common/futu-skills-hub/-/raw/v20260428-futu-cli_v2/internal/futu/futu-install.sh" | bash
-#   ./futu-install.sh
+#   curl -fsSL "https://raw.githubusercontent.com/FutunnOpen/futu-agent-hub/feature/v202060511-add-skill/futu-install.sh" | bash
 #
 # Override remote git repo (takes precedence over cli_update_manifest.json):
-#   export FUTU_SKILLHUB_REPO_URL="https://github.com/your-org/futu-skills-hub"
-#   export FUTU_SKILLHUB_REPO_REF="main"
-#   export FUTU_SKILLHUB_REPO_PATH="internal/futu/futu-skill-manager"
-#
-# Offline / dev: run from repo root so local futu-skill-manager/ is copied.
+#   export FUTU_SKILLHUB_REPO_URL="https://github.com/FutunnOpen/futu-agent-hub"
+#   export FUTU_SKILLHUB_REPO_REF="feature/v202060511-add-skill"
+#   export FUTU_SKILLHUB_REPO_PATH="manager"
 
 set -euo pipefail
 
@@ -19,26 +16,12 @@ BIN_DIR="${HOME}/.local/bin"
 WRAPPER="${BIN_DIR}/futu-skills"
 
 # Resolve remote repo: env override > cli_update_manifest.json > hardcoded fallback.
-FALLBACK_REPO_URL="https://gitlab.futunn.com/futu-common/futu-skills-hub"
-FALLBACK_REPO_REF="main"
-FALLBACK_REPO_PATH="internal/futu/futu-skill-manager"
-REMOTE_REPO_URL="${FUTU_SKILLHUB_REPO_URL:-}"
-REMOTE_REPO_REF="${FUTU_SKILLHUB_REPO_REF:-}"
-REMOTE_REPO_PATH="${FUTU_SKILLHUB_REPO_PATH:-}"
-if [[ -z "${REMOTE_REPO_URL}" || -z "${REMOTE_REPO_REF}" || -z "${REMOTE_REPO_PATH}" ]]; then
-  MANIFEST=""
-  if [[ -n "${BASH_SOURCE[0]:-}" ]]; then
-    MANIFEST="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/futu-skill-manager/cli_update_manifest.json"
-  fi
-  if [[ -f "${MANIFEST:-}" ]] && command -v python3 >/dev/null 2>&1; then
-    REMOTE_REPO_URL="${REMOTE_REPO_URL:-$(python3 -c "import json,sys;print(json.load(open(sys.argv[1])).get('cli_repo_url',''))" "${MANIFEST}" 2>/dev/null || echo "")}"
-    REMOTE_REPO_REF="${REMOTE_REPO_REF:-$(python3 -c "import json,sys;print(json.load(open(sys.argv[1])).get('cli_repo_ref',''))" "${MANIFEST}" 2>/dev/null || echo "")}"
-    REMOTE_REPO_PATH="${REMOTE_REPO_PATH:-$(python3 -c "import json,sys;print(json.load(open(sys.argv[1])).get('cli_repo_path',''))" "${MANIFEST}" 2>/dev/null || echo "")}"
-  fi
-fi
-REMOTE_REPO_URL="${REMOTE_REPO_URL:-${FALLBACK_REPO_URL}}"
-REMOTE_REPO_REF="${REMOTE_REPO_REF:-${FALLBACK_REPO_REF}}"
-REMOTE_REPO_PATH="${REMOTE_REPO_PATH:-${FALLBACK_REPO_PATH}}"
+FALLBACK_REPO_URL="https://github.com/FutunnOpen/futu-agent-hub"
+FALLBACK_REPO_REF="feature/v202060511-add-skill"
+FALLBACK_REPO_PATH="manager"
+REMOTE_REPO_URL="${FUTU_SKILLHUB_REPO_URL:-${FALLBACK_REPO_URL}}"
+REMOTE_REPO_REF="${FUTU_SKILLHUB_REPO_REF:-${FALLBACK_REPO_REF}}"
+REMOTE_REPO_PATH="${FUTU_SKILLHUB_REPO_PATH:-${FALLBACK_REPO_PATH}}"
 
 die() {
   echo "error: $*" >&2
@@ -47,26 +30,7 @@ die() {
 
 command -v python3 >/dev/null 2>&1 || die "python3 is required"
 
-SCRIPT_PATH=""
-if [[ -n "${BASH_SOURCE[0]:-}" ]]; then
-  SCRIPT_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-fi
-
 mkdir -p "${CLI_DEST}" "${BIN_DIR}"
-
-copy_local() {
-  local src="$1"
-  [[ -d "${src}/futu-skill-manager" ]] || return 1
-  echo "Installing from local directory: ${src}/futu-skill-manager"
-  cp -f "${src}/futu-skill-manager/futu_skills.py" "${CLI_DEST}/"
-  cp -f "${src}/futu-skill-manager/metadata.json" "${CLI_DEST}/" 2>/dev/null || true
-  cp -f "${src}/futu-skill-manager/version.json" "${CLI_DEST}/" 2>/dev/null || true
-  cp -f "${src}/futu-skill-manager/skill_index.json" "${CLI_DEST}/" 2>/dev/null || true
-  cp -f "${src}/futu-skill-manager/cli_update_manifest.json" "${CLI_DEST}/" 2>/dev/null || true
-  cp -f "${src}/futu-skill-manager/skill_catalog.json" "${CLI_DEST}/" 2>/dev/null || true
-  chmod +x "${CLI_DEST}/futu_skills.py"
-  return 0
-}
 
 fetch_remote() {
   [[ -n "${REMOTE_REPO_URL}" ]] || return 1
@@ -86,13 +50,7 @@ fetch_remote() {
   return 0
 }
 
-if [[ -n "${SCRIPT_PATH}" ]] && copy_local "${SCRIPT_PATH}"; then
-  :
-elif fetch_remote; then
-  :
-else
-  die "Set FUTU_SKILLHUB_REPO_URL to the CLI git repo, or run this script from the futu-skills-hub repo root."
-fi
+fetch_remote || die "Failed to fetch CLI from ${REMOTE_REPO_URL} (ref ${REMOTE_REPO_REF})."
 
 cat > "${WRAPPER}" <<'EOF'
 #!/usr/bin/env bash

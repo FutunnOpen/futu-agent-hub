@@ -1,6 +1,6 @@
 {
   "version": "2026.4.17",
-  "cli_repo_url": "https://gitlab.futunn.com/futu-common/futu-skills-hub",
-  "cli_repo_ref": "v20260428-futu-cli_v2",
-  "cli_repo_path": "internal/futu/futu-skill-manager"
+  "cli_repo_url": "https://github.com/FutunnOpen/futu-agent-hub",
+  "cli_repo_ref": "feature/v202060511-add-skill",
+  "cli_repo_path": "manager"
 }

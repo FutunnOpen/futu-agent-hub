@@ -48,7 +48,7 @@ def get_orders(acc_id=None, market=None, trd_env=None, security_firm=None, outpu
     ctx = None
     try:
         ctx = create_trade_context(trd_market, security_firm=parse_security_firm(security_firm))
-        ret, data = ctx.order_list_query(trd_env=trd_env, acc_id=acc_id)
+        ret, data = ctx.order_list_query(trd_env=trd_env, acc_id=acc_id, refresh_cache=True)
         check_ret(ret, data, ctx, "查询订单")
 
         if is_empty(data):

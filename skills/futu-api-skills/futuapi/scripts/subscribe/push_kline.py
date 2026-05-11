@@ -22,10 +22,19 @@ from common import (
     safe_float,
     safe_int,
     SubType,
+    Session,
     RET_OK,
 )
 
 from futu import CurKlineHandlerBase, RET_ERROR
+
+# session 仅支持以下值（订阅不支持 OVERNIGHT）
+SESSION_MAP = {
+    "NONE": Session.NONE,
+    "RTH": Session.RTH,
+    "ETH": Session.ETH,
+    "ALL": Session.ALL,
+}
 
 KTYPE_SUB_MAP = {
     "K_1M": SubType.K_1M,
@@ -78,8 +87,9 @@ class KlineHandler(CurKlineHandlerBase):
         return RET_OK, data
 
 
-def push_kline(codes, ktype="K_1M", duration=300, output_json=False):
+def push_kline(codes, ktype="K_1M", duration=300, session_str="NONE", output_json=False):
     sub_type = KTYPE_SUB_MAP.get(ktype.upper(), SubType.K_1M)
+    session = SESSION_MAP.get(session_str.upper(), Session.NONE)
 
     ctx = None
     try:
@@ -87,7 +97,7 @@ def push_kline(codes, ktype="K_1M", duration=300, output_json=False):
         handler = KlineHandler(output_json=output_json)
         ctx.set_handler(handler)
 
-        ret, msg = ctx.subscribe(codes, [sub_type], subscribe_push=True)
+        ret, msg = ctx.subscribe(codes, [sub_type], subscribe_push=True, session=session)
         check_ret(ret, msg, ctx, "订阅K线推送")
 
         if not output_json:
@@ -115,6 +125,8 @@ if __name__ == "__main__":
     parser.add_argument("--ktype", choices=["K_1M", "K_3M", "K_5M", "K_15M", "K_30M", "K_60M", "K_DAY", "K_WEEK", "K_MON", "K_QUARTER", "K_YEAR"],
                         default="K_1M", help="K 线类型（默认: K_1M）")
     parser.add_argument("--duration", type=int, default=300, help="持续接收时间（秒，默认: 300）")
+    parser.add_argument("--session", choices=["NONE", "RTH", "ETH", "ALL"],
+                        default="NONE", help="美股交易时段（仅美股，不支持 OVERNIGHT）")
     parser.add_argument("--json", action="store_true", dest="output_json", help="输出 JSON 格式")
     args = parser.parse_args()
-    push_kline(args.codes, args.ktype, args.duration, args.output_json)
+    push_kline(args.codes, args.ktype, args.duration, args.session, args.output_json)

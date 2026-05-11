@@ -61,10 +61,11 @@ def _parse_account_row(row):
         "card_num": safe_get(row, "card_num", default=""),
         "security_firm": format_enum(safe_get(row, "security_firm", default="")),
         "trdmarket_auth": trdmarket_auth,
+        "acc_status": format_enum(safe_get(row, "acc_status", default="")),
     }
 
 
-def get_accounts(output_json=False):
+def get_accounts(output_json=False, show_disabled=False):
     seen_acc_ids = set()
     accounts = []
 
@@ -79,6 +80,8 @@ def get_accounts(output_json=False):
                 row = data.iloc[i] if hasattr(data, "iloc") else data[i]
                 acc = _parse_account_row(row)
                 if acc["acc_id"] not in seen_acc_ids:
+                    if not show_disabled and acc["acc_status"] == "DISABLED":
+                        continue
                     seen_acc_ids.add(acc["acc_id"])
                     accounts.append(acc)
         except Exception:
@@ -109,5 +112,6 @@ def get_accounts(output_json=False):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="获取交易账户列表")
     parser.add_argument("--json", action="store_true", dest="output_json", help="输出 JSON 格式")
+    parser.add_argument("--show-disabled", action="store_true", help="显示 DISABLED 状态的账户")
     args = parser.parse_args()
-    get_accounts(args.output_json)
+    get_accounts(args.output_json, show_disabled=args.show_disabled)

@@ -39,37 +39,49 @@ from common import (
 )
 
 
+_SNAPSHOT_BATCH_SIZE = 400  # 接口限制：每次请求最多 400 个代码
+
+
+def _parse_snapshot_row(row):
+    """解析单条快照行为字典"""
+    return {
+        "code": safe_get(row, "code", default="N/A"),
+        "name": safe_get(row, "name", default=""),
+        "last_price": safe_float(safe_get(row, "last_price", default=0)),
+        "open": safe_float(safe_get(row, "open_price", default=0)),
+        "high": safe_float(safe_get(row, "high_price", default=0)),
+        "low": safe_float(safe_get(row, "low_price", default=0)),
+        "prev_close": safe_float(safe_get(row, "prev_close_price", default=0)),
+        "volume": safe_int(safe_get(row, "volume", default=0)),
+        "turnover": safe_float(safe_get(row, "turnover", default=0)),
+        "bid": safe_float(safe_get(row, "bid_price", default=0)),
+        "ask": safe_float(safe_get(row, "ask_price", default=0)),
+        "price_spread": safe_float(safe_get(row, "price_spread", default=0)),
+    }
+
+
 def get_snapshot(codes, output_json=False):
     ctx = None
     try:
         ctx = create_quote_context()
-        ret, data = ctx.get_market_snapshot(codes)
-        check_ret(ret, data, ctx, "获取市场快照")
 
-        if is_empty(data):
+        # 自动分批：接口限制每次最多 400 个代码
+        records = []
+        for batch_start in range(0, len(codes), _SNAPSHOT_BATCH_SIZE):
+            batch = codes[batch_start:batch_start + _SNAPSHOT_BATCH_SIZE]
+            ret, data = ctx.get_market_snapshot(batch)
+            check_ret(ret, data, ctx, "获取市场快照")
+            if not is_empty(data):
+                for i in range(len(data)):
+                    row = data.iloc[i] if hasattr(data, "iloc") else data[i]
+                    records.append(_parse_snapshot_row(row))
+
+        if not records:
             if output_json:
                 print(json.dumps({"data": []}))
             else:
                 print("无数据")
             return
-
-        records = []
-        for i in range(len(data)):
-            row = data.iloc[i] if hasattr(data, "iloc") else data[i]
-            records.append({
-                "code": safe_get(row, "code", default="N/A"),
-                "name": safe_get(row, "name", default=""),
-                "last_price": safe_float(safe_get(row, "last_price", default=0)),
-                "open": safe_float(safe_get(row, "open_price", default=0)),
-                "high": safe_float(safe_get(row, "high_price", default=0)),
-                "low": safe_float(safe_get(row, "low_price", default=0)),
-                "prev_close": safe_float(safe_get(row, "prev_close_price", default=0)),
-                "volume": safe_int(safe_get(row, "volume", default=0)),
-                "turnover": safe_float(safe_get(row, "turnover", default=0)),
-                "bid": safe_float(safe_get(row, "bid_price", default=0)),
-                "ask": safe_float(safe_get(row, "ask_price", default=0)),
-                "price_spread": safe_float(safe_get(row, "price_spread", default=0)),
-            })
 
         if output_json:
             print(json.dumps({"data": records}, ensure_ascii=False))

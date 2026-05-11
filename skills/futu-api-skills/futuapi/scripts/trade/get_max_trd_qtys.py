@@ -11,6 +11,7 @@
 参数说明：
 - price: 目标价格（必填），用于计算可买卖数量
 - order_type: 订单类型，默认 NORMAL（普通限价单）
+- session: 仅对美股生效，支持 RTH/ETH/OVERNIGHT/ALL
 """
 import argparse
 import json
@@ -33,23 +34,38 @@ from common import (
     safe_int,
     format_enum,
     OrderType,
+    Session,
 )
 
+# session 仅对美股生效
+ORDER_SESSION_MAP = {
+    "NONE": Session.NONE,
+    "RTH": Session.RTH,
+    "ETH": Session.ETH,
+    "OVERNIGHT": Session.OVERNIGHT,
+    "ALL": Session.ALL,
+}
 
-def get_max_trd_qtys(code, price, acc_id=None, market=None, trd_env=None, security_firm=None, output_json=False):
+
+def get_max_trd_qtys(code, price, acc_id=None, market=None, trd_env=None,
+                     security_firm=None, session_str="NONE", output_json=False):
     acc_id = acc_id or get_default_acc_id()
     trd_env = parse_trd_env(trd_env) if trd_env else get_default_trd_env()
+    session = ORDER_SESSION_MAP.get(session_str.upper(), Session.NONE)
 
     ctx = None
     try:
         ctx = create_trade_context(market, security_firm=parse_security_firm(security_firm))
-        ret, data = ctx.acctradinginfo_query(
+        query_kwargs = dict(
             order_type=OrderType.NORMAL,
             code=code,
             price=price,
             trd_env=trd_env,
             acc_id=acc_id,
         )
+        if session != Session.NONE:
+            query_kwargs["session"] = session
+        ret, data = ctx.acctradinginfo_query(**query_kwargs)
         check_ret(ret, data, ctx, "查询最大可买卖数量")
 
         if is_empty(data):
@@ -99,7 +115,10 @@ if __name__ == "__main__":
     parser.add_argument("--security-firm",
                         choices=["FUTUSECURITIES", "FUTUINC", "FUTUSG", "FUTUAU", "FUTUCA", "FUTUJP", "FUTUMY"],
                         default=None, help="券商标识")
+    parser.add_argument("--session", choices=["NONE", "RTH", "ETH", "OVERNIGHT", "ALL"],
+                        default="NONE", help="美股交易时段（仅对美股生效）")
     parser.add_argument("--json", action="store_true", dest="output_json", help="输出 JSON 格式")
     args = parser.parse_args()
     get_max_trd_qtys(args.code, args.price, acc_id=args.acc_id, market=args.market,
-                     trd_env=args.trd_env, security_firm=args.security_firm, output_json=args.output_json)
+                     trd_env=args.trd_env, security_firm=args.security_firm,
+                     session_str=args.session, output_json=args.output_json)

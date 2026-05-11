@@ -14,6 +14,12 @@ description: >-
   such as `US.TSLA` or `HK.00700`.
 metadata:
   version: 0.0.1
+  requires:
+    bins: 
+        - python3 
+    skills:
+        - install-futu-opend
+        - futuapi
   author: Futu
 license: MIT
 ---

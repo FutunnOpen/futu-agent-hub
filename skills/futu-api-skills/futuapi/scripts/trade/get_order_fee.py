@@ -39,7 +39,7 @@ def get_order_fee(order_ids, acc_id=None, market=None, trd_env=None, security_fi
     ctx = None
     try:
         ctx = create_trade_context(market, security_firm=parse_security_firm(security_firm))
-        ret, data = ctx.get_order_fee(
+        ret, data = ctx.order_fee_query(
             order_id_list=order_ids,
             trd_env=trd_env,
             acc_id=acc_id,

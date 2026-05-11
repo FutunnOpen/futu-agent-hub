@@ -14,12 +14,11 @@ description: >-
 metadata:
   version: 0.0.2
   author: Futu
-  openclaw:
-    requires:
-      bins:
-        - curl
-        - openssl
-        - date
+  requires:
+    bins:
+      - curl
+      - openssl
+      - date
 license: MIT
 ---
 

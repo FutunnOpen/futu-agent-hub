@@ -46,7 +46,7 @@ def get_order_fill_list(acc_id=None, market=None, trd_env=None, security_firm=No
     ctx = None
     try:
         ctx = create_trade_context(trd_market, security_firm=parse_security_firm(security_firm))
-        ret, data = ctx.deal_list_query(trd_env=trd_env, acc_id=acc_id)
+        ret, data = ctx.deal_list_query(trd_env=trd_env, acc_id=acc_id, refresh_cache=True)
         check_ret(ret, data, ctx, "查询当日成交")
 
         if is_empty(data):

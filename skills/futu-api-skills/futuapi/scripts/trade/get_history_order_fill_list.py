@@ -70,11 +70,17 @@ def get_history_order_fill_list(start=None, end=None, acc_id=None, market=None, 
                 print("=" * 70)
             return
 
+        no_date_filter = not start and not end
         if output_json:
-            print(json.dumps({"market": format_enum(trd_market), "deals": df_to_records(data)}, ensure_ascii=False))
+            result = {"market": format_enum(trd_market), "deals": df_to_records(data)}
+            if no_date_filter:
+                result["note"] = "默认仅查询最近90天的成交记录，如需更早的记录请指定 --start/--end"
+            print(json.dumps(result, ensure_ascii=False))
         else:
             print("=" * 70)
             print(f"历史成交 - 市场: {format_enum(trd_market)}")
+            if no_date_filter:
+                print("提示：默认仅查询最近90天的成交记录，如需更早的记录请指定 --start/--end")
             print("=" * 70)
             print(data.to_string(index=False))
             print(f"\n共 {len(data)} 条成交")

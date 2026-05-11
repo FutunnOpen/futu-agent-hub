@@ -201,6 +201,67 @@ def read_skill_version(skill_dir: Path) -> str:
     return m2.group(1).strip() if m2 else ""
 
 
+def read_skill_deps(skill_dir: Path) -> List[str]:
+    """Read declared skill-to-skill deps from SKILL.md frontmatter.
+
+    Canonical path is ``metadata.requires.skills``. The parser accepts a
+    ``skills:`` list under any ``requires:`` block in the frontmatter, so
+    extra namespace levels (e.g. legacy ``metadata.openclaw.requires``) also
+    work. Returns slug list in declared order, deduped. Empty list if
+    frontmatter is absent or the field is missing.
+    """
+    p = skill_dir / "SKILL.md"
+    if not p.is_file():
+        return []
+    try:
+        text = p.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return []
+    m = re.match(r"^---\s*\n(.*?)\n---", text, re.DOTALL)
+    if not m:
+        return []
+    lines = m.group(1).splitlines()
+    in_requires = False
+    requires_indent = -1
+    in_skills_list = False
+    skills_indent = -1
+    deps: List[str] = []
+    seen: set = set()
+
+    def _push(item: str) -> None:
+        s = item.strip().strip("'\"")
+        if s and s not in seen:
+            seen.add(s)
+            deps.append(s)
+
+    for line in lines:
+        stripped = line.lstrip(" ")
+        indent = len(line) - len(stripped)
+        if not stripped or stripped.startswith("#"):
+            continue
+        if in_skills_list:
+            if indent > skills_indent and stripped.startswith("- "):
+                _push(stripped[2:])
+                continue
+            in_skills_list = False
+        if in_requires:
+            if indent <= requires_indent:
+                in_requires = False
+            elif stripped.startswith("skills:"):
+                rest = stripped[len("skills:"):].strip()
+                if rest.startswith("[") and rest.endswith("]"):
+                    for item in rest[1:-1].split(","):
+                        _push(item)
+                else:
+                    in_skills_list = True
+                    skills_indent = indent
+                continue
+        if stripped.startswith("requires:"):
+            in_requires = True
+            requires_indent = indent
+    return deps
+
+
 def resolve_skill_version(
     skill_dir: Path,
     slug: str,
@@ -848,10 +909,7 @@ def _refresh_discovery_skill(
         hint = s.get("discovery_hint", "")
         s_url = resolve_repo_url(meta, s)
         s_ref = resolve_repo_ref(meta, s)
-        s_path = str(s.get("path") or "").strip().replace("\\", "/").strip("/")
         install_cmd = f"npx skills add -y -g {s_url}#{s_ref}"
-        if s_path:
-            install_cmd += f" --path {s_path}"
         lines.append(f"## {slug}")
         lines.append(f"- **Description**: {desc_short}")
         if hint:
@@ -1089,10 +1147,9 @@ def install_from_source(
     Install a skill from its git repo.
 
     Strategy: prefer `npx skills add` when available; otherwise clone the repo
-    declared in metadata.repo_url and copy the skill directory into dest_skill.
-
-    - Full install: entry.path is empty → copy the entire repo as the skill.
-    - Partial install: entry.path is set → copy only that subdirectory.
+    declared in metadata.repo_url and locate the skill directory by convention:
+    a directory named `<slug>` containing `SKILL.md`. If the repo root itself
+    matches (single-skill repo), use the repo root.
     """
     if _try_npx_skills_add(slug, dest_skill):
         return
@@ -1101,17 +1158,39 @@ def install_from_source(
     ref = resolve_repo_ref(meta, entry)
     repo = _git_ensure_repo(url, ref, force_refresh=force_refresh)
 
-    rel = str(entry.get("path") or "").strip().replace("\\", "/").strip("/")
-    src = repo if not rel else (repo / rel)
-    if not src.is_dir():
-        label = rel or "<repo root>"
-        print(f"error: skill path not found in repo: {label}", file=sys.stderr)
+    src = _locate_skill_dir(repo, slug)
+    if src is None:
+        print(
+            f"error: could not locate skill directory for slug {slug!r} "
+            f"in repo (expected a folder named {slug!r} containing SKILL.md, "
+            f"or SKILL.md at repo root)",
+            file=sys.stderr,
+        )
         raise SystemExit(3)
 
     if dest_skill.exists():
         shutil.rmtree(dest_skill)
     dest_skill.parent.mkdir(parents=True, exist_ok=True)
     shutil.copytree(src, dest_skill, ignore=shutil.ignore_patterns(".git"))
+
+
+def _locate_skill_dir(repo: Path, slug: str) -> Optional[Path]:
+    """Find the skill directory inside *repo* by convention.
+
+    Order:
+      1. Repo root itself contains SKILL.md (single-skill repo).
+      2. A directory named exactly *slug* anywhere under the repo that
+         contains SKILL.md.
+    """
+    if (repo / "SKILL.md").is_file():
+        return repo
+    for p in repo.rglob(slug):
+        if p.is_dir() and (p / "SKILL.md").is_file():
+            # Skip anything under .git
+            if ".git" in p.parts:
+                continue
+            return p
+    return None
 
 
 def cmd_uninstall(args: argparse.Namespace) -> None:
@@ -1335,8 +1414,24 @@ def cmd_upgrade(args: argparse.Namespace) -> None:
             deprecated_slugs.append(slug)
             targets.remove(slug)
 
+    initial_targets = set(targets)
+    migration_set = set(migrate_installs)
+
+    def _enqueue_deps(skill_dir: Path, queue: List[str], seen: set) -> None:
+        if not skill_dir.is_dir():
+            return
+        for d in read_skill_deps(skill_dir):
+            if d not in seen and d not in queue:
+                queue.append(d)
+
     if args.check_only:
-        for slug in targets:
+        queue = list(targets)
+        seen: set = set()
+        while queue:
+            slug = queue.pop(0)
+            if slug in seen:
+                continue
+            seen.add(slug)
             entry = get_skill_entry(skills, slug)
             if not entry:
                 print(f"{slug}\tskip (unknown slug)")
@@ -1344,13 +1439,17 @@ def cmd_upgrade(args: argparse.Namespace) -> None:
             dest = install_root / slug
             local_ver = read_skill_version(dest) if dest.is_dir() else ""
             remote_ver = parse_catalog_skill_version(catalog, slug) if catalog else None
-            if remote_ver and local_ver and not version_is_newer(remote_ver, local_ver):
+            origin = "" if slug in initial_targets else "\t(dependency)"
+            if not dest.is_dir():
+                status = "missing (will install)"
+            elif remote_ver and local_ver and not version_is_newer(remote_ver, local_ver):
                 status = "up to date"
             elif remote_ver:
                 status = "update available"
             else:
                 status = "no catalog info"
-            print(f"{slug}\tlocal={local_ver or '?'}\tremote={remote_ver or '?'}\t{status}")
+            print(f"{slug}\tlocal={local_ver or '?'}\tremote={remote_ver or '?'}\t{status}{origin}")
+            _enqueue_deps(dest, queue, seen)
         return
 
     # Process deprecation removals
@@ -1363,60 +1462,43 @@ def cmd_upgrade(args: argparse.Namespace) -> None:
             del lock["skills"][slug]
         removed += 1
 
-    # Process deprecation migrations (install replacement skills)
-    migrated = 0
-    for new_slug in migrate_installs:
-        new_entry = get_skill_entry(skills, new_slug)
-        if not new_entry:
-            print(f"warning: migrate target {new_slug} not found in index", file=sys.stderr)
-            continue
-        dest = install_root / new_slug
-        try:
-            install_from_source(meta, new_entry, new_slug, dest, force_refresh=True)
-            _inject_version_check(dest, new_slug, "futu-skills")
-            ver = resolve_skill_version(dest, new_slug, catalog)
-            lock["skills"][new_slug] = {
-                "name": new_entry.get("name") or new_slug,
-                "version": ver,
-                "source": "futu-skillhub",
-                "source_url": resolve_repo_url(meta, new_entry),
-                "path": new_entry.get("path", ""),
-                "product": new_entry.get("product"),
-            }
-            migrated += 1
-            _update_local_catalog_version(new_slug, ver)
-            print(f"installed {new_slug} (migration) -> {ver}")
-        except SystemExit:
-            raise
-        except Exception as e:
-            print(f"error: migrate install {new_slug}: {e}", file=sys.stderr)
-
-    # --- Normal upgrade ---
+    # --- Unified install/upgrade queue (migrations + normal targets + transitive deps) ---
+    upgrade_queue: List[str] = list(migrate_installs) + list(targets)
+    processed: set = set()
     failed = 0
     skipped = 0
     upgraded = 0
+    migrated = 0
+    dep_added = 0
     repo_refreshed: set = set()
-    for slug in targets:
+    while upgrade_queue:
+        slug = upgrade_queue.pop(0)
+        if slug in processed:
+            continue
+        processed.add(slug)
         entry = get_skill_entry(skills, slug)
         if not entry:
             print(f"skip unknown slug: {slug}", file=sys.stderr)
             failed += 1
             continue
         dest = install_root / slug
+        is_migration = slug in migration_set
+        is_dep = slug not in initial_targets and not is_migration
 
-        # Version check: skip if already at latest catalog version (unless --force)
-        if not args.force and catalog:
-            local_ver = read_skill_version(dest) if dest.is_dir() else ""
+        # Version-skip only applies to already-installed, non-migration skills.
+        if not args.force and catalog and dest.is_dir() and not is_migration:
+            local_ver = read_skill_version(dest)
             remote_ver = parse_catalog_skill_version(catalog, slug)
             if remote_ver and local_ver and not version_is_newer(remote_ver, local_ver):
                 verbose(f"{slug}: already up to date ({local_ver})")
                 skipped += 1
+                _enqueue_deps(dest, upgrade_queue, processed)
                 continue
 
         try:
-            # First skill per-repo triggers a refresh; subsequent ones reuse that clone.
             cur_url = resolve_repo_url(meta, entry)
-            install_from_source(meta, entry, slug, dest, force_refresh=cur_url not in repo_refreshed)
+            force_refresh = is_migration or (cur_url not in repo_refreshed)
+            install_from_source(meta, entry, slug, dest, force_refresh=force_refresh)
             repo_refreshed.add(cur_url)
             _inject_version_check(dest, slug, "futu-skills")
             ver = resolve_skill_version(dest, slug, catalog)
@@ -1425,16 +1507,24 @@ def cmd_upgrade(args: argparse.Namespace) -> None:
                 "version": ver,
                 "source": "futu-skillhub",
                 "source_url": resolve_repo_url(meta, entry),
-                "path": entry.get("path", ""),
                 "product": entry.get("product"),
             }
-            upgraded += 1
             _update_local_catalog_version(slug, ver)
-            print(f"upgraded {slug} -> {ver}")
+            if is_migration:
+                migrated += 1
+                print(f"installed {slug} (migration) -> {ver}")
+            elif is_dep:
+                dep_added += 1
+                print(f"installed dependency {slug} -> {ver}")
+            else:
+                upgraded += 1
+                print(f"upgraded {slug} -> {ver}")
+            _enqueue_deps(dest, upgrade_queue, processed)
         except SystemExit:
             raise
         except Exception as e:
-            print(f"error: upgrade {slug}: {e}", file=sys.stderr)
+            kind = "migrate install" if is_migration else ("install dep" if is_dep else "upgrade")
+            print(f"error: {kind} {slug}: {e}", file=sys.stderr)
             failed += 1
     write_lock(install_root, meta, lock)
 
@@ -1446,6 +1536,8 @@ def cmd_upgrade(args: argparse.Namespace) -> None:
         parts.append(f"{migrated} migrated")
     if upgraded:
         parts.append(f"{upgraded} upgraded")
+    if dep_added:
+        parts.append(f"{dep_added} dependency installed")
     if skipped:
         parts.append(f"{skipped} up to date")
     if failed:

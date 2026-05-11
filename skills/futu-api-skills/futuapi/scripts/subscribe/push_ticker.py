@@ -20,10 +20,19 @@ from common import (
     safe_close,
     df_to_records,
     SubType,
+    Session,
     RET_OK,
 )
 
 from futu import TickerHandlerBase, RET_ERROR
+
+# session 仅支持以下值（订阅不支持 OVERNIGHT）
+SESSION_MAP = {
+    "NONE": Session.NONE,
+    "RTH": Session.RTH,
+    "ETH": Session.ETH,
+    "ALL": Session.ALL,
+}
 
 
 class TickerHandler(TickerHandlerBase):
@@ -51,14 +60,15 @@ class TickerHandler(TickerHandlerBase):
         return RET_OK, data
 
 
-def push_ticker(codes, duration=60, output_json=False):
+def push_ticker(codes, duration=60, session_str="NONE", output_json=False):
+    session = SESSION_MAP.get(session_str.upper(), Session.NONE)
     ctx = None
     try:
         ctx = create_quote_context()
         handler = TickerHandler(output_json=output_json)
         ctx.set_handler(handler)
 
-        ret, msg = ctx.subscribe(codes, [SubType.TICKER], subscribe_push=True)
+        ret, msg = ctx.subscribe(codes, [SubType.TICKER], subscribe_push=True, session=session)
         check_ret(ret, msg, ctx, "订阅逐笔推送")
 
         if not output_json:
@@ -84,6 +94,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="接收逐笔成交推送")
     parser.add_argument("codes", nargs="+", help="股票代码，如 HK.00700")
     parser.add_argument("--duration", type=int, default=60, help="持续接收时间（秒，默认: 60）")
+    parser.add_argument("--session", choices=["NONE", "RTH", "ETH", "ALL"],
+                        default="NONE", help="美股交易时段（仅美股，不支持 OVERNIGHT）")
     parser.add_argument("--json", action="store_true", dest="output_json", help="输出 JSON 格式")
     args = parser.parse_args()
-    push_ticker(args.codes, args.duration, args.output_json)
+    push_ticker(args.codes, args.duration, args.session, args.output_json)
