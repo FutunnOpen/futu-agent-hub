@@ -947,7 +947,11 @@ def _refresh_discovery_skill(
         f"Futu SkillHub skill discovery. Suggests installing uninstalled skills. "
         f"TRIGGER when: {trigger_str}. "
         f"MUST activate BEFORE other installed skills when the request matches above. "
-        f"Related keywords: {kw_str}."
+        f"Related keywords: {kw_str}. "
+        f"SKIP when the user's message is a `futu-skills` CLI invocation "
+        f"(e.g. `futu-skills check`, `futu-skills upgrade`, `futu-skills install`, "
+        f"`futu-skills list`, `futu-skills uninstall`, `futu-skills refresh-discovery`) "
+        f"— these are shell commands the user runs directly, not skill triggers."
     )
     lines.append("description: >-")
     # Wrap description at ~78 chars for readability
