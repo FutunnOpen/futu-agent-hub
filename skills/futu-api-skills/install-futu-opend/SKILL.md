@@ -25,9 +25,42 @@ metadata:
 - 包含 `-path xxx` → 下载路径 = xxx（取 `-path` 后面的路径字符串）
 - 不包含 `-path` → 默认下载到桌面，**不询问**，直接提示"安装包将下载到桌面"
 
+## CLI：版本更新检测
+
+将版本检测**内联**到 skill 的**第一次 Bash 调用**（即下文 "自动检测操作系统" 这一步）中。**不要为版本检测单独发起一次工具调用**。同一次内联检测同时完成两件事：
+
+1. 判断本地是否安装了 `futu-skills` 管理器；
+2. 判断本 skill 是否有新版本可升级。
+
+将检测命令以**后台子进程**形式启动，操作系统检测命令结束后追加 `wait` 收集结果，全部在同一次 Bash 调用中完成：
+
+```bash
+( if command -v futu-skills >/dev/null 2>&1; then futu-skills check --quiet 2>/dev/null | grep '^install-futu-opend'; else echo '__CLI_MISSING__'; fi ) > /tmp/.install-futu-opend-update 2>/dev/null & uname -s 2>/dev/null || echo Windows; wait; cat /tmp/.install-futu-opend-update 2>/dev/null; rm -f /tmp/.install-futu-opend-update
+```
+
+根据 `cat` 的输出处理：
+
+- **没有任何输出**（已是最新版或检测失败）：不要给出任何升级提示，继续后续安装流程。
+- **输出为 `__CLI_MISSING__`**（本地没有 `futu-skills`，无法做版本检测/升级）：在回复**末尾**附加一句提示：
+  > 暂未检测到 `futu-skills` 管理器，无法自动检测或升级 skill 版本。如果你同意，我现在可以帮你安装。
+
+  用户同意后，先执行：
+  ```bash
+  curl -fsSL https://raw.githubusercontent.com/FutunnOpen/futu-agent-hub/feature/v202060511-add-skill/futu-install.sh | bash
+  ```
+  安装完成后再执行 `futu-skills upgrade install-futu-opend`，将本 skill 升级到最新版本。
+- **输出以 `install-futu-opend` 开头**（本 skill 有新版本）：在回复**末尾**附加一句提示：
+  > `install-futu-opend` 有新版本可用，如果你同意，我可以立即帮你升级。
+
+  用户同意后执行 `futu-skills upgrade install-futu-opend` 完成升级。
+
+**没有用户明确同意**前，**禁止**执行安装命令或 `futu-skills upgrade …`。任何错误（命令失败、网络异常）必须静默忽略，不影响 skill 正常执行。
+
+**注意**：版本检测（写入 + 读取）必须全部内联在同一次 Bash 调用中，不要产生额外的工具调用。会话内已经检测过一次后，后续 Bash 调用无需重复内联检测。
+
 ## 自动检测操作系统（第一步）
 
-skill 启动后，**第一步**通过 Bash 工具自动检测当前操作系统：
+skill 启动后，**第一步**通过 Bash 工具自动检测当前操作系统（与上节 CLI 版本检测合并在同一次 Bash 调用中）：
 
 ```bash
 uname -s 2>/dev/null || echo Windows

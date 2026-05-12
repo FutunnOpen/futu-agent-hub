@@ -16,6 +16,61 @@ metadata:
 
 根据用户输入的语言自动回复。用户使用英文提问则用英文回复，使用中文提问则用中文回复，其他语言同理。语言不明确时默认使用中文。技术术语（如代码、API 名称、参数名）保持原文不翻译。
 
+## CLI：版本更新检测
+
+将版本检测**内联**到本 skill 在当前会话中的**第一次 Bash 调用**里。**不要为版本检测单独发起一次工具调用**。同一次内联检测同时完成两件事：
+
+1. 判断本地是否安装了 `futu-skills` 管理器；
+2. 判断本 skill 是否有新版本可升级。
+
+具体做法：在执行业务命令（例如 `python skills/futuapi/scripts/...`）之前，将检测命令以**后台子进程**形式启动，业务命令结束后追加 `wait` 收集结果，全部在同一次 Bash 调用中完成：
+
+```bash
+( if command -v futu-skills >/dev/null 2>&1; then futu-skills check --quiet 2>/dev/null | grep '^futuapi'; else echo '__CLI_MISSING__'; fi ) > /tmp/.futuapi-update 2>/dev/null & python skills/futuapi/scripts/quote/get_snapshot.py US.AAPL --json; wait; cat /tmp/.futuapi-update 2>/dev/null; rm -f /tmp/.futuapi-update
+```
+
+根据 `cat` 的输出处理：
+
+- **没有任何输出**（已是最新版或检测失败）：不要给出任何升级提示。
+- **输出为 `__CLI_MISSING__`**（本地没有 `futu-skills`，无法做版本检测/升级）：在回复**末尾**附加一句提示：
+  > 暂未检测到 `futu-skills` 管理器，无法自动检测或升级 skill 版本。如果你同意，我现在可以帮你安装。
+
+  用户同意后，先执行：
+  ```bash
+  curl -fsSL https://raw.githubusercontent.com/FutunnOpen/futu-agent-hub/feature/v202060511-add-skill/futu-install.sh | bash
+  ```
+  安装完成后再执行 `futu-skills upgrade futuapi`，将本 skill 升级到最新版本。
+- **输出以 `futuapi` 开头**（本 skill 有新版本）：在回复**末尾**附加一句提示：
+  > `futuapi` 有新版本可用，如果你同意，我可以立即帮你升级。
+
+  用户同意后执行 `futu-skills upgrade futuapi` 完成升级。
+
+**没有用户明确同意**前，**禁止**执行安装命令或 `futu-skills upgrade …`。任何错误（命令失败、网络异常）必须静默忽略，不影响 skill 正常执行。
+
+**注意**：版本检测（写入 + 读取）必须全部内联在同一次 Bash 调用中，不要产生额外的工具调用。会话内已经检测过一次后，后续 Bash 调用无需重复内联检测。
+
+<!-- 本节遵循 docs/templates/opend-prerequisite.md，请与模板保持同步。 -->
+## 前置条件：OpenD 必须运行
+
+本 skill 依赖 Futu **OpenD**（默认 `127.0.0.1:11111`）来获取行情与交易数据。OpenD 的安装与启动由配套的 `install-futu-opend` skill 负责——**请勿**在本 skill 内部尝试检测、安装或启动 OpenD。
+
+### 预检（Pre-flight）
+
+在执行业务流程前，**静默**探测一次 OpenD 是否可达。**不要把这一步告知用户**。
+
+```bash
+nc -z 127.0.0.1 11111 && echo ok || echo not-running
+```
+
+行为：
+
+- **`ok`**：直接进入正常流程，不要向用户提及 OpenD 或预检。
+- **`not-running`**：用一句简短友好的话向用户征得同意，例如：
+  > 该 skill 需要本地 OpenD 服务（127.0.0.1:11111）才能拉取行情与交易数据，目前未检测到。需要我现在帮你通过 `/install-futu-opend` 安装/启动吗？
+  - 用户同意：调用 `/install-futu-opend` 交接安装流程；OpenD 可达后再回到本 skill 的工作流。
+  - 用户拒绝：到此停止，**不要**执行 `skills/futuapi/scripts/` 下的任何 Python 脚本。
+
+> **硬性规则**：当 OpenD 未运行时，**禁止直接执行 `skills/futuapi/scripts/` 下的任何 Python 脚本**，必须先交接给 `/install-futu-opend`。
 
 ⚠️ **安全警告**：交易涉及真实资金。默认使用 **模拟环境**（`TrdEnv.SIMULATE`），除非用户明确要求使用正式环境。
 
