@@ -5,25 +5,25 @@
       "slug": "futu-news-search",
       "name": "futu-news-search",
       "product": "futu",
-      "description": "Futu news, notices, and research search",
-      "keywords": ["futu", "news", "search", "富途", "新闻"],
-      "discovery_hint": "用户想了解某只股票或公司的消息、新闻、公告、研报时，包含任何表达如：最新消息、最近消息、近期新闻、有什么新闻、news、latest news等（非个股解读分析）"
+      "description": "Futu single-stock news/article/announcement/research retrieval — list only, no interpretation",
+      "keywords": ["futu", "news", "search", "富途", "新闻", "消息", "资讯", "文章", "公告", "研报"],
+      "discovery_hint": "用户想拉取某只股票/公司的最新消息、新闻、文章、资讯、公告、研报列表（标题+时间+链接），且消息中同时包含股票和明确的『消息/新闻/资讯/公告/研报/文章/news/announcement』关键词时；仅做信息查询，不做解读/分析/总结。SKIP：只提股票不带消息关键词、对消息/文章做解读分析（→ futu-stock-digest）、社区评论情绪（→ futu-comment-sentiment）。"
     },
     {
       "slug": "futu-stock-digest",
       "name": "futu-stock-digest",
       "product": "futu",
-      "description": "Futu single-stock news digest",
-      "keywords": ["futu", "digest", "summary", "摘要"],
-      "discovery_hint": "用户要求对个股做解读、消息面分析、多空研判、新闻总结归纳时（非简单搜索罗列新闻、非社区情绪）"
+      "description": "Futu single-stock news interpretation / digest — analysis & summary, not a raw list",
+      "keywords": ["futu", "digest", "summary", "摘要", "解读", "解析", "分析", "消息面", "多空", "利好利空", "总结", "归纳"],
+      "discovery_hint": "用户想要对单只股票的最新消息/新闻/公告/研报/文章做解读、解析、分析、总结、摘要、归纳、消息面分析、利好利空判断、多空研判、impact/interpretation/takeaway 时（让模型读完消息后下结论）。SKIP：只想查询/罗列新闻列表（→ futu-news-search）、社区情绪/看多看空风向（→ futu-comment-sentiment）、行情/异动/K线/持仓/交易、多只股票批量分析。"
     },
     {
       "slug": "futu-comment-sentiment",
       "name": "futu-comment-sentiment",
       "product": "futu",
-      "description": "Futu community comment sentiment",
-      "keywords": ["futu", "sentiment", "情绪", "评论"],
-      "discovery_hint": "用户询问社区讨论情绪、散户情绪、牛熊讨论、评论分析、舆情分析时（基于社区帖子评论，非新闻解读）"
+      "description": "Futu community sentiment — bullish/bearish mood from posts & comments",
+      "keywords": ["futu", "sentiment", "情绪", "评论", "社区", "看多看空", "多空", "牛熊", "风向", "舆情"],
+      "discovery_hint": "用户想判断/分析某只股票（或多只）的看多看空情绪、社区情绪、散户情绪、多空风向、讨论氛围、评论怎么看、大家怎么看、bullish/bearish sentiment 时；信号来源是社区帖子/评论，非新闻、非行情。SKIP：要新闻列表（→ futu-news-search）、要消息面解读分析（→ futu-stock-digest）、行情/异动/K线/持仓/交易等。"
     },
     {
       "slug": "futuapi",

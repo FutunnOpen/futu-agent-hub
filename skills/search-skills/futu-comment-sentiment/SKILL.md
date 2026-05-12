@@ -1,12 +1,26 @@
 ---
 name: futu-comment-sentiment
 description: >-
-  Aggregates real-time Futu community/feed discussions for one or more user-specified
-  symbols, filters low-quality posts, classifies sentiment as bullish, bearish,
-  or neutral, and returns a structured community sentiment snapshot for a single
-  stock or a multi-symbol portfolio. Use when the user asks for stock community
-  sentiment, retail discussion tone, portfolio sentiment snapshot, bullish vs
-  bearish discussion, or futu-comment-sentiment.
+  Judges the BULLISH vs BEARISH sentiment / mood / 风向 of a stock by aggregating
+  real-time Futu community / feed / 帖子 / 评论 discussions for one or more
+  user-specified symbols, filtering low-quality posts, classifying each post as
+  bullish / bearish / neutral, and returning a structured community sentiment
+  snapshot (single stock or multi-symbol portfolio).
+  TRIGGER when the user asks about: 情绪 / 社区情绪 / 散户情绪 / 看多看空 /
+  多空情绪 / 牛熊 / 看涨看跌 / 风向 / 讨论氛围 / 评论怎么看 / 大家怎么看 /
+  bullish or bearish / sentiment / community mood / retail discussion tone /
+  portfolio sentiment snapshot. The signal here is community POSTS / COMMENTS,
+  not news, not price action.
+  SKIP in any of the following cases:
+  - the user wants a list of news / articles / announcements / research reports
+    (title + time + link) — that belongs to `futu-news-search`.
+  - the user wants news / 消息面 interpretation, summarization, impact analysis,
+    or 多空研判 based on news rather than community posts — that belongs to
+    `futu-stock-digest`.
+  - price/quote checks, 异动 / anomaly tracking, K线 / technical analysis,
+    holdings, or trade execution — none of these are sentiment requests.
+  A bare ticker or company name without a sentiment-intent keyword is NOT enough
+  to trigger this skill.
 metadata:
   version: 0.0.4
   author: Futu

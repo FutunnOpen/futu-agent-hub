@@ -1,12 +1,28 @@
 ---
 name: futu-stock-digest
 description: >-
-  Interprets the latest public news for one user-specified stock or company by
-  calling the Futu news search API directly, extracting key events, judging likely impact
-  direction, and returning a structured stock digest with evidence links and a
-  non-investment disclaimer. Use when the user asks for a stock digest,
-  single-stock news interpretation, stock news interpretation, or futunn stock
-  digest.
+  INTERPRETS the latest public news / 消息面 for ONE user-specified stock or
+  company: extracts key events, summarizes them, judges likely impact direction
+  (bullish / bearish / neutral / 多空研判), and returns a structured single-stock
+  digest with evidence links and a non-investment disclaimer. The output is an
+  ANALYSIS / SUMMARY, not a raw news list.
+  TRIGGER when the user asks for: 解读 / 解析 / 分析 / 怎么看 / 如何看 / 总结 /
+  摘要 / 归纳 / 消息面 / 利好利空 / 多空研判 / impact / interpretation /
+  digest / summary / takeaway 一只股票的最新消息 / 新闻 / 公告 / 研报 / 文章 —
+  i.e. the user wants the model to READ news AND draw a conclusion.
+  SKIP in any of the following cases:
+  - the user only wants to retrieve / 查询 / list raw news, articles,
+    announcements, or research reports (title + time + link) without
+    interpretation — that belongs to `futu-news-search`.
+  - the user asks about community sentiment / 评论 / 社区情绪 / 散户情绪 /
+    看多看空 / 多空风向 / discussion mood — that belongs to
+    `futu-comment-sentiment`.
+  - price/quote checks, 异动 / anomaly tracking, K线 / technical analysis,
+    holdings, or trade execution.
+  - the user names multiple stocks for batch analysis — this skill takes ONE
+    target only.
+  A bare ticker or company name without an interpretation-intent keyword is NOT
+  enough to trigger this skill.
 metadata:
   version: 0.0.4
   author: Futu
