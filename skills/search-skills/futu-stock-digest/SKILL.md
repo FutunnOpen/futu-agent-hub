@@ -5,15 +5,24 @@ description: >-
   company: extracts key events, summarizes them, judges likely impact direction
   (bullish / bearish / neutral / 多空研判), and returns a structured single-stock
   digest with evidence links and a non-investment disclaimer. The output is an
-  ANALYSIS / SUMMARY, not a raw news list.
-  TRIGGER when the user asks for: 解读 / 解析 / 分析 / 怎么看 / 如何看 / 总结 /
-  摘要 / 归纳 / 消息面 / 利好利空 / 多空研判 / impact / interpretation /
-  digest / summary / takeaway 一只股票的最新消息 / 新闻 / 公告 / 研报 / 文章 —
-  i.e. the user wants the model to READ news AND draw a conclusion.
-  SKIP in any of the following cases:
-  - the user only wants to retrieve / 查询 / list raw news, articles,
+  ANALYSIS / SUMMARY / CONCLUSION, not a raw news list.
+  TRIGGER ONLY when the user's message contains an explicit
+  INTERPRETATION-INTENT verb directed at a single stock's news/messages, such
+  as: 解读 / 解析 / 分析 / 研判 / 怎么看 / 如何看 / 看法 / 点评 /
+  总结 / 摘要 / 归纳 / 概括 / 提炼 / 消息面（分析）/ 利好利空（判断）/
+  多空研判 / interpret / analyze / summarize / digest / impact analysis /
+  takeaway. Example triggers: "解读一下特斯拉最近的消息"、"帮我分析下英伟达
+  这波新闻面"、"summarize Apple's recent news for me".
+  Words like 新闻 / 消息 / 公告 / 研报 / 文章 / news / article appearing in the
+  message are NOT triggers by themselves — they are only the OBJECT of an
+  interpretation verb. If the message merely names a stock and asks for news
+  WITHOUT any interpretation verb, this skill MUST NOT be triggered.
+  SKIP in any of the following cases (do NOT trigger this skill):
+  - the user only wants to retrieve / 查询 / 看 / 列 / 拉 raw news, articles,
     announcements, or research reports (title + time + link) without
-    interpretation — that belongs to `futu-news-search`.
+    interpretation. Examples: "特斯拉最近有什么新闻"、"苹果最近的消息"、
+    "腾讯最近有啥新闻"、"NVDA latest news"、"what news about Apple" — these
+    are LISTING requests and belong to `futu-news-search`, NOT this skill.
   - the user asks about community sentiment / 评论 / 社区情绪 / 散户情绪 /
     看多看空 / 多空风向 / discussion mood — that belongs to
     `futu-comment-sentiment`.
@@ -21,8 +30,8 @@ description: >-
     holdings, or trade execution.
   - the user names multiple stocks for batch analysis — this skill takes ONE
     target only.
-  A bare ticker or company name without an interpretation-intent keyword is NOT
-  enough to trigger this skill.
+  Hard rule: presence of "新闻 / 消息 / news" words alone is NEVER enough to
+  trigger this skill — an interpretation verb must also be present.
 metadata:
   version: 0.0.4
   author: Futu

@@ -4,20 +4,25 @@ description: >-
   Searches Futu news, notices, articles, announcements, and research reports for a
   user-specified stock or company — INFORMATION RETRIEVAL ONLY (a list of items;
   no interpretation, no summarization, no impact judgment).
-  TRIGGER only when the message contains BOTH (a) a single stock / company / ticker
-  AND (b) an explicit news-intent keyword: 新闻 / 消息 / 资讯 / 公告 / 研报 / 报道 /
-  头条 / 文章 / news / announcement / research report / headlines / latest update.
+  TRIGGER when the message contains BOTH (a) a single stock / company / ticker
+  AND (b) an explicit news-intent keyword: 新闻 / 消息 / 资讯 / 公告 / 研报 /
+  报道 / 头条 / 文章 / news / announcement / research report / headlines /
+  latest update. Typical patterns that MUST trigger this skill (NOT
+  `futu-stock-digest`):
+  "特斯拉最近有什么新闻"、"苹果最近的消息"、"腾讯最近有啥新闻"、"英伟达近期公告"、
+  "NVDA latest news"、"what news about Apple"、"any recent announcement on TSLA".
   Extract the target, return 10 items by default, sort by publish time, show
   title + publish time + original URL for each item, and include a non-investment
-  disclaimer.
+  disclaimer. Do NOT add interpretation, summarization, or impact judgment.
   SKIP in any of the following cases:
   - the message only names a stock without an explicit news-intent keyword
     (price/quote checks, 异动 / anomaly tracking, K线 / candlestick analysis,
     technical signals, holdings, trade execution). A bare ticker or company name
     is NOT enough to trigger this skill.
-  - the user asks to interpret, analyze, summarize, judge the impact of, or do
-    multi/空 reasoning over news / articles / messages / 消息面 — that belongs to
-    `futu-stock-digest`, not this skill.
+  - the user explicitly asks to INTERPRET, analyze, summarize, judge the impact
+    of, or do 多空 reasoning over the news (verbs: 解读 / 解析 / 分析 / 研判 /
+    怎么看 / 总结 / 摘要 / 点评 / interpret / analyze / summarize / digest) —
+    that belongs to `futu-stock-digest`, not this skill.
   - the user asks about community sentiment / 评论 / 讨论 / 散户情绪 — that belongs
     to `futu-comment-sentiment`.
 metadata:

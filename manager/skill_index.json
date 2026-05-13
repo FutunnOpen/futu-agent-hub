@@ -7,7 +7,7 @@
       "product": "futu",
       "description": "Futu single-stock news/article/announcement/research retrieval — list only, no interpretation",
       "keywords": ["futu", "news", "search", "富途", "新闻", "消息", "资讯", "文章", "公告", "研报"],
-      "discovery_hint": "用户想拉取某只股票/公司的最新消息、新闻、文章、资讯、公告、研报列表（标题+时间+链接），且消息中同时包含股票和明确的『消息/新闻/资讯/公告/研报/文章/news/announcement』关键词时；仅做信息查询，不做解读/分析/总结。SKIP：只提股票不带消息关键词、对消息/文章做解读分析（→ futu-stock-digest）、社区评论情绪（→ futu-comment-sentiment）。"
+      "discovery_hint": "用户想拉取某只股票/公司的最新消息、新闻、文章、资讯、公告、研报列表（标题+时间+链接），且消息中同时包含股票和明确的『消息/新闻/资讯/公告/研报/文章/news/announcement』关键词时；仅做信息查询，不做解读/分析/总结。典型必中例：『特斯拉最近有什么新闻』『苹果最近的消息』『腾讯最近有啥新闻』『NVDA latest news』『what news about Apple』。SKIP：只提股票不带消息关键词、用户明确要求解读/解析/分析/研判/总结/摘要/点评（→ futu-stock-digest）、社区评论情绪（→ futu-comment-sentiment）。"
     },
     {
       "slug": "futu-stock-digest",
@@ -15,7 +15,7 @@
       "product": "futu",
       "description": "Futu single-stock news interpretation / digest — analysis & summary, not a raw list",
       "keywords": ["futu", "digest", "summary", "摘要", "解读", "解析", "分析", "消息面", "多空", "利好利空", "总结", "归纳"],
-      "discovery_hint": "用户想要对单只股票的最新消息/新闻/公告/研报/文章做解读、解析、分析、总结、摘要、归纳、消息面分析、利好利空判断、多空研判、impact/interpretation/takeaway 时（让模型读完消息后下结论）。SKIP：只想查询/罗列新闻列表（→ futu-news-search）、社区情绪/看多看空风向（→ futu-comment-sentiment）、行情/异动/K线/持仓/交易、多只股票批量分析。"
+      "discovery_hint": "用户用明确的『解读/解析/分析/研判/怎么看/总结/摘要/点评/interpret/analyze/summarize』动词，要求对单只股票的最新消息/新闻/公告/研报/文章下结论、做利好利空/多空研判时。典型必中例：『解读一下特斯拉最近的消息』『帮我分析下英伟达这波新闻面』『summarize Apple's recent news』。硬性规则：仅出现『新闻/消息/news』等名词不足以触发——必须同时存在解读类动词。SKIP：只想查询/罗列新闻列表如『特斯拉最近有什么新闻』『苹果最近的消息』『NVDA latest news』（→ futu-news-search）、社区情绪/看多看空风向（→ futu-comment-sentiment）、行情/异动/K线/持仓/交易、多只股票批量分析。"
     },
     {
       "slug": "futu-comment-sentiment",
