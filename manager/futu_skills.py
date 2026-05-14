@@ -965,41 +965,42 @@ def _refresh_discovery_skill(
             trigger_examples.append(hint)
     trigger_str = " / ".join(trigger_examples) if trigger_examples else kw_str
 
-    # Build COMPLEMENT trigger clause when applicable
-    complement_trigger = ""
+    # Build COMPLEMENT trigger clause — put FIRST so it's visible before description truncation
+    complement_lead = ""
+    complement_body = ""
     if complements:
         complement_parts: List[str] = []
         for cat, info in complements.items():
             installed_names = [s["slug"] for s in info["installed"]]
             uninstalled_names = [s["slug"] for s in info["uninstalled"]]
             complement_parts.append(
-                f"ALSO trigger (COMPLEMENT) alongside {', '.join(installed_names)} "
-                f"when user asks about {cat}-related topics if "
-                f"{', '.join(uninstalled_names)} not yet installed — "
-                f"do NOT block the installed skill, invoke IN PARALLEL, "
-                f"append a suggestion at end of response"
+                f"Trigger alongside {', '.join(installed_names)} "
+                f"if {', '.join(uninstalled_names)} not yet installed — "
+                f"invoke IN PARALLEL, append a complement suggestion at end of response."
             )
-        complement_trigger = " ".join(complement_parts) + ". "
+        complement_lead = " ".join(complement_parts) + " "
+        complement_body = (
+            f"COMPLEMENT mode: invoke IN PARALLEL with already-installed skills in the same "
+            f"category, do NOT block them — just append a suggestion at end. "
+        )
 
-    desc = (
-        f"Futu SkillHub skill discovery. Suggests installing uninstalled skills. "
-        f"TRIGGER in TWO scenarios: "
-        f"(1) PRIMARY — {trigger_str}. "
-        f"MUST activate BEFORE other installed skills when the request matches above. "
-        f"{complement_trigger}"
-        f"Related keywords: {kw_str}. "
-        f"SKIP when the user's message is a `futu-skills` CLI invocation "
-        f"(e.g. `futu-skills check`, `futu-skills upgrade`, `futu-skills install`, "
-        f"`futu-skills list`, `futu-skills uninstall`, `futu-skills refresh-discovery`) "
-        f"— these are shell commands the user runs directly, not skill triggers."
-    ) if trigger_str else (
-        f"Futu SkillHub skill discovery. "
-        f"{complement_trigger}"
-        f"SKIP when the user's message is a `futu-skills` CLI invocation "
-        f"(e.g. `futu-skills check`, `futu-skills upgrade`, `futu-skills install`, "
-        f"`futu-skills list`, `futu-skills uninstall`, `futu-skills refresh-discovery`) "
-        f"— these are shell commands the user runs directly, not skill triggers."
-    )
+    if trigger_str:
+        desc = (
+            f"{complement_lead}"
+            f"Also trigger (PRIMARY) for: {trigger_str}. "
+            f"In PRIMARY mode MUST activate BEFORE other installed skills. "
+            f"{complement_body}"
+            f"Keywords: {kw_str}. "
+            f"SKIP futu-skills CLI invocations (check/upgrade/install/list/uninstall/"
+            f"refresh-discovery) — those are shell commands, not skill triggers."
+        )
+    else:
+        desc = (
+            f"{complement_lead}"
+            f"{complement_body}"
+            f"SKIP futu-skills CLI invocations (check/upgrade/install/list/uninstall/"
+            f"refresh-discovery) — those are shell commands, not skill triggers."
+        )
     lines.append("description: >-")
     # Wrap description at ~78 chars for readability
     _wrap_yaml(lines, desc, indent=2)
