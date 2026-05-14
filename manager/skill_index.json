@@ -5,6 +5,7 @@
       "slug": "futu-news-search",
       "name": "futu-news-search",
       "product": "futu",
+      "category": "search",
       "description": "Futu single-stock news/article/announcement/research retrieval — list only, no interpretation",
       "keywords": ["futu", "news", "search", "富途", "新闻", "消息", "资讯", "文章", "公告", "研报"],
       "discovery_hint": "用户想拉取某只股票/公司的最新消息、新闻、文章、资讯、公告、研报列表（标题+时间+链接），且消息中同时包含股票和明确的『消息/新闻/资讯/公告/研报/文章/news/announcement』关键词时；仅做信息查询，不做解读/分析/总结。典型必中例：『特斯拉最近有什么新闻』『苹果最近的消息』『腾讯最近有啥新闻』『NVDA latest news』『what news about Apple』。SKIP：只提股票不带消息关键词、用户明确要求解读/解析/分析/研判/总结/摘要/点评（→ futu-stock-digest）、社区评论情绪（→ futu-comment-sentiment）。"
@@ -13,6 +14,7 @@
       "slug": "futu-stock-digest",
       "name": "futu-stock-digest",
       "product": "futu",
+      "category": "search",
       "description": "Futu single-stock news interpretation / digest — analysis & summary, not a raw list",
       "keywords": ["futu", "digest", "summary", "摘要", "解读", "解析", "分析", "消息面", "多空", "利好利空", "总结", "归纳"],
       "discovery_hint": "用户用明确的『解读/解析/分析/研判/怎么看/总结/摘要/点评/interpret/analyze/summarize』动词，要求对单只股票的最新消息/新闻/公告/研报/文章下结论、做利好利空/多空研判时。典型必中例：『解读一下特斯拉最近的消息』『帮我分析下英伟达这波新闻面』『summarize Apple's recent news』。硬性规则：仅出现『新闻/消息/news』等名词不足以触发——必须同时存在解读类动词。SKIP：只想查询/罗列新闻列表如『特斯拉最近有什么新闻』『苹果最近的消息』『NVDA latest news』（→ futu-news-search）、社区情绪/看多看空风向（→ futu-comment-sentiment）、行情/异动/K线/持仓/交易、多只股票批量分析。"
@@ -21,6 +23,7 @@
       "slug": "futu-comment-sentiment",
       "name": "futu-comment-sentiment",
       "product": "futu",
+      "category": "search",
       "description": "Futu community sentiment — bullish/bearish mood from posts & comments",
       "keywords": ["futu", "sentiment", "情绪", "评论", "社区", "看多看空", "多空", "牛熊", "风向", "舆情"],
       "discovery_hint": "用户想判断/分析某只股票（或多只）的看多看空情绪、社区情绪、散户情绪、多空风向、讨论氛围、评论怎么看、大家怎么看、bullish/bearish sentiment 时；信号来源是社区帖子/评论，非新闻、非行情。SKIP：要新闻列表（→ futu-news-search）、要消息面解读分析（→ futu-stock-digest）、行情/异动/K线/持仓/交易等。"
@@ -45,6 +48,7 @@
       "slug": "futu-capital-anomaly",
       "name": "futu-capital-anomaly",
       "product": "futu",
+      "category": "anomaly",
       "description": "Futu capital-flow anomaly detection",
       "keywords": ["futu", "capital", "anomaly", "资金", "异动", "主力", "卖空"],
       "discovery_hint": "用户询问资金动向、主力行为、大单小单、谁在买谁在卖、买卖经纪商、卖空/做空/沽空、主力是否在进场或离场，或给出宽泛的异动请求如'英伟达异动'时"
@@ -53,6 +57,7 @@
       "slug": "futu-derivatives-anomaly",
       "name": "futu-derivatives-anomaly",
       "product": "futu",
+      "category": "anomaly",
       "description": "Futu derivatives anomaly detection",
       "keywords": ["futu", "derivatives", "anomaly", "期权", "牛熊证", "衍生品", "异动"],
       "discovery_hint": "用户询问期权、衍生品、牛熊证、IV、隐含波动率、PCR、期权大单、做多做空情绪、波动率溢价，或给出宽泛的异动请求如'NVDA 异动'时"
@@ -61,6 +66,7 @@
       "slug": "futu-technical-anomaly",
       "name": "futu-technical-anomaly",
       "product": "futu",
+      "category": "anomaly",
       "description": "Futu technical-analysis anomaly detection",
       "keywords": ["futu", "technical", "anomaly", "技术面", "K线", "MACD", "RSI", "异动"],
       "discovery_hint": "用户询问技术面情况、技术信号、K线形态、金叉/死叉、超买超卖、MACD、RSI、KDJ 等技术指标异动，或给出宽泛的异动请求如'腾讯有没有异常'时"

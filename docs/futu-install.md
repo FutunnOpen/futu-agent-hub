@@ -62,11 +62,14 @@ npx skills update futu-skill
 | AI Client | Command / Setup | Scope |
 |-----------|-----------------|-------|
 | Claude Code / VS Code / Cursor / JetBrains (Claude plugin) | Default — writes to `~/.claude/skills/` | Global |
+| **Codex (OpenAI Codex CLI)** | Default — writes to `~/.codex/skills/`. **Must run in "Work locally" mode** (not Cloud — Cloud has network restrictions that block CLI/MCP install) | Global |
 | OpenClaw | Send in chat: `Install Futu Developers Skill from this Git repo: <git-url>` | Global |
 | Cursor (built-in AI) | Add `--target cursor` -> `~/.cursor/rules/` | Global |
 | JetBrains (built-in AI) | Add `--target junie` -> `~/.junie/guidelines/` | Global |
 | VS Code (Cline / Roo Code) | Paste SKILL.md into `cline.customInstructions` / `roo-cline.customInstructions` | Global |
 | Claude Desktop / Claude.ai | Paste SKILL.md into **Custom Instructions** | Global |
+
+> **Codex notes**: OpenAI ships a couple of global skills in `~/.codex/skills/.system/`; user-installed skills coexist alongside under `~/.codex/skills/`. Any directory layout under that path works — Codex's Discovery skill scans the tree and exposes skills via the system prompt.
 
 ---
 

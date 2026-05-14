@@ -143,6 +143,11 @@ def detect_ai_client() -> Tuple[Optional[str], Optional[Path]]:
     # OpenClaw
     if os.environ.get("OPENCLAW"):
         return "OpenClaw", home / ".openclaw" / "skills"
+    # Codex (OpenAI Codex CLI) — env var hint or presence of ~/.codex
+    if os.environ.get("CODEX_HOME") or os.environ.get("CODEX_ENV") or os.environ.get("CODEX_CLI"):
+        return "Codex", home / ".codex" / "skills"
+    if (home / ".codex").is_dir():
+        return "Codex", home / ".codex" / "skills"
     return None, None
 
 
@@ -174,6 +179,7 @@ def resolve_skills_dir() -> Tuple[str, str]:
         Path.home() / ".claude" / "skills",
         Path.home() / ".cursor" / "skills",
         Path.home() / ".openclaw" / "skills",
+        Path.home() / ".codex" / "skills",
         Path.home() / ".junie" / "guidelines",
     ]:
         if d.is_dir():
@@ -918,7 +924,23 @@ def _refresh_discovery_skill(
 
     uninstalled = [s for s in skills if s.get("slug") not in installed_slugs]
 
-    if not uninstalled:
+    # --- Compute category complements ---
+    # Categories with BOTH installed and uninstalled skills → append suggestions
+    # after installed skills complete, rather than blocking them.
+    category_groups: Dict[str, List[Dict[str, Any]]] = {}
+    for s in skills:
+        cat = s.get("category") or ""
+        if cat:
+            category_groups.setdefault(cat, []).append(s)
+
+    complements: Dict[str, Dict[str, List[Dict[str, Any]]]] = {}
+    for cat, cat_skills in category_groups.items():
+        installed_in_cat = [s for s in cat_skills if s.get("slug") in installed_slugs]
+        uninstalled_in_cat = [s for s in cat_skills if s.get("slug") not in installed_slugs]
+        if installed_in_cat and uninstalled_in_cat:
+            complements[cat] = {"installed": installed_in_cat, "uninstalled": uninstalled_in_cat}
+
+    if not uninstalled and not complements:
         if discovery_dir.is_dir():
             shutil.rmtree(discovery_dir)
             verbose("discovery skill removed (all skills installed)")
@@ -943,11 +965,36 @@ def _refresh_discovery_skill(
             trigger_examples.append(hint)
     trigger_str = " / ".join(trigger_examples) if trigger_examples else kw_str
 
+    # Build COMPLEMENT trigger clause when applicable
+    complement_trigger = ""
+    if complements:
+        complement_parts: List[str] = []
+        for cat, info in complements.items():
+            installed_names = [s["slug"] for s in info["installed"]]
+            uninstalled_names = [s["slug"] for s in info["uninstalled"]]
+            complement_parts.append(
+                f"ALSO trigger (COMPLEMENT) alongside {', '.join(installed_names)} "
+                f"when user asks about {cat}-related topics if "
+                f"{', '.join(uninstalled_names)} not yet installed — "
+                f"do NOT block the installed skill, invoke IN PARALLEL, "
+                f"append a suggestion at end of response"
+            )
+        complement_trigger = " ".join(complement_parts) + ". "
+
     desc = (
         f"Futu SkillHub skill discovery. Suggests installing uninstalled skills. "
-        f"TRIGGER when: {trigger_str}. "
+        f"TRIGGER in TWO scenarios: "
+        f"(1) PRIMARY — {trigger_str}. "
         f"MUST activate BEFORE other installed skills when the request matches above. "
+        f"{complement_trigger}"
         f"Related keywords: {kw_str}. "
+        f"SKIP when the user's message is a `futu-skills` CLI invocation "
+        f"(e.g. `futu-skills check`, `futu-skills upgrade`, `futu-skills install`, "
+        f"`futu-skills list`, `futu-skills uninstall`, `futu-skills refresh-discovery`) "
+        f"— these are shell commands the user runs directly, not skill triggers."
+    ) if trigger_str else (
+        f"Futu SkillHub skill discovery. "
+        f"{complement_trigger}"
         f"SKIP when the user's message is a `futu-skills` CLI invocation "
         f"(e.g. `futu-skills check`, `futu-skills upgrade`, `futu-skills install`, "
         f"`futu-skills list`, `futu-skills uninstall`, `futu-skills refresh-discovery`) "
@@ -1006,6 +1053,40 @@ def _refresh_discovery_skill(
     lines.append("对于用户指定的每个 slug，依次执行其下方对应的 `npx skills add` 命令；")
     lines.append("**严禁** 把未在 `--skill` 列表中出现的 slug 一并安装。")
     lines.append("")
+
+    # --- Category complement section (only when applicable) ---
+    if complements:
+        lines.append("## 同类别补充推荐（Category Complement）")
+        lines.append("")
+        lines.append("当用户的请求被某个已安装 skill 处理（PRIMARY 触发不满足），")
+        lines.append("但同类别中仍有未安装 skill 时：")
+        lines.append("**不要中断已安装 skill 的执行**，在其响应末尾追加如下轻量提示：")
+        lines.append("")
+        lines.append("> 💡 同类别还有 **`<slug>`**（`<描述>`）尚未安装，可补充更完整的视角。若您同意，我可以帮您直接安装。")
+        lines.append("")
+        for cat, info in complements.items():
+            installed_names = ", ".join(f"`{s['slug']}`" for s in info["installed"])
+            lines.append(f"### {cat} 类")
+            lines.append(f"- **已安装**: {installed_names}")
+            for u in info["uninstalled"]:
+                u_slug = u.get("slug", "")
+                u_desc = u.get("description", "")
+                u_hint = u.get("discovery_hint", "")
+                s_url = resolve_repo_url(meta, u)
+                s_ref = resolve_repo_ref(meta, u)
+                s_src = _npx_skills_source(s_url)
+                install_cmd = (
+                    f"npx skills add -y -g {s_src}"
+                    if s_ref in ("", "main")
+                    else f"npx skills add -y -g {s_src}#{s_ref}"
+                )
+                lines.append(f"- **未安装**: `{u_slug}` — {u_desc}")
+                if u_hint:
+                    lines.append(f"  - 补充提示时机: {u_hint}")
+                lines.append(f"  - 安装命令: `{install_cmd}`")
+            lines.append("")
+        lines.append("> **判断规则**: 本文件中列出的 slug = 未安装；不在本文件中的 = 已安装。")
+        lines.append("")
 
     for s in uninstalled:
         slug = s.get("slug", "")
