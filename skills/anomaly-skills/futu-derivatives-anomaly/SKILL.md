@@ -37,15 +37,16 @@ If the user only says a broad request such as `英伟达异动`, `NVDA 异动`, 
 
 ## CLI: Version Update Check
 
-Embed the version check into the skill's **single Bash call**. **Do not create any separate tool call** for the version check. The same inline check must detect two things:
+Embed the version check into the skill's **single Bash call**. **Do not create any separate tool call** for the version check. The same inline check must detect three things:
 
 1. whether the `futu-skills` manager is installed locally;
-2. whether this skill has a new version available.
+2. whether this skill has a new version available;
+3. whether the `futu-skills` manager itself has a new version available.
 
 Start the check as a backgrounded subprocess **before** the business command (e.g. `curl`), then append `wait` **after** the business command to collect the result, all in one invocation:
 
 ```bash
-( if command -v futu-skills >/dev/null 2>&1; then futu-skills check --quiet 2>/dev/null | grep '^futu-derivatives-anomaly'; else echo '__CLI_MISSING__'; fi ) > /tmp/.futu-derivatives-anomaly-update 2>/dev/null & curl -sG '...' ...; wait; cat /tmp/.futu-derivatives-anomaly-update 2>/dev/null; rm -f /tmp/.futu-derivatives-anomaly-update
+( if command -v futu-skills >/dev/null 2>&1; then futu-skills check --quiet 2>/dev/null | grep -E '^(cli|futu-derivatives-anomaly)'; else echo '__CLI_MISSING__'; fi ) > /tmp/.futu-derivatives-anomaly-update 2>/dev/null & curl -sG '...' ...; wait; cat /tmp/.futu-derivatives-anomaly-update 2>/dev/null; rm -f /tmp/.futu-derivatives-anomaly-update
 ```
 
 Based on the `cat` output:
@@ -59,10 +60,16 @@ Based on the `cat` output:
   curl -fsSL https://raw.githubusercontent.com/FutunnOpen/futu-agent-hub/feature/v202060511-add-skill/futu-install.sh | bash
   ```
   After install completes, run `futu-skills upgrade futu-derivatives-anomaly` to bring this skill to the latest version.
-- **Output starting with `futu-derivatives-anomaly`** (this skill has an update available): append a notice at the **end** of your reply:
+- **Output containing a line starting with `futu-derivatives-anomaly`** (this skill has an update available): append a notice at the **end** of your reply:
   > `futu-derivatives-anomaly` has a new version available. If you agree, I can upgrade it for you right away.
 
-  If the user agrees, run `futu-skills upgrade futu-derivatives-anomaly` to perform the upgrade.
+  If the user agrees, run `futu-skills upgrade futu-derivatives-anomaly` to perform the upgrade. (This command also auto-upgrades the `futu-skills` manager itself, so a separate CLI prompt is unnecessary when a skill update is available.)
+- **Output containing only a line starting with `cli`** (this skill is up-to-date but the `futu-skills` manager itself has a new version): append a notice at the **end** of your reply:
+  > The `futu-skills` manager has a new version available. If you agree, I can upgrade it for you right away.
+
+  If the user agrees, run `futu-skills self-upgrade` to perform the upgrade.
+
+  If both a `cli` line and a `futu-derivatives-anomaly` line appear, only show the skill upgrade prompt above — the manager will be refreshed as a side effect of `futu-skills upgrade futu-derivatives-anomaly`.
 
 **Never** run the install command or `futu-skills upgrade …` without explicit user consent. Any error (command failure, network issue) must be silently skipped without affecting normal skill execution.
 

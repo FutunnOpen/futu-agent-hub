@@ -18,15 +18,16 @@ metadata:
 
 ## CLI：版本更新检测
 
-将版本检测**内联**到本 skill 在当前会话中的**第一次 Bash 调用**里。**不要为版本检测单独发起一次工具调用**。同一次内联检测同时完成两件事：
+将版本检测**内联**到本 skill 在当前会话中的**第一次 Bash 调用**里。**不要为版本检测单独发起一次工具调用**。同一次内联检测同时完成三件事：
 
 1. 判断本地是否安装了 `futu-skills` 管理器；
-2. 判断本 skill 是否有新版本可升级。
+2. 判断本 skill 是否有新版本可升级；
+3. 判断 `futu-skills` 管理器自身是否有新版本可升级。
 
 具体做法：在执行业务命令（例如 `python skills/futuapi/scripts/...`）之前，将检测命令以**后台子进程**形式启动，业务命令结束后追加 `wait` 收集结果，全部在同一次 Bash 调用中完成：
 
 ```bash
-( if command -v futu-skills >/dev/null 2>&1; then futu-skills check --quiet 2>/dev/null | grep '^futuapi'; else echo '__CLI_MISSING__'; fi ) > /tmp/.futuapi-update 2>/dev/null & python skills/futuapi/scripts/quote/get_snapshot.py US.AAPL --json; wait; cat /tmp/.futuapi-update 2>/dev/null; rm -f /tmp/.futuapi-update
+( if command -v futu-skills >/dev/null 2>&1; then futu-skills check --quiet 2>/dev/null | grep -E '^(cli|futuapi)'; else echo '__CLI_MISSING__'; fi ) > /tmp/.futuapi-update 2>/dev/null & python skills/futuapi/scripts/quote/get_snapshot.py US.AAPL --json; wait; cat /tmp/.futuapi-update 2>/dev/null; rm -f /tmp/.futuapi-update
 ```
 
 根据 `cat` 的输出处理：
@@ -40,10 +41,16 @@ metadata:
   curl -fsSL https://raw.githubusercontent.com/FutunnOpen/futu-agent-hub/feature/v202060511-add-skill/futu-install.sh | bash
   ```
   安装完成后再执行 `futu-skills upgrade futuapi`，将本 skill 升级到最新版本。
-- **输出以 `futuapi` 开头**（本 skill 有新版本）：在回复**末尾**附加一句提示：
+- **输出包含以 `futuapi` 开头的行**（本 skill 有新版本）：在回复**末尾**附加一句提示：
   > `futuapi` 有新版本可用，如果你同意，我可以立即帮你升级。
 
-  用户同意后执行 `futu-skills upgrade futuapi` 完成升级。
+  用户同意后执行 `futu-skills upgrade futuapi` 完成升级。（该命令会顺带升级 `futu-skills` 管理器自身，因此 skill 有更新时无需再单独提示 CLI 升级。）
+- **输出仅包含以 `cli` 开头的行**（本 skill 已是最新，但 `futu-skills` 管理器自身有新版本）：在回复**末尾**附加一句提示：
+  > `futu-skills` 管理器有新版本可用，如果你同意，我可以立即帮你升级。
+
+  用户同意后执行 `futu-skills self-upgrade` 完成升级。
+
+  若同时出现 `cli` 行和 `futuapi` 行，仅展示上面的 skill 升级提示——`futu-skills upgrade futuapi` 会顺带刷新管理器。
 
 **没有用户明确同意**前，**禁止**执行安装命令或 `futu-skills upgrade …`。任何错误（命令失败、网络异常）必须静默忽略，不影响 skill 正常执行。
 
