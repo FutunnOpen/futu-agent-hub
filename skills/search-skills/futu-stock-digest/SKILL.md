@@ -13,16 +13,21 @@ description: >-
   多空研判 / interpret / analyze / summarize / digest / impact analysis /
   takeaway. Example triggers: "解读一下特斯拉最近的消息"、"帮我分析下英伟达
   这波新闻面"、"summarize Apple's recent news for me".
-  Words like 新闻 / 消息 / 公告 / 研报 / 文章 / news / article appearing in the
-  message are NOT triggers by themselves — they are only the OBJECT of an
-  interpretation verb. If the message merely names a stock and asks for news
-  WITHOUT any interpretation verb, this skill MUST NOT be triggered.
+  Words like 新闻 / 消息 / 资讯 / 公告 / 研报 / 文章 / news / article / update
+  appearing in the message are NOT triggers by themselves — they are only the
+  OBJECT of an interpretation verb. Time qualifiers like 最新 / 最近 / 近期 /
+  今日 / latest / recent attached to those words (e.g. 最新新闻 / 最新消息 /
+  最新公告 / 最新资讯 / 最新研报 / latest news / recent news) are STILL listing
+  intents, NOT interpretation — they MUST go to `futu-news-search`, never here.
+  If the message merely names a stock and asks for news WITHOUT any
+  interpretation verb, this skill MUST NOT be triggered.
   SKIP in any of the following cases (do NOT trigger this skill):
   - the user only wants to retrieve / 查询 / 看 / 列 / 拉 raw news, articles,
     announcements, or research reports (title + time + link) without
-    interpretation. Examples: "特斯拉最近有什么新闻"、"苹果最近的消息"、
-    "腾讯最近有啥新闻"、"NVDA latest news"、"what news about Apple" — these
-    are LISTING requests and belong to `futu-news-search`, NOT this skill.
+    interpretation. Examples: "腾讯最新新闻"、"英伟达最新消息"、"苹果最新公告"、
+    "特斯拉最近有什么新闻"、"苹果最近的消息"、"腾讯最近有啥新闻"、
+    "NVDA latest news"、"what news about Apple" — these are LISTING requests
+    and belong to `futu-news-search`, NOT this skill.
   - the user asks about community sentiment / 评论 / 社区情绪 / 散户情绪 /
     看多看空 / 多空风向 / discussion mood — that belongs to
     `futu-comment-sentiment`.
@@ -30,8 +35,10 @@ description: >-
     holdings, or trade execution.
   - the user names multiple stocks for batch analysis — this skill takes ONE
     target only.
-  Hard rule: presence of "新闻 / 消息 / news" words alone is NEVER enough to
-  trigger this skill — an interpretation verb must also be present.
+  Hard rule: presence of "新闻 / 消息 / news / 最新新闻 / 最新消息 / latest news"
+  alone is NEVER enough to trigger this skill — an interpretation verb
+  (解读 / 分析 / 研判 / 总结 / interpret / analyze / summarize) must also be
+  present.
 metadata:
   version: 0.0.4
   author: Futu

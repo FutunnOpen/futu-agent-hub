@@ -7,10 +7,14 @@ description: >-
   TRIGGER when the message contains BOTH (a) a single stock / company / ticker
   AND (b) an explicit news-intent keyword: 新闻 / 消息 / 资讯 / 公告 / 研报 /
   报道 / 头条 / 文章 / news / announcement / research report / headlines /
-  latest update. Typical patterns that MUST trigger this skill (NOT
-  `futu-stock-digest`):
-  "特斯拉最近有什么新闻"、"苹果最近的消息"、"腾讯最近有啥新闻"、"英伟达近期公告"、
-  "NVDA latest news"、"what news about Apple"、"any recent announcement on TSLA".
+  latest update. Time qualifiers like 最新 / 最近 / 近期 / 今日 / latest /
+  recent attached to a news-intent keyword (e.g. 最新新闻 / 最新消息 / 最新资讯 /
+  最新公告 / 最新研报 / latest news / recent news) MUST also trigger this skill —
+  they are listing requests, NOT interpretation requests.
+  Typical patterns that MUST trigger this skill (NOT `futu-stock-digest`):
+  "腾讯最新新闻"、"英伟达最新消息"、"苹果最新公告"、"特斯拉最近有什么新闻"、
+  "苹果最近的消息"、"腾讯最近有啥新闻"、"英伟达近期公告"、"NVDA latest news"、
+  "what news about Apple"、"any recent announcement on TSLA".
   Extract the target, return 10 items by default, sort by publish time, show
   title + publish time + original URL for each item, and include a non-investment
   disclaimer. Do NOT add interpretation, summarization, or impact judgment.
