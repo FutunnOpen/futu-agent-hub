@@ -28,7 +28,15 @@ die() {
   exit 1
 }
 
-command -v python3 >/dev/null 2>&1 || die "python3 is required"
+# Prefer python3; fall back to python if it's Python 3
+PYTHON=""
+if command -v python3 >/dev/null 2>&1; then
+  PYTHON="python3"
+elif command -v python >/dev/null 2>&1 && python -c "import sys; sys.exit(0 if sys.version_info[0]==3 else 1)" 2>/dev/null; then
+  PYTHON="python"
+else
+  die "Python 3 is required (install python3 or ensure 'python' points to Python 3)"
+fi
 
 mkdir -p "${CLI_DEST}" "${BIN_DIR}"
 
@@ -52,14 +60,14 @@ fetch_remote() {
 
 fetch_remote || die "Failed to fetch CLI from ${REMOTE_REPO_URL} (ref ${REMOTE_REPO_REF})."
 
-cat > "${WRAPPER}" <<'EOF'
+cat > "${WRAPPER}" <<EOF
 #!/usr/bin/env bash
-exec python3 "${HOME}/.futu-skillhub/futu-skill-manager/futu_skills.py" "$@"
+exec ${PYTHON} "\${HOME}/.futu-skillhub/futu-skill-manager/futu_skills.py" "\$@"
 EOF
 chmod +x "${WRAPPER}"
 
-if python3 "${CLI_DEST}/futu_skills.py" --version >/dev/null 2>&1; then
-  echo "Smoke test OK: $(python3 "${CLI_DEST}/futu_skills.py" --version)"
+if ${PYTHON} "${CLI_DEST}/futu_skills.py" --version >/dev/null 2>&1; then
+  echo "Smoke test OK: $(${PYTHON} "${CLI_DEST}/futu_skills.py" --version)"
 else
   die "CLI smoke test failed"
 fi
