@@ -1,12 +1,6 @@
 #!/usr/bin/env bash
 # Futu Skills Hub CLI — one-line installer (deploys CLI under ~/.futu-skillhub, adds ~/.local/bin to PATH).
-# Usage:
-#   curl -fsSL "https://raw.githubusercontent.com/FutunnOpen/futu-agent-hub/feature/v202060511-add-skill/futu-install.sh" | bash
-#
-# Override remote git repo (takes precedence over cli_update_manifest.json):
-#   export FUTU_SKILLHUB_REPO_URL="https://github.com/FutunnOpen/futu-agent-hub"
-#   export FUTU_SKILLHUB_REPO_REF="feature/v202060511-add-skill"
-#   export FUTU_SKILLHUB_REPO_PATH="manager"
+# Patched: validates Python actually runs (avoids Windows Store stub) and supports `py -3` launcher.
 
 set -euo pipefail
 
@@ -15,7 +9,6 @@ CLI_DEST="${HUB_HOME}/futu-skill-manager"
 BIN_DIR="${HOME}/.local/bin"
 WRAPPER="${BIN_DIR}/futu-skills"
 
-# Resolve remote repo: env override > cli_update_manifest.json > hardcoded fallback.
 FALLBACK_REPO_URL="https://github.com/FutunnOpen/futu-agent-hub"
 FALLBACK_REPO_REF="feature/v202060511-add-skill"
 FALLBACK_REPO_PATH="manager"
@@ -28,15 +21,26 @@ die() {
   exit 1
 }
 
-# Prefer python3; fall back to python if it's Python 3
+# Validate a candidate by actually running --version. Rejects the Windows Store
+# stub `python3.exe` which exits non-zero with no stdout (or pops the Store).
+validate_python() {
+  local cand="$1"
+  local ver
+  ver="$(${cand} --version 2>&1)" || return 1
+  [[ "${ver}" == Python\ 3* ]] || return 1
+  return 0
+}
+
 PYTHON=""
-if command -v python3 >/dev/null 2>&1; then
-  PYTHON="python3"
-elif command -v python >/dev/null 2>&1 && python -c "import sys; sys.exit(0 if sys.version_info[0]==3 else 1)" 2>/dev/null; then
-  PYTHON="python"
-else
-  die "Python 3 is required (install python3 or ensure 'python' points to Python 3)"
-fi
+for cand in "python3" "py -3" "python"; do
+  if validate_python "${cand}"; then
+    PYTHON="${cand}"
+    break
+  fi
+done
+[[ -n "${PYTHON}" ]] || die "Python 3 is required (install Python 3 and ensure 'python3', 'py -3', or 'python' resolves to it)"
+
+echo "Using Python: ${PYTHON} ($(${PYTHON} --version 2>&1))"
 
 mkdir -p "${CLI_DEST}" "${BIN_DIR}"
 
@@ -105,10 +109,8 @@ ensure_path() {
 
 ensure_path
 
-# Make futu-skills available in the current session immediately
 export PATH="${BIN_DIR}:${PATH}"
 
-# Refresh discovery skill so first-time installs immediately get a SKILL.md listing
 "${WRAPPER}" refresh-discovery >/dev/null 2>&1 || true
 
 echo ""
@@ -121,6 +123,6 @@ echo "  export PATH=\"\${HOME}/.local/bin:\${PATH}\"  # or set PATH directly"
 echo ""
 echo "Try: futu-skills search news"
 echo "     futu-skills detect"
-echo "     npx skills add futu-news-search   # install a skill via npx"
+echo "     npx skills add futu-news-search"
 echo ""
 echo "[CLI_PATH] ${WRAPPER}"
