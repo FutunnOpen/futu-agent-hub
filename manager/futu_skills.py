@@ -946,7 +946,7 @@ def _refresh_discovery_skill(
             verbose("discovery skill removed (all skills installed)")
         return
 
-    # --- Build description line with trigger keywords from all uninstalled skills ---
+    # --- Build description line with ONLY keywords from uninstalled skills ---
     all_keywords: List[str] = []
     for s in uninstalled:
         all_keywords.extend(s.get("keywords") or [])
@@ -956,51 +956,19 @@ def _refresh_discovery_skill(
     lines: List[str] = []
     lines.append("---")
     lines.append("name: futu-skillhub")
-    # description as a YAML block scalar
-    # Build trigger hints from all uninstalled skills' discovery_hints
-    trigger_examples: List[str] = []
-    for s in uninstalled:
-        hint = s.get("discovery_hint", "")
-        if hint:
-            trigger_examples.append(hint)
-    trigger_str = " / ".join(trigger_examples) if trigger_examples else kw_str
-
-    # Build COMPLEMENT trigger clause — put FIRST so it's visible before description truncation
-    complement_lead = ""
-    complement_body = ""
-    if complements:
-        complement_parts: List[str] = []
-        for cat, info in complements.items():
-            installed_names = [s["slug"] for s in info["installed"]]
-            uninstalled_names = [s["slug"] for s in info["uninstalled"]]
-            complement_parts.append(
-                f"Trigger alongside {', '.join(installed_names)} "
-                f"if {', '.join(uninstalled_names)} not yet installed — "
-                f"invoke IN PARALLEL, append a complement suggestion at end of response."
-            )
-        complement_lead = " ".join(complement_parts) + " "
-        complement_body = (
-            f"COMPLEMENT mode: invoke IN PARALLEL with already-installed skills in the same "
-            f"category, do NOT block them — just append a suggestion at end. "
-        )
-
-    if trigger_str:
-        desc = (
-            f"{complement_lead}"
-            f"Also trigger (PRIMARY) for: {trigger_str}. "
-            f"In PRIMARY mode MUST activate BEFORE other installed skills. "
-            f"{complement_body}"
-            f"Keywords: {kw_str}. "
-            f"SKIP futu-skills CLI invocations (check/upgrade/install/list/uninstall/"
-            f"refresh-discovery) — those are shell commands, not skill triggers."
-        )
-    else:
-        desc = (
-            f"{complement_lead}"
-            f"{complement_body}"
-            f"SKIP futu-skills CLI invocations (check/upgrade/install/list/uninstall/"
-            f"refresh-discovery) — those are shell commands, not skill triggers."
-        )
+    # Keep description concise — only keywords, detailed matching logic lives in body
+    desc = (
+        f"Futu SkillHub skill discovery. Suggests installing uninstalled skills "
+        f"when user intent matches. Keywords: {kw_str}."
+    )
+    # Enforce 1024 char limit on description
+    if len(desc) > 1024:
+        # Truncate keywords to fit within limit
+        prefix = "Futu SkillHub skill discovery. Suggests installing uninstalled skills when user intent matches. Keywords: "
+        suffix = "."
+        max_kw_len = 1024 - len(prefix) - len(suffix)
+        truncated_kw = kw_str[:max_kw_len].rsplit(", ", 1)[0]
+        desc = f"{prefix}{truncated_kw}{suffix}"
     lines.append("description: >-")
     # Wrap description at ~78 chars for readability
     _wrap_yaml(lines, desc, indent=2)
