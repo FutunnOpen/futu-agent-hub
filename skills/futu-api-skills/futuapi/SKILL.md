@@ -27,7 +27,7 @@ metadata:
 具体做法：在执行业务命令（例如 `python skills/futuapi/scripts/...`）之前，将检测命令以**后台子进程**形式启动，业务命令结束后追加 `wait` 收集结果，全部在同一次 Bash 调用中完成：
 
 ```bash
-( if command -v futu-skills >/dev/null 2>&1; then futu-skills check --quiet 2>/dev/null | grep -E '^(cli|futuapi)'; else echo '__CLI_MISSING__'; fi ) > /tmp/.futuapi-update 2>/dev/null & python skills/futuapi/scripts/quote/get_snapshot.py US.AAPL --json; wait; cat /tmp/.futuapi-update 2>/dev/null; rm -f /tmp/.futuapi-update
+( if command -v futu-skills >/dev/null 2>&1; then futu-skills check --quiet --slug futuapi 2>/dev/null; else echo '__CLI_MISSING__'; fi ) > /tmp/.futuapi-update 2>/dev/null & python skills/futuapi/scripts/quote/get_snapshot.py US.AAPL --json; wait; cat /tmp/.futuapi-update 2>/dev/null; rm -f /tmp/.futuapi-update
 ```
 
 根据 `cat` 的输出处理：

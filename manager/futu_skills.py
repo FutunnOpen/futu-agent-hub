@@ -1151,7 +1151,7 @@ _VC_EN = (
     "to collect the result, all in one invocation:\n"
     "\n"
     "```bash\n"
-    "{cli} check --quiet 2>/dev/null | grep -E '^(cli|{slug})' "
+    "{cli} check --quiet --slug {slug} 2>/dev/null "
     "> /tmp/.{slug}-update 2>/dev/null & "
     "curl -sG '...' ...; "
     "wait; "
@@ -1199,7 +1199,7 @@ _VC_ZH = (
     "在业务命令**后面**用 `wait` 等待检查完成并读取结果，整体结构如下：\n"
     "\n"
     "```bash\n"
-    "{cli} check --quiet 2>/dev/null | grep -E '^(cli|{slug})' "
+    "{cli} check --quiet --slug {slug} 2>/dev/null "
     "> /tmp/.{slug}-update 2>/dev/null & "
     "curl -sG '...' ...; "
     "wait; "
@@ -1856,9 +1856,13 @@ def cmd_check(args: argparse.Namespace) -> None:
     if args.quiet:
         if not r["outdated"]:
             return
-        if r["cli"]["outdated"]:
+        slug_filter = getattr(args, "slug", None)
+        show_cli = not slug_filter or slug_filter == "cli"
+        if show_cli and r["cli"]["outdated"]:
             print(f"cli\t{r['cli']['local']}\t{r['cli']['remote']}")
         for s in r["skills"]:
+            if slug_filter and s["slug"] != slug_filter:
+                continue
             if s["status"] == "update_available":
                 print(f"{s['slug']}\t{s['local']}\t{s['remote']}")
             elif s["status"] in ("deprecated_remove", "deprecated_migrate"):
@@ -2087,6 +2091,11 @@ def build_parser() -> argparse.ArgumentParser:
         default=8,
         metavar="SEC",
         help="HTTP timeout for manifest and catalog (default: 8)",
+    )
+    chk.add_argument(
+        "--slug",
+        default=None,
+        help="filter quiet output to this slug (and cli); replaces external grep",
     )
     chk.set_defaults(func=cmd_check)
 
