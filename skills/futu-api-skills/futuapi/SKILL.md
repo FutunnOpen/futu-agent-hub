@@ -66,7 +66,7 @@ metadata:
 在执行业务流程前，**静默**探测一次 OpenD 是否可达。**不要把这一步告知用户**。
 
 ```bash
-nc -z 127.0.0.1 11111 && echo ok || echo not-running
+futu-skills check-opend
 ```
 
 行为：

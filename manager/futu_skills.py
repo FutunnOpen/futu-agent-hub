@@ -1811,6 +1811,25 @@ def cmd_detect(args: argparse.Namespace) -> None:
         print(path)
 
 
+def cmd_check_opend(args: argparse.Namespace) -> None:
+    """Check if OpenD is reachable on the configured host:port."""
+    import socket
+
+    host = args.host or os.environ.get("FUTU_OPEND_HOST", "127.0.0.1")
+    port = args.port or int(os.environ.get("FUTU_OPEND_PORT", "11111"))
+    timeout = args.timeout
+
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(timeout)
+        s.connect((host, port))
+        s.close()
+        print("ok")
+    except (OSError, socket.timeout):
+        print("not-running")
+        raise SystemExit(1)
+
+
 def cmd_refresh_discovery(args: argparse.Namespace) -> None:
     """Regenerate the discovery SKILL.md based on current install state."""
     install_root = Path(args.dir).expanduser().resolve()
@@ -2077,6 +2096,15 @@ def build_parser() -> argparse.ArgumentParser:
         parents=[common],
     )
     rd.set_defaults(func=cmd_refresh_discovery)
+
+    co = sub.add_parser(
+        "check-opend",
+        help="check if OpenD is reachable (cross-platform, exits 0=ok, 1=not running)",
+    )
+    co.add_argument("--host", default=None, help="OpenD host (default: $FUTU_OPEND_HOST or 127.0.0.1)")
+    co.add_argument("--port", type=int, default=None, help="OpenD port (default: $FUTU_OPEND_PORT or 11111)")
+    co.add_argument("--timeout", type=float, default=2.0, help="connection timeout in seconds (default: 2)")
+    co.set_defaults(func=cmd_check_opend)
 
     return p
 

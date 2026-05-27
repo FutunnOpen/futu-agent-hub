@@ -84,7 +84,7 @@ This skill depends on Futu **OpenD** (default `127.0.0.1:11111`) to fetch techni
 Silently probe OpenD reachability before the workflow. **Do not announce this step to the user.**
 
 ```bash
-nc -z 127.0.0.1 11111 && echo ok || echo not-running
+futu-skills check-opend
 ```
 
 Behavior:
