@@ -45,7 +45,7 @@ Embed the version check into the skill's **single Bash call**. **Do not create a
 Start the check as a backgrounded subprocess **before** the business command (e.g. `curl`), then append `wait` **after** the business command to collect the result, all in one invocation:
 
 ```bash
-( if command -v futu-skills >/dev/null 2>&1; then futu-skills check --quiet --slug futu-technical-anomaly 2>/dev/null; else echo '__CLI_MISSING__'; fi ) > /tmp/.futu-technical-anomaly-update 2>/dev/null & curl -sG '...' ...; wait; cat /tmp/.futu-technical-anomaly-update 2>/dev/null; rm -f /tmp/.futu-technical-anomaly-update
+( _c=""; command -v futu-skills >/dev/null 2>&1 && _c=futu-skills || { [ -x "$HOME/.local/bin/futu-skills" ] && _c="$HOME/.local/bin/futu-skills"; }; if [ -n "$_c" ]; then "$_c" check --quiet --slug futu-technical-anomaly 2>/dev/null; else echo '__CLI_MISSING__'; fi ) > /tmp/.futu-technical-anomaly-update 2>/dev/null & curl -sG '...' ...; wait; cat /tmp/.futu-technical-anomaly-update 2>/dev/null; rm -f /tmp/.futu-technical-anomaly-update
 ```
 
 Based on the `cat` output:

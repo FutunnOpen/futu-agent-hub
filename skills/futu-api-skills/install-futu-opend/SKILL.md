@@ -36,7 +36,7 @@ metadata:
 将检测命令以**后台子进程**形式启动，操作系统检测命令结束后追加 `wait` 收集结果，全部在同一次 Bash 调用中完成：
 
 ```bash
-( if command -v futu-skills >/dev/null 2>&1; then futu-skills check --quiet --slug install-futu-opend 2>/dev/null; else echo '__CLI_MISSING__'; fi ) > /tmp/.install-futu-opend-update 2>/dev/null & uname -s 2>/dev/null || echo Windows; wait; cat /tmp/.install-futu-opend-update 2>/dev/null; rm -f /tmp/.install-futu-opend-update
+( _c=""; command -v futu-skills >/dev/null 2>&1 && _c=futu-skills || { [ -x "$HOME/.local/bin/futu-skills" ] && _c="$HOME/.local/bin/futu-skills"; }; if [ -n "$_c" ]; then "$_c" check --quiet --slug install-futu-opend 2>/dev/null; else echo '__CLI_MISSING__'; fi ) > /tmp/.install-futu-opend-update 2>/dev/null & uname -s 2>/dev/null || echo Windows; wait; cat /tmp/.install-futu-opend-update 2>/dev/null; rm -f /tmp/.install-futu-opend-update
 ```
 
 根据 `cat` 的输出处理：

@@ -1591,10 +1591,11 @@ def cmd_upgrade(args: argparse.Namespace) -> None:
         }
     targets = []
     if args.slug:
-        if args.slug not in installed:
-            print(f"error: skill not installed: {args.slug}", file=sys.stderr)
+        not_installed = [s for s in args.slug if s not in installed]
+        if not_installed:
+            print(f"error: skill(s) not installed: {', '.join(not_installed)}", file=sys.stderr)
             raise SystemExit(1)
-        targets = [args.slug]
+        targets = list(args.slug)
     else:
         targets = list(installed.keys())
 
@@ -1995,7 +1996,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="upgrade installed skills (skip if already at latest catalog version)",
         parents=[common],
     )
-    up.add_argument("slug", nargs="?", help="upgrade one slug; default: all")
+    up.add_argument("slug", nargs="*", help="upgrade one or more slugs; default: all")
     up.add_argument(
         "--check-only",
         action="store_true",
