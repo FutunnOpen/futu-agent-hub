@@ -861,7 +861,7 @@ def reconcile_lockfile_with_disk(
     lock = read_lock(install_root, meta)
     locked = lock.setdefault("skills", {})
     by_slug = {s.get("slug"): s for s in skills if s.get("slug")}
-    reserved = {DISCOVERY_DIR_NAME, "_futu-skill-guard"}
+    reserved = {_discovery_dir_name(meta), DISCOVERY_DIR_NAME, "_futu-skill-guard"}
     added = 0
     for child in install_root.iterdir():
         slug = child.name
@@ -895,6 +895,14 @@ def reconcile_lockfile_with_disk(
 DISCOVERY_DIR_NAME = "_futu-skillhub"
 
 
+def _discovery_dir_name(meta: Dict[str, Any]) -> str:
+    """Return the discovery skill directory name derived from hub_name metadata."""
+    hub = str(meta.get("hub_name") or "")
+    if hub:
+        return f"_{hub}"
+    return DISCOVERY_DIR_NAME
+
+
 def _refresh_discovery_skill(
     install_root: Path,
     meta: Dict[str, Any],
@@ -902,20 +910,20 @@ def _refresh_discovery_skill(
 ) -> None:
     """Generate or remove the discovery skill that lists uninstalled skills.
 
-    Creates ``_futu-skillhub/SKILL.md`` containing trigger descriptions for
+    Creates ``_<hub_name>/SKILL.md`` containing trigger descriptions for
     every skill that is available in the index but NOT currently installed.
     The AI client reads this like any other skill and can suggest installation
     when the user's intent matches an uninstalled skill.
 
     If all skills are installed the directory is removed entirely.
     """
-    discovery_dir = install_root / DISCOVERY_DIR_NAME
+    discovery_dir = install_root / _discovery_dir_name(meta)
     lock = read_lock(install_root, meta)
     installed_slugs = set(lock.get("skills", {}).keys())
     # Count skills installed directly via `npx skills add` (bypassing the CLI):
     # treat any sibling directory that contains a SKILL.md as installed.
     if install_root.is_dir():
-        reserved = {DISCOVERY_DIR_NAME, "_futu-skill-guard"}
+        reserved = {_discovery_dir_name(meta), DISCOVERY_DIR_NAME, "_futu-skill-guard"}
         for child in install_root.iterdir():
             if child.name in reserved or child.name.startswith("."):
                 continue
@@ -953,18 +961,19 @@ def _refresh_discovery_skill(
     kw_str = ", ".join(dict.fromkeys(all_keywords))  # dedupe, preserve order
 
     # --- Build SKILL.md content ---
+    hub_name = str(meta.get("hub_name") or "futu-skillhub")
+    hub_title = hub_name.replace("-", " ").title().replace("Skillhub", "SkillHub")
     lines: List[str] = []
     lines.append("---")
-    lines.append("name: futu-skillhub")
+    lines.append(f"name: {hub_name}")
     # Keep description concise — only keywords, detailed matching logic lives in body
     desc = (
-        f"Futu SkillHub skill discovery. Suggests installing uninstalled skills "
+        f"{hub_title} skill discovery. Suggests installing uninstalled skills "
         f"when user intent matches. Keywords: {kw_str}."
     )
     # Enforce 1024 char limit on description
     if len(desc) > 1024:
-        # Truncate keywords to fit within limit
-        prefix = "Futu SkillHub skill discovery. Suggests installing uninstalled skills when user intent matches. Keywords: "
+        prefix = f"{hub_title} skill discovery. Suggests installing uninstalled skills when user intent matches. Keywords: "
         suffix = "."
         max_kw_len = 1024 - len(prefix) - len(suffix)
         truncated_kw = kw_str[:max_kw_len].rsplit(", ", 1)[0]
@@ -974,69 +983,69 @@ def _refresh_discovery_skill(
     _wrap_yaml(lines, desc, indent=2)
     lines.append("metadata:")
     lines.append("  version: auto")
-    lines.append("  author: Futu SkillHub CLI")
+    lines.append(f"  author: {hub_title} CLI")
     lines.append("---")
     lines.append("")
-    lines.append("# Futu SkillHub — Available but Not Installed Skills")
+    lines.append(f"# {hub_title} — Available but Not Installed Skills")
     lines.append("")
     lines.append("The following skills can be installed via the `npx skills add` commands shown below.")
     lines.append("When the user's request matches a skill listed below,")
-    lines.append("tell the user this skill is available and ask: **若您同意，我可以帮您直接安装。**")
+    lines.append("tell the user this skill is available and ask: **If you'd like, I can install it for you right now.**")
     lines.append("")
     lines.append("**IMPORTANT**: If the user's request matches an uninstalled skill below,")
     lines.append("do NOT use another installed skill as a substitute — prompt the user to install")
     lines.append("the correct skill instead. Each skill has a distinct purpose.")
     lines.append("")
-    lines.append("## 用户同意安装后的行为（Post-install behavior）")
+    lines.append("## Post-install behavior")
     lines.append("")
-    lines.append("用户同意安装后，按以下顺序执行，**不要让用户重新输入原始请求**：")
+    lines.append("After the user agrees to install, execute in this order — **do NOT ask the user to repeat their original request**:")
     lines.append("")
-    lines.append("1. 运行下方对应的 `npx skills add` 安装命令。")
-    lines.append("2. 安装成功后，**直接读取**新装目录下的 `SKILL.md`（用 Read 工具按路径读取即可），")
-    lines.append("   按其内容继续完成用户**最初的请求**。")
-    lines.append("   - 注意：本次会话的 Skill 工具白名单在会话开启时已锁定，新装 slug 通常不在其中。")
-    lines.append("     **不要**尝试用 Skill 工具调用新 slug，会被拒绝。直接 Read 该 SKILL.md 并按其指令执行。")
-    lines.append("3. 全程无需再次询问用户「现在要做什么」——原始意图已在上下文中。")
+    lines.append("1. Run the corresponding `npx skills add` install command shown below.")
+    lines.append("2. After successful installation, **directly read** the `SKILL.md` in the newly installed directory (use the Read tool with the file path),")
+    lines.append("   then follow its instructions to fulfill the user's **original request**.")
+    lines.append("   - Note: The Skill tool allowlist is locked at session start; the new slug is usually not in it.")
+    lines.append("     **Do NOT** try to invoke the new slug via the Skill tool — it will be rejected. Instead, Read the SKILL.md directly and follow its instructions.")
+    lines.append("3. Do not ask the user \"what would you like to do now\" — the original intent is already in context.")
     lines.append("")
-    lines.append("## 用户拒绝安装时的行为（Decline fallback）")
+    lines.append("## Decline fallback")
     lines.append("")
-    lines.append("如果用户**拒绝安装**或**明确表示不想装**，**不要**再次劝说，也**不要**用其它已装 skill 顶替，")
-    lines.append("而是**直接使用大模型自身的通用能力**回答用户原始问题（基于训练知识、推理、")
-    lines.append("已有上下文等），并在适当处简短说明该能力依赖未安装的专用技能、本次回答可能不及专用技能精确。")
+    lines.append("If the user **declines** or **explicitly says they don't want to install**, **do NOT** ask again or substitute with another installed skill.")
+    lines.append("Instead, **use your general capabilities** to answer the user's original question (based on training knowledge, reasoning,")
+    lines.append("and existing context), and briefly note that a specialized skill exists but is not installed, so the answer may be less precise.")
     lines.append("")
-    lines.append("## 多技能匹配处理（Multi-match handling）")
+    lines.append("## Multi-match handling")
     lines.append("")
-    lines.append("**当用户的请求同时匹配下方多个未安装技能时，绝对不要一次性全部安装。**")
-    lines.append("必须先列出所有匹配的技能（slug + 简要描述），然后询问用户希望安装哪些，例如：")
+    lines.append("**When the user's request matches multiple uninstalled skills below, NEVER install all of them at once.**")
+    lines.append("You must first list all matching skills (slug + brief description), then ask the user which ones to install, for example:")
     lines.append("")
-    lines.append("> 您的请求匹配到多个可安装的技能：`a`、`b`、`c`。")
-    lines.append("> 请使用 `--skill a` 安装单个，或 `--skill a,b` 安装多个（逗号分隔，无空格）；")
-    lines.append("> 也可以回复 `--skill all` 表示全部安装。")
+    lines.append("> Your request matches multiple installable skills: `a`, `b`, `c`.")
+    lines.append("> Use `--skill a` to install one, or `--skill a,b` to install multiple (comma-separated, no spaces);")
+    lines.append("> or reply `--skill all` to install all of them.")
     lines.append("")
-    lines.append("解析用户回复中的 `--skill` 参数：")
-    lines.append("- `--skill <slug>`：仅安装该单个 slug 对应的技能。")
-    lines.append("- `--skill <slug1>,<slug2>,...`：仅安装逗号分隔列表中明确列出的 slug。")
-    lines.append("- `--skill all`：安装所有匹配项（仅当用户显式声明时才执行）。")
-    lines.append("- 未指定 `--skill` 或用户未明确确认 → **不要安装任何技能**，再次询问。")
+    lines.append("Parse the `--skill` parameter from the user's reply:")
+    lines.append("- `--skill <slug>`: Install only that single skill.")
+    lines.append("- `--skill <slug1>,<slug2>,...`: Install only the slugs explicitly listed (comma-separated).")
+    lines.append("- `--skill all`: Install all matches (only when the user explicitly states this).")
+    lines.append("- No `--skill` specified or no explicit confirmation → **do NOT install anything**, ask again.")
     lines.append("")
-    lines.append("对于用户指定的每个 slug，依次执行其下方对应的 `npx skills add` 命令；")
-    lines.append("**严禁** 把未在 `--skill` 列表中出现的 slug 一并安装。")
+    lines.append("For each slug the user specifies, run its corresponding `npx skills add` command below;")
+    lines.append("**NEVER** install slugs that are not in the user's `--skill` list.")
     lines.append("")
 
     # --- Category complement section (only when applicable) ---
     if complements:
-        lines.append("## 同类别补充推荐（Category Complement）")
+        lines.append("## Category Complement")
         lines.append("")
-        lines.append("当用户的请求被某个已安装 skill 处理（PRIMARY 触发不满足），")
-        lines.append("但同类别中仍有未安装 skill 时：")
-        lines.append("**不要中断已安装 skill 的执行**，在其响应末尾追加如下轻量提示：")
+        lines.append("When the user's request is handled by an installed skill (PRIMARY trigger not met),")
+        lines.append("but there are still uninstalled skills in the same category:")
+        lines.append("**Do NOT interrupt the installed skill's execution.** Append a lightweight hint at the end of its response:")
         lines.append("")
-        lines.append("> 💡 同类别还有 **`<slug>`**（`<描述>`）尚未安装，可补充更完整的视角。若您同意，我可以帮您直接安装。")
+        lines.append("> 💡 There's also **`<slug>`** (`<description>`) in the same category that isn't installed yet — it can provide a more complete perspective. If you'd like, I can install it for you.")
         lines.append("")
         for cat, info in complements.items():
             installed_names = ", ".join(f"`{s['slug']}`" for s in info["installed"])
-            lines.append(f"### {cat} 类")
-            lines.append(f"- **已安装**: {installed_names}")
+            lines.append(f"### {cat}")
+            lines.append(f"- **Installed**: {installed_names}")
             for u in info["uninstalled"]:
                 u_slug = u.get("slug", "")
                 u_desc = u.get("description", "")
@@ -1049,12 +1058,12 @@ def _refresh_discovery_skill(
                     if s_ref in ("", "main")
                     else f"npx skills add -y -g {s_src}#{s_ref}"
                 )
-                lines.append(f"- **未安装**: `{u_slug}` — {u_desc}")
+                lines.append(f"- **Not installed**: `{u_slug}` — {u_desc}")
                 if u_hint:
-                    lines.append(f"  - 补充提示时机: {u_hint}")
-                lines.append(f"  - 安装命令: `{install_cmd}`")
+                    lines.append(f"  - When to suggest: {u_hint}")
+                lines.append(f"  - Install: `{install_cmd}`")
             lines.append("")
-        lines.append("> **判断规则**: 本文件中列出的 slug = 未安装；不在本文件中的 = 已安装。")
+        lines.append("> **Rule**: Slugs listed in this file = not installed; slugs NOT in this file = already installed.")
         lines.append("")
 
     for s in uninstalled:
@@ -1804,7 +1813,7 @@ def cmd_refresh_discovery(args: argparse.Namespace) -> None:
     meta, skills = load_index()
     _refresh_discovery_skill(install_root, meta, skills)
     _cleanup_guard_skill(install_root)
-    print(f"discovery skill refreshed at {install_root / DISCOVERY_DIR_NAME}")
+    print(f"discovery skill refreshed at {install_root / _discovery_dir_name(meta)}")
 
 
 def cmd_check(args: argparse.Namespace) -> None:
@@ -1881,7 +1890,7 @@ def cmd_check(args: argparse.Namespace) -> None:
 
     if r["outdated"]:
         print(
-            "\n若您同意，我可以帮您直接升级。",
+            "\nIf you'd like, I can upgrade them for you right now.",
             file=sys.stderr,
         )
     if args.strict and r["outdated"]:
@@ -1916,10 +1925,11 @@ def maybe_announce_skill_updates(args: argparse.Namespace) -> None:
             parts.append(s["slug"])
     if not parts:
         return
+    hub_name = str(load_metadata().get("hub_name") or "futu-skillhub")
     print(
-        "[futu-skillhub] Updates available: "
+        f"[{hub_name}] Updates available: "
         + ", ".join(parts)
-        + ". 若您同意，我可以帮您直接升级。",
+        + ". If you'd like, I can upgrade them for you right now.",
         file=sys.stderr,
     )
 
