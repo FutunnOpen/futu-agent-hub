@@ -1386,15 +1386,25 @@ def _remove_skill_path(dest: Path) -> bool:
     Returns True if anything was removed. ``Path.is_dir()`` returns False for
     broken symlinks, so callers that only checked ``is_dir()`` would silently
     leave dangling links behind and later trip ``shutil.copytree`` on reinstall.
+
+    On Windows, directory junctions may not be detected by ``Path.is_symlink()``
+    but are caught by ``os.path.islink()``. We check both to avoid
+    ``shutil.rmtree`` raising "Cannot call rmtree on a symbolic link" (Python 3.12+).
     """
-    if dest.is_symlink() or dest.is_file():
+    if dest.is_symlink() or os.path.islink(dest) or dest.is_file():
         try:
             dest.unlink()
             return True
         except FileNotFoundError:
             return False
     if dest.is_dir():
-        shutil.rmtree(dest)
+        try:
+            shutil.rmtree(dest)
+        except OSError as e:
+            if "symbolic" in str(e).lower() or "junction" in str(e).lower():
+                dest.unlink()
+            else:
+                raise
         return True
     return False
 
