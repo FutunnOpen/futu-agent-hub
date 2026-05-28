@@ -1266,6 +1266,16 @@ def _repo_cache_dir(url: str, ref: str) -> Path:
     return cache_dir() / "repos" / key
 
 
+def _cleanup_repo_cache(used_urls: set) -> None:
+    """Remove cached repo clones after upgrade to avoid leftover files."""
+    repos_root = cache_dir() / "repos"
+    if not repos_root.is_dir():
+        return
+    for child in repos_root.iterdir():
+        if child.is_dir():
+            shutil.rmtree(child, ignore_errors=True)
+
+
 def _git_ensure_repo(url: str, ref: str, *, force_refresh: bool) -> Path:
     """Clone or refresh a shallow local copy of the skill repo. Returns the working tree path."""
     if shutil.which("git") is None:
@@ -1744,6 +1754,9 @@ def cmd_upgrade(args: argparse.Namespace) -> None:
             print(f"error: {kind} {slug}: {e}", file=sys.stderr)
             failed += 1
     write_lock(install_root, meta, lock)
+
+    # Cleanup cached repos after upgrade
+    _cleanup_repo_cache(repo_refreshed)
 
     # Summary
     parts = []
