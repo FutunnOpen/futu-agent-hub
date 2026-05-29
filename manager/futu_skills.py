@@ -553,6 +553,8 @@ def run_self_upgrade(
         script = os.path.abspath(sys.argv[0])
         new_argv = [sys.executable, script, *sys.argv[1:]]
         verbose(f"re-exec: {new_argv}")
+        if sys.platform == "win32":
+            raise SystemExit(subprocess.call(new_argv))
         os.execv(sys.executable, new_argv)
     return False
 
@@ -608,6 +610,8 @@ def maybe_startup_self_upgrade(argv: List[str]) -> bool:
     os.environ[ENV_SELF_UPGRADE_REEXEC] = "1"
     script = os.path.abspath(argv[0])
     new_argv = [sys.executable, script, *argv[1:]]
+    if sys.platform == "win32":
+        raise SystemExit(subprocess.call(new_argv))
     os.execv(sys.executable, new_argv)
     return True
 
