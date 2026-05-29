@@ -1906,11 +1906,12 @@ def cmd_self_upgrade(args: argparse.Namespace) -> None:
     run_self_upgrade(
         check_only=args.check_only,
         timeout=args.timeout,
-        force_exec=False,
+        force_exec=True,
         force=args.force,
     )
-    # After manual self-upgrade, refresh discovery skill (index may have new skills)
-    if not args.check_only:
+    # After re-exec, main() STEP B already refreshed discovery with new code.
+    # Only refresh here for no-op cases (no update applied, process not replaced).
+    if not args.check_only and os.environ.get(ENV_SELF_UPGRADE_REEXEC) != "1":
         try:
             ir = Path(default_skills_dir()).expanduser().resolve()
             if ir.is_dir():
