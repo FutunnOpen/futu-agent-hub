@@ -964,7 +964,7 @@ def _refresh_discovery_skill(
     all_keywords: List[str] = []
     for s in uninstalled:
         all_keywords.extend(s.get("keywords") or [])
-    kw_str = ", ".join(dict.fromkeys(all_keywords))  # dedupe, preserve order
+    kw_str = "/".join(dict.fromkeys(all_keywords))  # dedupe, preserve order
 
     # --- Build SKILL.md content ---
     hub_name = str(meta.get("hub_name") or "futu-skillhub")
