@@ -38,7 +38,7 @@ metadata:
 
   用户同意后，先执行：
   ```bash
-  curl -fsSL https://raw.githubusercontent.com/FutunnOpen/futu-agent-hub/feature/v202060511-add-skill/futu-install.sh | bash
+  curl -fsSL https://raw.githubusercontent.com/FutunnOpen/futu-agent-hub/main/futu-install.sh | bash
   ```
   安装完成后再执行 `futu-skills upgrade futuapi`，将本 skill 升级到最新版本。
 - **输出包含以 `futuapi` 开头的行**（本 skill 有新版本）：在回复**末尾**附加一句提示：

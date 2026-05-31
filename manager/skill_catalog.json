@@ -24,13 +24,13 @@
     }
   },
   "skills": {
-    "futu-news-search": "0.0.6",
-    "futu-stock-digest": "0.0.6",
-    "futu-comment-sentiment": "0.0.6",
+    "futu-news-search": "0.0.4",
+    "futu-stock-digest": "0.0.4",
+    "futu-comment-sentiment": "0.0.4",
     "futuapi": "0.1.1",
     "install-futu-opend": "0.1.1",
-    "futu-capital-anomaly": "0.0.4",
+    "futu-capital-anomaly": "0.0.1",
     "futu-derivatives-anomaly": "0.0.1",
-    "futu-technical-anomaly": "0.0.6"
+    "futu-technical-anomaly": "0.0.1"
   }
 }

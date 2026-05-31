@@ -45,7 +45,7 @@ Based on the `cat` output:
 
   If the user agrees, first run:
   ```bash
-  curl -fsSL https://raw.githubusercontent.com/FutunnOpen/futu-agent-hub/feature/v202060511-add-skill/futu-install.sh | bash
+  curl -fsSL https://raw.githubusercontent.com/FutunnOpen/futu-agent-hub/main/futu-install.sh | bash
   ```
   After install completes, run `futu-skills upgrade futu-news-search` to bring this skill to the latest version.
 - **Output containing a line starting with `futu-news-search`** (this skill has an update available): append a notice at the **end** of your reply:

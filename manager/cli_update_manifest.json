@@ -1,6 +1,6 @@
 {
-  "version": "2026.5.29",
+  "version": "2026.5.31",
   "cli_repo_url": "https://github.com/FutunnOpen/futu-agent-hub",
-  "cli_repo_ref": "feature/v202060511-add-skill",
+  "cli_repo_ref": "main",
   "cli_repo_path": "manager"
 }
