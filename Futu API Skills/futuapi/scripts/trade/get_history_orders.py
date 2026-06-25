@@ -26,6 +26,7 @@ from common import (
     create_trade_context,
     parse_trd_env,
     parse_market,
+    TRD_MARKET_CLI_CHOICES,
     parse_security_firm,
     get_default_acc_id,
     get_default_trd_env,
@@ -120,7 +121,7 @@ def get_history_orders(acc_id=None, market=None, trd_env=None, code=None,
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="获取历史订单")
     parser.add_argument("--acc-id", type=int, default=None, help="账户 ID")
-    parser.add_argument("--market", choices=["US", "HK", "HKCC", "CN", "SG"], default=None, help="交易市场")
+    parser.add_argument("--market", choices=TRD_MARKET_CLI_CHOICES, default=None, help="交易市场")
     parser.add_argument("--trd-env", choices=["REAL", "SIMULATE"], default=None, help="交易环境")
     parser.add_argument("--code", default=None, help="股票代码过滤")
     parser.add_argument("--start", default=None, help="开始日期（YYYY-MM-DD）")

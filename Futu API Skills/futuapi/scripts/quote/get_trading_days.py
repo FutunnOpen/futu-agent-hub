@@ -27,7 +27,7 @@ from common import (
 def get_trading_days(market_str, start=None, end=None, output_json=False):
     ctx = None
     try:
-        # TradeDateMarket 枚举: NONE, HK, US, CN, NT, ST, JP_FUTURE, SG_FUTURE
+        # TradeDateMarket 枚举: NONE, HK, US, CN, NT, ST, JP_FUTURE, SG_FUTURE, SG, MY, JP
         # 注意: 没有 SH/SZ，A 股统一用 CN
         if TradeDateMarket is not None:
             market_map = {
@@ -37,7 +37,7 @@ def get_trading_days(market_str, start=None, end=None, output_json=False):
                 "NT": TradeDateMarket.NT,
                 "ST": TradeDateMarket.ST,
             }
-            for name in ["JP_FUTURE", "SG_FUTURE"]:
+            for name in ["JP_FUTURE", "SG_FUTURE", "SG", "MY", "JP"]:
                 if hasattr(TradeDateMarket, name):
                     market_map[name] = getattr(TradeDateMarket, name)
         else:
@@ -97,7 +97,7 @@ def get_trading_days(market_str, start=None, end=None, output_json=False):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="获取交易日历")
-    parser.add_argument("market", choices=["HK", "US", "CN", "NT", "ST", "JP_FUTURE", "SG_FUTURE"], help="市场（HK/US/CN/NT深沪股通/ST港股通）")
+    parser.add_argument("market", choices=["HK", "US", "CN", "NT", "ST", "JP_FUTURE", "SG_FUTURE", "SG", "MY", "JP"], help="市场（HK/US/CN/NT深沪股通/ST港股通/SG新加坡/MY马来西亚/JP日本）")
     parser.add_argument("--start", default=None, help="起始日期 yyyy-MM-dd")
     parser.add_argument("--end", default=None, help="结束日期 yyyy-MM-dd")
     parser.add_argument("--json", action="store_true", dest="output_json", help="输出 JSON 格式")

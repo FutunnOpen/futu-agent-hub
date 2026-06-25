@@ -24,6 +24,7 @@ sys.path.insert(0, _os.path.normpath(_os.path.join(_os.path.dirname(_os.path.abs
 from common import (
     create_trade_context,
     parse_trd_env,
+    TRD_MARKET_CLI_CHOICES,
     parse_security_firm,
     get_default_acc_id,
     get_default_trd_env,
@@ -74,7 +75,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="获取融资融券数据")
     parser.add_argument("codes", nargs="+", help="股票代码，如 HK.00700")
     parser.add_argument("--acc-id", type=int, default=None, help="账户 ID")
-    parser.add_argument("--market", choices=["US", "HK", "HKCC", "CN", "SG"], default=None, help="交易市场")
+    parser.add_argument("--market", choices=TRD_MARKET_CLI_CHOICES, default=None, help="交易市场")
     parser.add_argument("--trd-env", choices=["REAL", "SIMULATE"], default=None, help="交易环境")
     parser.add_argument("--security-firm",
                         choices=["FUTUSECURITIES", "FUTUINC", "FUTUSG", "FUTUAU", "FUTUCA", "FUTUJP", "FUTUMY"],

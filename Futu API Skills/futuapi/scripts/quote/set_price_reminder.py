@@ -3,17 +3,20 @@
 设置到价提醒
 
 功能：为股票设置到价提醒
-用法：python set_price_reminder.py HK.00700 --op SET --type PRICE_UP --value 400
+用法：python set_price_reminder.py HK.00700 --op ADD --type PRICE_UP --value 400
 
 接口限制：
 - 每 30 秒内最多请求 60 次
 - 每只股票最多 10 个提醒
 
 参数说明：
-- op: SET(新增/修改), DEL(删除), DEL_ALL(删除该股票全部), ENABLE(启用), DISABLE(禁用)
+- op: ADD(新增), MODIFY(修改，需配合 --reminder-id), DEL(删除单条，需 --reminder-id),
+      DEL_ALL(删除该股票全部), ENABLE(启用), DISABLE(禁用)
 - reminder_type: PRICE_UP(升到), PRICE_DOWN(跌到), CHANGE_RATE_UP(日涨幅超),
                  CHANGE_RATE_DOWN(日跌幅超), BID_PRICE_UP(买一升到), ASK_PRICE_DOWN(卖一跌到),
-                 TURNOVER_UP(成交量超), TURNOVER_RATE_UP(换手率超)
+                 TURNOVER_UP(成交量超), TURNOVER_RATE_UP(换手率超), VOLUME_UP(成交量超),
+                 FIVE_MIN_CHANGE_RATE_UP/DOWN(5分钟涨/跌幅超), THREE_MIN_CHANGE_RATE_UP/DOWN(3分钟涨/跌幅超),
+                 BID_VOL_UP(买一量超), ASK_VOL_UP(卖一量超)
 """
 import argparse
 import json
@@ -34,7 +37,8 @@ def set_price_reminder(code, op, reminder_type=None, value=None, reminder_id=Non
         from futu import SetPriceReminderOp, PriceReminderType
 
         op_map = {
-            "SET": SetPriceReminderOp.SET,
+            "ADD": SetPriceReminderOp.ADD,
+            "MODIFY": SetPriceReminderOp.MODIFY,
             "DEL": SetPriceReminderOp.DEL,
             "DEL_ALL": SetPriceReminderOp.DEL_ALL,
             "ENABLE": SetPriceReminderOp.ENABLE,
@@ -53,10 +57,17 @@ def set_price_reminder(code, op, reminder_type=None, value=None, reminder_id=Non
                 "PRICE_DOWN": PriceReminderType.PRICE_DOWN,
                 "CHANGE_RATE_UP": PriceReminderType.CHANGE_RATE_UP,
                 "CHANGE_RATE_DOWN": PriceReminderType.CHANGE_RATE_DOWN,
-                "BID_PRICE_UP": PriceReminderType.BID_PRICE_UP,
-                "ASK_PRICE_DOWN": PriceReminderType.ASK_PRICE_DOWN,
+                "FIVE_MIN_CHANGE_RATE_UP": PriceReminderType.FIVE_MIN_CHANGE_RATE_UP,
+                "FIVE_MIN_CHANGE_RATE_DOWN": PriceReminderType.FIVE_MIN_CHANGE_RATE_DOWN,
+                "THREE_MIN_CHANGE_RATE_UP": PriceReminderType.THREE_MIN_CHANGE_RATE_UP,
+                "THREE_MIN_CHANGE_RATE_DOWN": PriceReminderType.THREE_MIN_CHANGE_RATE_DOWN,
+                "VOLUME_UP": PriceReminderType.VOLUME_UP,
                 "TURNOVER_UP": PriceReminderType.TURNOVER_UP,
                 "TURNOVER_RATE_UP": PriceReminderType.TURNOVER_RATE_UP,
+                "BID_PRICE_UP": PriceReminderType.BID_PRICE_UP,
+                "ASK_PRICE_DOWN": PriceReminderType.ASK_PRICE_DOWN,
+                "BID_VOL_UP": PriceReminderType.BID_VOL_UP,
+                "ASK_VOL_UP": PriceReminderType.ASK_VOL_UP,
             }
             t = type_map.get(reminder_type.upper())
             if t is None:
@@ -88,7 +99,9 @@ def set_price_reminder(code, op, reminder_type=None, value=None, reminder_id=Non
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="设置到价提醒")
     parser.add_argument("code", help="股票代码，如 HK.00700")
-    parser.add_argument("--op", required=True, choices=["SET", "DEL", "DEL_ALL", "ENABLE", "DISABLE"], help="操作类型")
+    parser.add_argument("--op", required=True,
+                        choices=["ADD", "MODIFY", "DEL", "DEL_ALL", "ENABLE", "DISABLE"],
+                        help="操作类型（ADD=新增，MODIFY=修改需 --reminder-id，DEL=删除单条需 --reminder-id，DEL_ALL=删除该股票全部）")
     parser.add_argument("--type", dest="reminder_type", default=None, help="提醒类型")
     parser.add_argument("--value", type=float, default=None, help="提醒值")
     parser.add_argument("--reminder-id", type=int, default=None, help="提醒 ID（修改/删除时使用）")

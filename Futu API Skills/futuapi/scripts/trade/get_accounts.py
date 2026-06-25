@@ -10,8 +10,15 @@
 
 返回字段说明：
 - card_num: 综合账户下包含一个或多个业务账户（综合证券、综合期货等），与交易品种有关
-- trdmarket_auth: 账户可交易的市场列表
+- trdmarket_auth: 账户可交易的市场列表（按账户实际权限返回，比赛账户按比赛规则返回）
 - acc_role: MASTER=主账户，NORMAL=普通账户
+- sim_acc_type: 模拟账户类型（SimAccType 枚举），新增 COMPETITION 标识比赛账户
+    NONE / STOCK / OPTION / STOCK_AND_OPTION / FUTURES / COMPETITION
+- competition_acc_name: 比赛账户名称（仅 sim_acc_type=COMPETITION 的账户返回，其他模拟账户与真实账户返回 N/A）
+
+比赛账户特性：
+- 美股比赛账户：TrdMarket.US 且 acc_type=TrdAccType.MARGIN（支持融资融券）
+- 港股比赛账户：TrdMarket.HK 且 acc_type=TrdAccType.CASH（不支持融资融券）
 """
 import argparse
 import json
@@ -53,6 +60,9 @@ def _parse_account_row(row):
         trdmarket_auth = [format_enum(m) for m in trdmarket_auth_raw]
     else:
         trdmarket_auth = []
+    sim_acc_type = format_enum(safe_get(row, "sim_acc_type", default="NONE"))
+    competition_acc_name_raw = safe_get(row, "competition_acc_name", default="")
+    competition_acc_name = competition_acc_name_raw if (sim_acc_type == "COMPETITION" and competition_acc_name_raw) else "N/A"
     return {
         "acc_id": safe_int(safe_get(row, "acc_id", default=0)),
         "acc_type": format_enum(safe_get(row, "acc_type", default="")),
@@ -62,6 +72,8 @@ def _parse_account_row(row):
         "security_firm": format_enum(safe_get(row, "security_firm", default="")),
         "trdmarket_auth": trdmarket_auth,
         "acc_status": format_enum(safe_get(row, "acc_status", default="")),
+        "sim_acc_type": sim_acc_type,
+        "competition_acc_name": competition_acc_name,
     }
 
 
@@ -106,6 +118,10 @@ def get_accounts(output_json=False, show_disabled=False):
             print(f"\n  账户 ID: {a['acc_id']}")
             print(f"    类型: {a['acc_type']}  角色: {a['acc_role']}  环境: {a['trd_env']}  券商: {a['security_firm']}")
             print(f"    交易市场权限: {', '.join(a['trdmarket_auth']) if a['trdmarket_auth'] else 'N/A'}")
+            if a.get("sim_acc_type") and a["sim_acc_type"] != "NONE":
+                print(f"    模拟账户类型: {a['sim_acc_type']}")
+            if a.get("sim_acc_type") == "COMPETITION":
+                print(f"    比赛账户名称: {a['competition_acc_name']}")
         print("\n" + "=" * 70)
 
 

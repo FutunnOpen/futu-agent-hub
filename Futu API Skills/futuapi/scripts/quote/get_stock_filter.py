@@ -11,7 +11,7 @@
 - 每页最多返回 200 个结果
 
 参数说明：
-- --market: 市场代码（HK/US/SH/SZ），不区分沪股和深股，传入沪股或深股都会返回沪深市场的股票
+- --market: 市场代码（HK/US/SH/SZ/JP/SG/MY）；不区分沪股和深股，传入沪股或深股都会返回沪深市场的股票；JP=日股，SG=新加坡，MY=马股，均仅支持正股筛选
 - --sort: 排序字段（market_val/price/volume/turnover/turnover_rate/change_rate/pe/pb），不传默认按市值降序
 - --asc: 升序排序（默认降序）
 - --limit: 返回数量（默认 20）
@@ -58,6 +58,9 @@ MARKET_MAP = {
     "US": Market.US,
     "SH": Market.SH,
     "SZ": Market.SZ,
+    "SG": Market.SG,
+    "MY": Market.MY,
+    "JP": Market.JP,
 }
 
 SORT_MAP = {
@@ -359,7 +362,7 @@ def get_stock_filter(market="HK", limit=20, sort=None, asc=False, output_json=Fa
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="条件选股")
-    parser.add_argument("--market", choices=["HK", "US", "SH", "SZ"], default="HK", help="市场")
+    parser.add_argument("--market", choices=["HK", "US", "SH", "SZ", "SG", "MY", "JP"], default="HK", help="市场（SG=新加坡, MY=马股, JP=日股，均仅支持正股筛选）")
     parser.add_argument("--min-price", type=float, default=None)
     parser.add_argument("--max-price", type=float, default=None)
     parser.add_argument("--min-market-cap", type=float, default=None, help="最小市值（亿）")

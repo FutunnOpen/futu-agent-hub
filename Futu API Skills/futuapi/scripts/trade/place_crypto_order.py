@@ -73,7 +73,7 @@ def place_crypto_order(code, side, quantity, price=None, order_type="NORMAL",
 
     # 下单接口使用的 code 为 'CC.BTCUSD'，SDK 内部兼容；用户传入需包含币对
     base = code.split(".", 1)[1] if "." in code else ""
-    if len(base) < 4:  # BTCUSD 这类最少 6 字符；短于此显然不是币对
+    if len(base) < 6:  # BTCUSD 这类最少 6 字符；短于此显然不是币对
         msg = f"加密货币下单需使用币对代码（如 CC.BTCUSD），当前: {code}"
         if output_json:
             print(json.dumps({"error": msg}, ensure_ascii=False))
@@ -166,6 +166,8 @@ def place_crypto_order(code, side, quantity, price=None, order_type="NORMAL",
             "price": price_val,
             "order_type": order_type_up,
             "trd_env": "REAL",
+            "acc_id": acc_id,
+            "security_firm": security_firm or "(env default)",
             "status": "submitted",
         }
 

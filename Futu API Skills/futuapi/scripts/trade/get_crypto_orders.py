@@ -31,11 +31,12 @@ def get_crypto_orders(history=False, start=None, end=None, code=None,
     ctx = None
     try:
         ctx = create_crypto_trade_context(security_firm=firm_enum)
-        kwargs = dict(trd_env=TrdEnv.REAL, acc_id=acc_id, refresh_cache=True)
+        kwargs = dict(trd_env=TrdEnv.REAL, acc_id=acc_id)
         if code:
             kwargs["code"] = code
 
         if history:
+            # history_order_list_query 不支持 refresh_cache 参数
             if start:
                 kwargs["start"] = start
             if end:
@@ -43,6 +44,7 @@ def get_crypto_orders(history=False, start=None, end=None, code=None,
             ret, data = ctx.history_order_list_query(**kwargs)
             action = "查询加密货币历史订单"
         else:
+            kwargs["refresh_cache"] = True
             ret, data = ctx.order_list_query(**kwargs)
             action = "查询加密货币订单"
 

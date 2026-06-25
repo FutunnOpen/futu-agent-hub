@@ -31,7 +31,7 @@ get_rehab(code)  -- 获取复权因子
 get_history_kl_quota(get_detail=False)  -- 查询历史K线额度(调用request_history_kline前应先检查)
 ```
 
-### 基础信息（5 个）
+### 基础信息（7 个）
 
 ```
 get_stock_basicinfo(market, stock_type=SecurityType.STOCK, code_list=None)  -- 获取股票静态信息
@@ -39,6 +39,8 @@ get_global_state()  -- 获取各市场状态（返回 dict，key 包括 market_h
 request_trading_days(market=None, start=None, end=None, code=None)  -- 获取交易日历
 get_market_state(code_list)  -- 获取市场状态
 get_stock_filter(market, filter_list, plate_code=None, begin=0, num=200)  -- 条件选股
+get_search_quote(keyword, max_count=10)  -- 搜索行情标的
+get_search_news(keyword, max_count=10, news_sub_type=NewsSubType.ALL)  -- 搜索资讯
 ```
 
 ### 板块（3 个）
@@ -49,11 +51,15 @@ get_plate_stock(plate_code, sort_field=SortField.CODE, ascend=True)  -- 获取�
 get_owner_plate(code_list)  -- 获取股票所属板块
 ```
 
-### 衍生品（5 个）
+### 衍生品（9 个）
 
 ```
 get_option_chain(code, index_option_type=IndexOptionType.NORMAL, start=None, end=None, option_type=OptionType.ALL, option_cond_type=OptionCondType.ALL, data_filter=None)  -- 获取期权链
 get_option_expiration_date(code, index_option_type=IndexOptionType.NORMAL)  -- 获取期权到期日
+get_option_strategy(code, option_strategy, expire_time, spread=None, far_expire_time=None, index_option_type=IndexOptionType.NORMAL, option_type=OptionType.ALL, strike_price=None)  -- 获取期权策略组合腿列表(返回OptionStrategyLeg列表，可作为get_option_quote/get_option_strategy_analysis的入参)
+get_option_strategy_spread(code, option_strategy, expire_time, far_expire_time=None, index_option_type=IndexOptionType.NORMAL)  -- 获取期权策略有效价差列表(仅支持SPREAD/STRANGLE/COLLAR/BUTTERFLY/CONDOR/IRON_BUTTERFLY/IRON_CONDOR/DIAGONAL_SPREAD)
+get_option_quote(combo_leg_list)  -- 获取期权快照行情(combo_leg_list为OptionStrategyLeg列表，通常由get_option_strategy返回)
+get_option_strategy_analysis(combo_leg_list)  -- 期权策略损益分析，返回组合级 bid1/ask1(摆盘价)/最大盈亏/盈亏平衡点/盈利概率/Delta/Theta 等（组合摆盘价与组合下单定价优先使用本接口，勿对单腿快照手动加减）
 get_referencestock_list(code, reference_type)  -- 获取关联股票(正股/窝轮/牛熊/期权)
 get_future_info(code_list)  -- 获取期货合约信息
 get_warrant(stock_owner='', req=None)  -- 获取窝轮/牛熊证
@@ -87,7 +93,7 @@ set_price_reminder(code, op, key=None, reminder_type=None, reminder_freq=None, v
 get_ipo_list(market)  -- 获取IPO列表
 ```
 
-**行情 API 小计：35 个**
+**行情 API 小计：41 个**
 
 ---
 
@@ -101,10 +107,11 @@ unlock_trade(password=None, password_md5=None, is_unlock=True)  -- 解锁/锁定
 accinfo_query(trd_env=TrdEnv.REAL, acc_id=0, acc_index=0, refresh_cache=False, currency=Currency.HKD, asset_category=AssetCategory.NONE)  -- 查询账户资金
 ```
 
-### 下单改单（3 个）
+### 下单改单（4 个）
 
 ```
 place_order(price, qty, code, trd_side, order_type=OrderType.NORMAL, adjust_limit=0, trd_env=TrdEnv.REAL, acc_id=0, acc_index=0, remark=None, time_in_force=TimeInForce.DAY, fill_outside_rth=False, aux_price=None, trail_type=None, trail_value=None, trail_spread=None, session=Session.NONE)  -- 下单(限频: 15次/30秒; session 仅对美股生效，支持 RTH/ETH/OVERNIGHT/ALL)
+place_combo_order(combo_leg_list, price, qty, order_type=OrderType.NORMAL, trd_env=TrdEnv.REAL, acc_id=0, acc_index=0, remark="", time_in_force=TimeInForce.DAY, expire_time=None)  -- 组合下单(限频: 15次/30秒; 与 place_order 共用一个限频)
 modify_order(modify_order_op, order_id, qty, price, adjust_limit=0, trd_env=TrdEnv.REAL, acc_id=0, acc_index=0, aux_price=None, trail_type=None, trail_value=None, trail_spread=None)  -- 改单/撤单(限频: 20次/30秒)
 cancel_all_order(trd_env=TrdEnv.REAL, acc_id=0, acc_index=0, trdmarket=TrdMarket.NONE)  -- 撤销所有订单
 ```
@@ -124,16 +131,17 @@ deal_list_query(code="", deal_market=TrdMarket.NONE, trd_env=TrdEnv.REAL, acc_id
 history_deal_list_query(code='', deal_market=TrdMarket.NONE, start='', end='', trd_env=TrdEnv.REAL, acc_id=0, acc_index=0)  -- 查询历史成交
 ```
 
-### 持仓与资金（4 个）
+### 持仓与资金（5 个）
 
 ```
-position_list_query(code='', position_market=TrdMarket.NONE, pl_ratio_min=None, pl_ratio_max=None, trd_env=TrdEnv.REAL, acc_id=0, acc_index=0, refresh_cache=False)  -- 查询持仓
+position_list_query(code='', position_market=TrdMarket.NONE, pl_ratio_min=None, pl_ratio_max=None, trd_env=TrdEnv.REAL, acc_id=0, acc_index=0, refresh_cache=False, show_option_strategy_view=False)  -- 查询持仓（新增 show_option_strategy_view；返回新增 combo_id/strategy_type/position_type/acc_id/jp_acc_type）
 acctradinginfo_query(order_type, code, price, order_id=None, adjust_limit=0, trd_env=TrdEnv.REAL, acc_id=0, acc_index=0, session=Session.NONE)  -- 查询最大可买/卖数量(session 仅对美股生效，支持 RTH/ETH/OVERNIGHT/ALL)
+comboorder_tradinginfo_query(combo_leg_list, price, qty, order_type=OrderType.NORMAL, order_id=None, trd_env=TrdEnv.REAL, acc_id=0, acc_index=0)  -- 查询组合可交易信息(返回 nlv_change/initial_margin_change/maintenance_margin_change/option_bp/max_withdraw_change/bp_decrease)
 get_acc_cash_flow(clearing_date='', trd_env=TrdEnv.REAL, acc_id=0, acc_index=0, cashflow_direction=CashFlowDirection.NONE)  -- 查询账户现金流水
 get_margin_ratio(code_list)  -- 查询融资融券比率
 ```
 
-**交易 API 小计：15 个**
+**交易 API 小计：17 个**
 
 ---
 
@@ -226,7 +234,7 @@ ctx.set_handler(handler)  -- 注册推送回调
 SysNotifyHandlerBase  -- 系统通知回调
 ```
 
-**全部 API 总计：行情 35 + 交易 15 + 推送 Handler 9 + 基础 7 = 66 个接口**
+**全部 API 总计：行情 35 + 交易 17 + 推送 Handler 9 + 基础 7 = 68 个接口**
 
 ## SubType 订阅类型完整列表
 
@@ -246,8 +254,8 @@ SysNotifyHandlerBase  -- 系统通知回调
 - **TrdEnv**: `REAL` | `SIMULATE` — 加密货币仅支持 `REAL`
 - **TimeInForce**: `DAY` | `GTC` | `IOC`(立即成交或取消) — `IOC` 仅用于加密货币市价单；加密货币限价单固定 `GTC`
 - **ModifyOrderOp**: `NORMAL`(改单) | `CANCEL`(撤单) | `DISABLE` | `ENABLE` | `DELETE` — 加密货币只支持 `CANCEL`
-- **TrdMarket**: `HK` | `US` | `CN` | `HKCC` | `SG` | `CRYPTO`(加密货币)
-- **Market（行情）**: `HK` | `US` | `SH` | `SZ` | `HK_FUTURE` | `US_FUTURE` | `SG` | `CC`(加密货币)
+- **TrdMarket**: `HK` | `US` | `CN` | `HKCC` | `SG` | `MY` | `JP` | `CRYPTO`(加密货币)
+- **Market（行情）**: `HK` | `US` | `SH` | `SZ` | `JP`（仅正股，不支持衍生品）| `SG`（正股+窝轮，不支持期权）| `MY`（正股+窝轮，行情需账户权限）| `HK_FUTURE` | `US_FUTURE` | `CC`(加密货币)
 - **SecurityType**: `STOCK` | `IDX` | `ETF` | `WARRANT` | `BOND` | `DRVT` | `PLATE` | `CRYPTO`
 - **ExchType**: 新增 `ExchType_CC_CRYPTO = 19`（加密货币交易所）
 - **Session**: `NONE` | `RTH`(盘中) | `ETH`(盘前盘后) | `OVERNIGHT`(夜盘) | `ALL`(全部) — 订阅仅支持 RTH/ETH/ALL（不支持 OVERNIGHT）；下单支持 RTH/ETH/OVERNIGHT/ALL；加密货币不校验 session

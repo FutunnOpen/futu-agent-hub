@@ -20,6 +20,7 @@ from common import (
     safe_close,
     SubType,
     RET_OK,
+    OrderBookType,
 )
 
 from futu import OrderBookHandlerBase, RET_ERROR
@@ -56,14 +57,30 @@ class OrderBookHandler(OrderBookHandlerBase):
         return RET_OK, data
 
 
-def push_orderbook(codes, duration=60, output_json=False):
+_ODD_LOT_MARKETS = ("MY", "SG")
+
+
+def push_orderbook(codes, duration=60, output_json=False, order_book_type=None):
+    # 碎股盘仅支持 MY/SG 市场
+    if order_book_type == OrderBookType.ODD:
+        for code in codes:
+            prefix = code.split(".")[0].upper() if "." in code else ""
+            if prefix not in _ODD_LOT_MARKETS:
+                msg = f"碎股盘仅支持 {'/'.join(_ODD_LOT_MARKETS)} 市场，当前代码: {code}"
+                if output_json:
+                    print(json.dumps({"error": msg}, ensure_ascii=False))
+                else:
+                    print(f"错误: {msg}")
+                sys.exit(1)
+
     ctx = None
     try:
         ctx = create_quote_context()
         handler = OrderBookHandler(output_json=output_json)
         ctx.set_handler(handler)
 
-        ret, msg = ctx.subscribe(codes, [SubType.ORDER_BOOK], subscribe_push=True)
+        sub_type = SubType.ORDER_BOOK_ODD if order_book_type == OrderBookType.ODD else SubType.ORDER_BOOK
+        ret, msg = ctx.subscribe(codes, [sub_type], subscribe_push=True)
         check_ret(ret, msg, ctx, "订阅摆盘推送")
 
         if not output_json:
@@ -89,6 +106,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="接收摆盘推送")
     parser.add_argument("codes", nargs="+", help="股票代码，如 HK.00700")
     parser.add_argument("--duration", type=int, default=60, help="持续接收时间（秒，默认: 60）")
+    parser.add_argument("--type", choices=["NORMAL", "ODD"], default=None, help="摆盘类型: NORMAL=整股盘, ODD=碎股盘。碎股盘仅支持 MY/SG 市场")
     parser.add_argument("--json", action="store_true", dest="output_json", help="输出 JSON 格式")
     args = parser.parse_args()
-    push_orderbook(args.codes, args.duration, args.output_json)
+    ob_type = getattr(OrderBookType, args.type) if args.type else None
+    push_orderbook(args.codes, args.duration, args.output_json, ob_type)

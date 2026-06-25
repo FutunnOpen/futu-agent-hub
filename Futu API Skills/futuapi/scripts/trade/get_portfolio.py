@@ -11,6 +11,7 @@
 参数说明：
 - currency: 仅期货账户、综合证券账户适用，其它账户类型忽略此参数；返回的资金字段会以此币种换算
 - refresh_cache: True 立即请求服务器（受限频限制），False 使用 OpenD 缓存
+- show_option_strategy_view: True 时按期权策略维度展示持仓（默认 False）
 
 返回字段说明：
 - power（购买力）: 按 50% 融资初始保证金率计算的近似值，建议用 get_max_trd_qtys 获取精确值
@@ -31,6 +32,7 @@ from common import (
     create_trade_context,
     parse_trd_env,
     parse_market,
+    TRD_MARKET_CLI_CHOICES,
     parse_security_firm,
     get_default_acc_id,
     get_default_trd_env,
@@ -44,7 +46,8 @@ from common import (
 )
 
 
-def get_portfolio(acc_id=None, market=None, trd_env=None, currency=None, security_firm=None, output_json=False):
+def get_portfolio(acc_id=None, market=None, trd_env=None, currency=None, security_firm=None,
+                  show_option_strategy_view=False, output_json=False):
     acc_id = acc_id or get_default_acc_id()
     trd_env = parse_trd_env(trd_env) if trd_env else get_default_trd_env()
 
@@ -88,7 +91,12 @@ def get_portfolio(acc_id=None, market=None, trd_env=None, currency=None, securit
             }
 
         # 查询持仓（refresh_cache=True 避免返回过时缓存数据）
-        ret, pos_data = ctx.position_list_query(trd_env=trd_env, acc_id=acc_id, refresh_cache=True)
+        ret, pos_data = ctx.position_list_query(
+            trd_env=trd_env,
+            acc_id=acc_id,
+            refresh_cache=True,
+            show_option_strategy_view=show_option_strategy_view,
+        )
         check_ret(ret, pos_data, ctx, "查询持仓")
 
         positions = []
@@ -107,6 +115,11 @@ def get_portfolio(acc_id=None, market=None, trd_env=None, currency=None, securit
                     "pl_ratio_avg_cost": safe_float(safe_get(row, "pl_ratio_avg_cost", default=0)),
                     "realized_pl": safe_float(safe_get(row, "realized_pl", default=0)),
                     "today_pl_val": safe_float(safe_get(row, "today_pl_val", default=0)),
+                    "combo_id": safe_get(row, "combo_id", default=""),
+                    "strategy_type": safe_get(row, "strategy_type", default=""),
+                    "position_type": safe_get(row, "position_type", default=""),
+                    "acc_id": safe_get(row, "acc_id", default=""),
+                    "jp_acc_type": safe_get(row, "jp_acc_type", default=""),
                 })
 
         if output_json:
@@ -119,15 +132,33 @@ def get_portfolio(acc_id=None, market=None, trd_env=None, currency=None, securit
             if funds:
                 print(f"\n  总资产: {funds['total_assets']:.2f}  现金: {funds['cash']:.2f}  购买力: {funds['power']:.2f}")
                 print(f"  持仓市值: {funds['market_val']:.2f}  可用资金: {funds['available_funds']:.2f}  冻结: {funds['frozen_cash']:.2f}")
-            print(f"\n  {'持仓列表':=^66}")
+            title_width = 90 if show_option_strategy_view else 66
+            print(f"\n  {'持仓列表':=^{title_width}}")
             if positions:
-                print(f"  {'代码':<12} {'名称':<10} {'数量':>8} {'均价':>10} {'市值':>12} {'盈亏%':>8}")
-                print("  " + "-" * 66)
+                if show_option_strategy_view:
+                    print(
+                        f"  {'代码':<12} {'名称':<10} {'数量':>8} {'均价':>10} {'市值':>12} {'盈亏%':>8} "
+                        f"{'策略类型':<12} {'持仓类型':<10}"
+                    )
+                    print("  " + "-" * 90)
+                else:
+                    print(f"  {'代码':<12} {'名称':<10} {'数量':>8} {'均价':>10} {'市值':>12} {'盈亏%':>8}")
+                    print("  " + "-" * 66)
                 for p in positions:
-                    print(f"  {p['code']:<12} {p['name']:<10} {p['qty']:>8.0f} {p['average_cost']:>10.2f} {p['market_val']:>12.2f} {p['pl_ratio_avg_cost']:>8.2f}%")
+                    if show_option_strategy_view:
+                        print(
+                            f"  {p['code']:<12} {p['name']:<10} {p['qty']:>8.0f} {p['average_cost']:>10.2f} "
+                            f"{p['market_val']:>12.2f} {p['pl_ratio_avg_cost']:>8.2f}% {str(p['strategy_type']):<12} "
+                            f"{str(p['position_type']):<10}"
+                        )
+                    else:
+                        print(
+                            f"  {p['code']:<12} {p['name']:<10} {p['qty']:>8.0f} {p['average_cost']:>10.2f} "
+                            f"{p['market_val']:>12.2f} {p['pl_ratio_avg_cost']:>8.2f}%"
+                        )
             else:
                 print("  暂无持仓")
-            print("=" * 70)
+            print("=" * title_width)
 
     except Exception as e:
         if output_json:
@@ -142,14 +173,18 @@ def get_portfolio(acc_id=None, market=None, trd_env=None, currency=None, securit
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="获取持仓与资金")
     parser.add_argument("--acc-id", type=int, default=None, help="账户 ID")
-    parser.add_argument("--market", choices=["US", "HK", "HKCC", "CN", "SG"], default=None, help="交易市场")
+    parser.add_argument("--market", choices=TRD_MARKET_CLI_CHOICES, default=None, help="交易市场")
     parser.add_argument("--trd-env", choices=["REAL", "SIMULATE"], default=None, help="交易环境")
     parser.add_argument("--currency", choices=["HKD", "USD", "CNH", "JPY", "AUD", "CAD", "MYR", "SGD"], default=None,
                         help="货币类型（默认由服务端决定）")
     parser.add_argument("--security-firm",
                         choices=["FUTUSECURITIES", "FUTUINC", "FUTUSG", "FUTUAU", "FUTUCA", "FUTUJP", "FUTUMY"],
                         default=None, help="券商标识")
+    parser.add_argument("--show-option-strategy-view", action="store_true",
+                        help="按期权策略维度展示持仓（position_list_query 的 show_option_strategy_view）")
     parser.add_argument("--json", action="store_true", dest="output_json", help="输出 JSON 格式")
     args = parser.parse_args()
     get_portfolio(acc_id=args.acc_id, market=args.market, trd_env=args.trd_env,
-                  currency=args.currency, security_firm=args.security_firm, output_json=args.output_json)
+                  currency=args.currency, security_firm=args.security_firm,
+                  show_option_strategy_view=args.show_option_strategy_view,
+                  output_json=args.output_json)

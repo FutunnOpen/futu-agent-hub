@@ -97,6 +97,8 @@ SKILL_VERSION = "0.1.1"
 STAMP_FILE = os.path.join(os.path.expanduser("~"), ".futu_skill_version")
 
 MIN_SDK_VERSION = "10.4.6408"
+# OpenCryptoTradeContext 在 10.5.6508 才引入，加密货币脚本需要更高版本
+MIN_CRYPTO_SDK_VERSION = "10.5.6508"
 
 # ai_type 参数需要 SDK >= MIN_SDK_VERSION，低版本不传此参数
 _sdk_supports_ai_type = True
@@ -227,6 +229,7 @@ from futu import (
         StockField,
         SortDir,
         Plate,
+        OrderBookType,
 )
 
 try:
@@ -319,15 +322,98 @@ def create_trade_context(market=None, security_firm=None):
 # 加密货币交易对象仅支持 FUTUSECURITIES(香港)、FUTUINC(美国)、FUTUSG(新加坡)
 CRYPTO_SUPPORTED_FIRMS = ("FUTUSECURITIES", "FUTUINC", "FUTUSG")
 
+# 加密货币 firm 自动探测缓存：~/.futu_crypto_firm，TTL 内复用避免每次都遍历
+_CRYPTO_FIRM_CACHE_FILE = os.path.join(tempfile.gettempdir(), ".futu_crypto_firm")
+_CRYPTO_FIRM_CACHE_TTL = 3600
+
+
+def _crypto_firm_cache_read():
+    try:
+        if (time.time() - os.path.getmtime(_CRYPTO_FIRM_CACHE_FILE)) >= _CRYPTO_FIRM_CACHE_TTL:
+            return None
+        with open(_CRYPTO_FIRM_CACHE_FILE, "r", encoding="utf-8") as f:
+            name = f.read().strip()
+        return name if name in CRYPTO_SUPPORTED_FIRMS else None
+    except OSError:
+        return None
+
+
+def _crypto_firm_cache_write(firm_name):
+    try:
+        with open(_CRYPTO_FIRM_CACHE_FILE, "w", encoding="utf-8") as f:
+            f.write(firm_name)
+    except OSError:
+        pass
+
+
+def _crypto_firm_cache_clear():
+    try:
+        os.remove(_CRYPTO_FIRM_CACHE_FILE)
+    except OSError:
+        pass
+
+
+def _build_crypto_ctx(firm_enum, host, port):
+    kwargs = dict(host=host, port=port, security_firm=firm_enum)
+    if _sdk_supports_ai_type:
+        import inspect as _inspect
+        try:
+            if "ai_type" in _inspect.signature(OpenCryptoTradeContext).parameters:
+                kwargs["ai_type"] = 1
+        except (TypeError, ValueError):
+            pass
+    return OpenCryptoTradeContext(**kwargs)
+
+
+def _probe_crypto_firm(firm, host, port):
+    """探测指定券商是否有可用 CRYPTO 账户，True 表示有效。"""
+    ctx = None
+    try:
+        ctx = _build_crypto_ctx(firm, host, port)
+        ret, data = ctx.get_acc_list()
+        return ret == RET_OK and not is_empty(data)
+    except Exception:
+        return False
+    finally:
+        safe_close(ctx)
+
+
+def _detect_crypto_firm(host, port):
+    """未显式指定 firm 时，遍历 CRYPTO_SUPPORTED_FIRMS 查找有 CRYPTO 账户的券商。
+
+    缓存命中时仍需要 probe 一次，避免 OpenD 切换账号后命中过期券商。
+    """
+    cached = _crypto_firm_cache_read()
+    if cached is not None:
+        firm = getattr(SecurityFirm, cached, None)
+        if firm is not None and _probe_crypto_firm(firm, host, port):
+            return firm
+        _crypto_firm_cache_clear()
+
+    for name in CRYPTO_SUPPORTED_FIRMS:
+        firm = getattr(SecurityFirm, name, None)
+        if firm is None:
+            continue
+        if _probe_crypto_firm(firm, host, port):
+            _crypto_firm_cache_write(name)
+            return firm
+    return None
+
 
 def create_crypto_trade_context(security_firm=None):
     """创建加密货币交易上下文（OpenCryptoTradeContext）。
 
     security_firm 仅支持 FUTUSECURITIES、FUTUINC、FUTUSG。
-    传入不支持的券商会被报错退出。
+    未指定时按优先级：参数 > FUTU_SECURITY_FIRM > 自动探测有 CRYPTO 账户的券商。
     """
     if OpenCryptoTradeContext is None:
-        print("错误: 当前 SDK 不支持 OpenCryptoTradeContext，请升级 futu-api >= 10.4.6408")
+        try:
+            import futu as _futu
+            cur = getattr(_futu, "__version__", "unknown")
+        except ImportError:
+            cur = "unknown"
+        print(f"错误: 当前 futu-api {cur} 未提供 OpenCryptoTradeContext，加密货币需要 >= {MIN_CRYPTO_SDK_VERSION}。"
+              f"请运行: pip install --upgrade \"futu-api>={MIN_CRYPTO_SDK_VERSION}\"")
         sys.exit(1)
     host, port = get_opend_config()
     _check_opend_alive(host, port)
@@ -336,17 +422,27 @@ def create_crypto_trade_context(security_firm=None):
     if firm_enum is None:
         firm_enum = get_default_security_firm()
     if firm_enum is None:
-        firm_enum = SecurityFirm.FUTUSECURITIES
+        firm_enum = _detect_crypto_firm(host, port)
+    use_json = "--json" in sys.argv
+    if firm_enum is None:
+        msg = (f"未在 {', '.join(CRYPTO_SUPPORTED_FIRMS)} 下找到加密货币账户。"
+               f"请确认已开通加密货币交易，或显式指定 --security-firm。")
+        if use_json:
+            print(json.dumps({"error": msg}, ensure_ascii=False))
+        else:
+            print(f"错误: {msg}")
+        sys.exit(1)
 
     firm_name = format_enum(firm_enum)
     if firm_name not in CRYPTO_SUPPORTED_FIRMS:
-        print(f"错误: 加密货币交易仅支持 {', '.join(CRYPTO_SUPPORTED_FIRMS)}，当前 security_firm={firm_name}")
+        msg = f"加密货币交易仅支持 {', '.join(CRYPTO_SUPPORTED_FIRMS)}，当前 security_firm={firm_name}"
+        if use_json:
+            print(json.dumps({"error": msg}, ensure_ascii=False))
+        else:
+            print(f"错误: {msg}")
         sys.exit(1)
 
-    kwargs = dict(host=host, port=port, security_firm=firm_enum)
-    if _sdk_supports_ai_type:
-        kwargs["ai_type"] = 1
-    return OpenCryptoTradeContext(**kwargs)
+    return _build_crypto_ctx(firm_enum, host, port)
 
 
 # ============================================================
@@ -373,10 +469,18 @@ def parse_market(market_str):
         "HKCC": TrdMarket.HKCC,
         "SG": TrdMarket.SG,
     }
+    if hasattr(TrdMarket, "MY"):
+        mapping["MY"] = TrdMarket.MY
+    if hasattr(TrdMarket, "JP"):
+        mapping["JP"] = TrdMarket.JP
     if hasattr(TrdMarket, "CRYPTO"):
         mapping["CRYPTO"] = TrdMarket.CRYPTO
         mapping["CC"] = TrdMarket.CRYPTO
     return mapping.get(str(market_str).upper(), TrdMarket.US)
+
+
+# 交易脚本 CLI --market 可选值（SG/MY/JP 需 SDK 提供对应 TrdMarket 枚举）
+TRD_MARKET_CLI_CHOICES = ["US", "HK", "HKCC", "CN", "SG", "MY", "JP"]
 
 
 # 股票代码前缀 -> 交易市场映射
@@ -386,6 +490,8 @@ _CODE_PREFIX_TO_MARKET = {
     "SH": "CN",
     "SZ": "CN",
     "SG": "SG",
+    "MY": "MY",
+    "JP": "JP",
     "CC": "CRYPTO",
 }
 
@@ -518,6 +624,22 @@ def format_enum(val):
     return str(val)
 
 
+
+def disp_width(s):
+    """计算字符串在终端的显示宽度（中日韩全角=2，其他=1，σ等 Ambiguous 视为 1）。"""
+    from unicodedata import east_asian_width
+    return sum(2 if east_asian_width(c) in ("F", "W") else 1 for c in str(s))
+
+
+def pad_disp(s, width, align="left"):
+    """按显示宽度补空格对齐。"""
+    s = str(s)
+    pad = max(0, width - disp_width(s))
+    if align == "right":
+        return " " * pad + s
+    return s + " " * pad
+
+
 # ============================================================
 # 上下文管理辅助
 # ============================================================
@@ -531,8 +653,33 @@ def safe_close(ctx):
         pass
 
 
+def _is_no_account_error(error_msg):
+    """检测错误信息是否为"无可用交易账户"（区别于行情权限不足）"""
+    msg = str(error_msg).lower()
+    keywords = [
+        "no available real accounts",
+        "no available accounts",
+        "no available simulate accounts",
+        "无可用账户", "无可用交易账户", "没有可用账户",
+    ]
+    return any(kw in msg for kw in keywords)
+
+
+def _is_unlock_needed_error(error_msg):
+    """检测错误信息是否为"交易未解锁"。"""
+    msg = str(error_msg).lower()
+    keywords = [
+        "没有解锁交易", "请先解锁交易", "未解锁交易", "交易未解锁",
+        "unlock needed", "trade not unlocked", "trade unlock",
+        "please unlock", "need unlock",
+    ]
+    return any(kw in msg for kw in keywords)
+
+
 def _is_permission_error(error_msg):
-    """检测错误信息是否为行情权限不足"""
+    """检测错误信息是否为行情权限不足。账户类错误优先匹配 _is_no_account_error。"""
+    if _is_no_account_error(error_msg) or _is_unlock_needed_error(error_msg):
+        return False
     keywords = [
         "权限", "没有权限", "权限不足", "无权限",
         "no permission", "permission denied", "not permission",
@@ -550,6 +697,8 @@ _MARKET_NAMES = {
     "HK": "港股", "US": "美股",
     "SH": "A股", "SZ": "A股",
     "SG": "新加坡",
+    "MY": "马股",
+    "JP": "日股",
 }
 
 _AUTHORITY_URLS = {"futu": "https://openapi.futunn.com/futu-api-doc/intro/authority.html"}
@@ -559,7 +708,7 @@ def _detect_market_from_argv():
     """从命令行参数中的股票代码检测市场（如 HK.00700 -> 港股）"""
     import re
     for arg in sys.argv[1:]:
-        m = re.match(r'^(HK|US|SH|SZ|SG)\.', arg, re.IGNORECASE)
+        m = re.match(r'^(HK|US|SH|SZ|SG|MY|JP)\.', arg, re.IGNORECASE)
         if m:
             return _MARKET_NAMES.get(m.group(1).upper(), "")
     return ""
@@ -593,6 +742,18 @@ def _build_permission_hint_json():
 
 
 
+_NO_ACCOUNT_HINT = (
+    "未找到可用交易账户。常见原因：1) 该 security_firm 下未开通对应市场的交易账户；"
+    "2) OpenD 登录的账号与目标账户不一致；3) 加密货币账户需先在富途/Moomoo APP 中开通。"
+    "可调整 --security-firm / FUTU_SECURITY_FIRM 或 FUTU_TRD_ENV 后重试。"
+)
+
+_UNLOCK_NEEDED_HINT = (
+    "实盘交易未解锁。请在 OpenD GUI 界面点击「解锁交易」并输入交易密码完成解锁，"
+    "解锁后重新执行下单/撤单。出于安全考虑，本技能不通过 SDK 调用 unlock_trade。"
+)
+
+
 def check_ret(ret, data, ctx=None, action="操作", output_json=None):
     """检查 API 返回值，失败则打印错误并退出"""
     if ret != RET_OK:
@@ -602,16 +763,26 @@ def check_ret(ret, data, ctx=None, action="操作", output_json=None):
             except Exception:
                 output_json = False
 
-        perm_error = _is_permission_error(data)
+        no_acc_error = _is_no_account_error(data)
+        unlock_error = (not no_acc_error) and _is_unlock_needed_error(data)
+        perm_error = (not no_acc_error) and (not unlock_error) and _is_permission_error(data)
 
         if output_json:
             err_obj = {"ret": ret, "action": action, "error": str(data)}
-            if perm_error:
+            if no_acc_error:
+                err_obj["hint"] = _NO_ACCOUNT_HINT
+            elif unlock_error:
+                err_obj["hint"] = _UNLOCK_NEEDED_HINT
+            elif perm_error:
                 err_obj.update(_build_permission_hint_json())
             print(json.dumps(err_obj, ensure_ascii=False))
         else:
             print(f"{action}失败: {data}")
-            if perm_error:
+            if no_acc_error:
+                print(f"\n{_NO_ACCOUNT_HINT}")
+            elif unlock_error:
+                print(f"\n{_UNLOCK_NEEDED_HINT}")
+            elif perm_error:
                 print(_build_permission_hint())
         safe_close(ctx)
         sys.exit(1)
@@ -664,3 +835,79 @@ def df_to_records(df, limit=None):
             for k in keys
         })
     return records
+
+
+def print_display_df(df, max_colwidth=26):
+    """终端展示：东亚字符宽度 + DataFrame.to_string（pandas 3 须将 max_colwidth 传给 to_string）。"""
+    import pandas as pd
+
+    if df is None or is_empty(df):
+        print("无数据")
+        return
+    with pd.option_context(
+        "display.unicode.east_asian_width", True,
+        "display.width", None,
+        "display.max_rows", None,
+    ):
+        print(df.to_string(index=False, max_colwidth=max_colwidth))
+
+
+def scale_int(value, scale_pow10: int, display_decimals: int = None) -> str:
+    """将放大后的整型字段按 10 的幂次还原为带小数点的字符串，避免浮点精度丢失。
+
+    示例：scale_int(552000000000, 9)    → "552.000000000"
+          scale_int(552000000000, 9, 3) → "552.000"
+          scale_int(35804, 3)           → "35.804"
+
+    :param value: 原始 proto int64 值（可以是 int 或可转 int 的类型）
+    :param scale_pow10: 放大倍数的幂次，即实际值 = value / 10**scale_pow10
+    :param display_decimals: 展示小数位数（默认与 scale_pow10 一致；传入较小值可截断尾部零）
+    :return: 格式化字符串，保留指定位数小数
+    """
+    from decimal import Decimal, ROUND_DOWN
+    if value is None:
+        return "-"
+    try:
+        iv = int(value)
+    except (TypeError, ValueError):
+        return "-"
+    d = Decimal(iv)
+    divisor = Decimal(10 ** scale_pow10)
+    result = d / divisor
+    # 确定展示精度
+    decimals = display_decimals if display_decimals is not None else scale_pow10
+    fmt = "0." + "0" * decimals if decimals > 0 else "0"
+    return str(result.quantize(Decimal(fmt), rounding=ROUND_DOWN))
+
+
+def format_big_number(n, *, fixed: int = 2) -> str:
+    """将大整数按万/亿/万亿单位缩放，返回带单位后缀的字符串。
+    任意列存在 ≥ 10000 的值时，整列应统一调用本函数（--json 路径不调用）。
+
+    示例：format_big_number(1234567890000) → "1.23万亿"
+          format_big_number(12345678900)   → "123.46亿"
+          format_big_number(12345)         → "1.23万"
+          format_big_number(999)           → "999"
+
+    :param n: 原始数值（int/float）
+    :param fixed: 保留小数位数（默认 2）
+    :return: 格式化字符串
+    """
+    if n is None:
+        return "-"
+    try:
+        v = float(n)
+    except (TypeError, ValueError):
+        return "-"
+    import math
+    if math.isnan(v) or math.isinf(v):
+        return "-"
+    if abs(v) >= 1e12:
+        return f"{v / 1e12:.2f}万亿"
+    if abs(v) >= 1e8:
+        return f"{v / 1e8:.2f}亿"
+    if abs(v) >= 1e4:
+        return f"{v / 1e4:.2f}万"
+    return str(int(v)) if v == int(v) else f"{v:.{fixed}f}"
+
+

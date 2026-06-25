@@ -78,7 +78,7 @@ def place_order(code, side, quantity, price=None, order_type="NORMAL",
     # 从 --code 前缀自动推导交易市场
     market = infer_market_from_code(code)
     if not market:
-        msg = f"无法从代码 '{code}' 推导交易市场，请使用完整格式如 US.AAPL、HK.00700"
+        msg = f"无法从代码 '{code}' 推导交易市场，请使用完整格式如 US.AAPL、HK.00700、SG.D05、MY.1155、JP.7203"
         if output_json:
             print(json.dumps({"error": msg}, ensure_ascii=False))
         else:

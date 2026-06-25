@@ -38,8 +38,9 @@ from common import (
 
 CRYPTO_ACC_FIELDS = [
     "total_assets", "cash", "crypto_mv", "frozen_cash",
-    "hk_cash", "us_cash", "hk_avl_withdrawal_cash", "us_avl_withdrawal_cash",
-    "hkd_net_cash_power", "usd_net_cash_power",
+    "hk_cash", "us_cash", "sg_cash",
+    "hk_avl_withdrawal_cash", "us_avl_withdrawal_cash", "sg_avl_withdrawal_cash",
+    "hkd_net_cash_power", "usd_net_cash_power", "sgd_net_cash_power",
     "exposure_level", "exposure_limit", "used_limit", "remaining_limit",
 ]
 
