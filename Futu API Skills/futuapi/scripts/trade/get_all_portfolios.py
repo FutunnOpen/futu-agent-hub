@@ -2,7 +2,7 @@
 """
 查询所有账户的资金与持仓
 
-功能：遍历所有交易账户，查询每个账户的资金和持仓信息
+功能：遍历所有交易账户（证券 + 期货），查询每个账户的资金和持仓信息
 用法：python get_all_portfolios.py [--trd-env SIMULATE] [--acc-id 6795352] [--json]
 
 参数说明：
@@ -17,9 +17,7 @@ import sys
 import os as _os
 sys.path.insert(0, _os.path.normpath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..")))
 from common import (
-    create_trade_context,
     parse_trd_env,
-    parse_security_firm,
     check_ret,
     safe_close,
     is_empty,
@@ -48,44 +46,65 @@ ALL_FIRMS = [
 
 
 def get_all_accounts(host, port):
-    """获取所有账户列表（去重）"""
-    from common import get_opend_config, _check_opend_alive, OpenSecTradeContext
+    """获取所有账户列表（证券 + 期货，按 acc_id 去重）"""
+    from common import OpenSecTradeContext, OpenFutureTradeContext
+
     seen = set()
     accounts = []
-    for firm in ALL_FIRMS:
+
+    def _collect(ctx_cls, ctx_type, firm):
+        if ctx_cls is None:
+            return
         try:
-            kwargs = dict(host=host, port=port, filter_trdmarket=TrdMarket.NONE, security_firm=firm)
+            kwargs = dict(host=host, port=port, security_firm=firm)
+            if ctx_cls is OpenSecTradeContext:
+                kwargs["filter_trdmarket"] = TrdMarket.NONE
             if _sdk_supports_ai_type:
                 kwargs["ai_type"] = 1
-            ctx = OpenSecTradeContext(**kwargs)
+            ctx = ctx_cls(**kwargs)
             try:
                 ret, data = ctx.get_acc_list()
             finally:
                 safe_close(ctx)
-            if ret == RET_OK and not is_empty(data):
-                for i in range(len(data)):
-                    row = data.iloc[i]
-                    acc_id = safe_int(safe_get(row, "acc_id", default=0))
-                    if acc_id and acc_id not in seen:
-                        seen.add(acc_id)
-                        accounts.append({
-                            "acc_id": acc_id,
-                            "trd_env": safe_get(row, "trd_env", default="N/A"),
-                            "acc_type": safe_get(row, "acc_type", default="N/A"),
-                            "trdmarket_auth": safe_get(row, "trdmarket_auth", default=[]),
-                        })
+            if ret != RET_OK or is_empty(data):
+                return
+            for i in range(len(data)):
+                row = data.iloc[i]
+                acc_id = safe_int(safe_get(row, "acc_id", default=0))
+                if not acc_id or acc_id in seen:
+                    continue
+                seen.add(acc_id)
+                accounts.append({
+                    "acc_id": acc_id,
+                    "trd_env": safe_get(row, "trd_env", default="N/A"),
+                    "acc_type": safe_get(row, "acc_type", default="N/A"),
+                    "trdmarket_auth": safe_get(row, "trdmarket_auth", default=[]),
+                    "ctx_type": ctx_type,
+                })
         except Exception:
-            continue
+            return
+
+    for firm in ALL_FIRMS:
+        _collect(OpenSecTradeContext, "SEC", firm)
+        _collect(OpenFutureTradeContext, "FUTURE", firm)
     return accounts
 
 
-def query_portfolio(host, port, acc_id, trd_env, show_option_strategy_view=False):
+def query_portfolio(host, port, acc_id, trd_env, ctx_type="SEC", show_option_strategy_view=False):
     """查询单个账户的资金与持仓"""
-    from common import OpenSecTradeContext
-    kwargs = dict(host=host, port=port, filter_trdmarket=TrdMarket.NONE)
+    from common import OpenSecTradeContext, OpenFutureTradeContext
+
+    if str(ctx_type).upper() == "FUTURE":
+        if OpenFutureTradeContext is None:
+            raise RuntimeError("当前 SDK 不支持 OpenFutureTradeContext，请升级 futu-api")
+        kwargs = dict(host=host, port=port)
+        ctx_cls = OpenFutureTradeContext
+    else:
+        kwargs = dict(host=host, port=port, filter_trdmarket=TrdMarket.NONE)
+        ctx_cls = OpenSecTradeContext
     if _sdk_supports_ai_type:
         kwargs["ai_type"] = 1
-    ctx = OpenSecTradeContext(**kwargs)
+    ctx = ctx_cls(**kwargs)
     try:
         # 资金
         ret, acc_data = ctx.accinfo_query(trd_env=trd_env, acc_id=acc_id)
@@ -136,7 +155,7 @@ def query_portfolio(host, port, acc_id, trd_env, show_option_strategy_view=False
 
 
 def main():
-    parser = argparse.ArgumentParser(description="查询所有账户的资金与持仓")
+    parser = argparse.ArgumentParser(description="查询所有账户的资金与持仓（证券 + 期货）")
     parser.add_argument("--acc-id", type=int, default=None, help="指定账户 ID")
     parser.add_argument("--trd-env", choices=["REAL", "SIMULATE"], default=None, help="交易环境过滤")
     parser.add_argument("--show-option-strategy-view", action="store_true",
@@ -174,6 +193,7 @@ def main():
             port,
             acc_id,
             trd_env,
+            ctx_type=acc.get("ctx_type", "SEC"),
             show_option_strategy_view=args.show_option_strategy_view,
         )
         results.append({
@@ -181,6 +201,7 @@ def main():
             "trd_env": trd_env_str,
             "acc_type": acc["acc_type"],
             "trdmarket_auth": acc["trdmarket_auth"],
+            "ctx_type": acc.get("ctx_type", "SEC"),
             "funds": funds,
             "positions": positions,
         })
@@ -193,7 +214,7 @@ def main():
             markets = r["trdmarket_auth"] if isinstance(r["trdmarket_auth"], list) else [r["trdmarket_auth"]]
             market_str = ",".join(str(m) for m in markets)
             print(f"\n{'='*60}")
-            print(f"账户 {r['acc_id']} | {env_label} | {r['acc_type']} | 市场: {market_str}")
+            print(f"账户 {r['acc_id']} | {env_label} | {r['acc_type']} | 上下文: {r['ctx_type']} | 市场: {market_str}")
             print(f"{'='*60}")
             f = r["funds"]
             if f:

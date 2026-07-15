@@ -65,6 +65,29 @@ get_future_info(code_list)  -- 获取期货合约信息
 get_warrant(stock_owner='', req=None)  -- 获取窝轮/牛熊证
 ```
 
+### 事件合约 Event Contract（13 个查询 + 3 个订阅 + 3 个推送 Handler）
+
+合约代码 `EC.xxx`，YES/NO 二元预测合约。查询盘口/实时K线/逐笔前需先 `subscribe_event_contract` 订阅对应类型；历史 K 线（`request_history_event_contract_kline`）无需订阅，走历史 K 线额度；K 线仅支持 K_1M/K_5M/K_60M/K_DAY。
+
+```
+get_event_contract_category(category=None)  -- 事件合约分类列表
+filter_competition(category=None, tag=None)  -- 赛事筛选（赛事名称 + 玩法全集）
+get_event_contract_series_list(category=None, tag=None)  -- Series 列表
+get_event_contract_event_list(series_code, status=None, next_page=None, count=None)  -- Event 列表（分页）
+get_event_contract(event_code, next_page=None, count=None)  -- Contract 列表（返回 dict{contract_list, recommend_contracts}，分页）
+get_event_contract_milestone_list(category=None, competition=None, related_event=None, next_page=None, count=None)  -- 里程碑列表（分页）
+get_valid_combo_list(category=None, competition=None, series=None, next_page=None, count=None)  -- 可 Combo 事件列表（返回 data, mvc, next_page）
+request_combo_quotes(combo_leg_list, mvc)  -- Combo 询价（combo_leg_list 为 ComboLeg 列表，pred_side 必填；mvc 透传）
+get_event_contract_snapshot(code_list)  -- 事件合约快照（无需订阅）
+get_event_contract_order_book(code, num=10)  -- 事件合约摆盘（需先订阅 ORDER_BOOK；返回 dict{yes_bids/asks, no_bids/asks}）
+get_event_contract_kline(code, pre_side=None, ktype=KLType.K_DAY, kline_source=None, max_count=1000)  -- 事件合约 K 线（需先订阅对应 K 线类型）
+get_event_contract_ticker(code, count=30)  -- 事件合约逐笔（需先订阅 TICKER）
+request_history_event_contract_kline(code, start=None, end=None, pre_side=None, ktype=KLType.K_DAY, kline_source=None, max_count=1000, page_req_key=None)  -- 事件合约历史 K 线（无需订阅，自动分页）
+subscribe_event_contract(code_list, subtype_list, kline_source_list=None, is_first_push=True, subscribe_push=True)  -- 订阅事件合约
+unsubscribe_event_contract(code_list, subtype_list, kline_source_list=None)  -- 取消订阅（按维度）
+unsubscribe_all_event_contract()  -- 取消当前连接所有事件合约订阅
+```
+
 ### 资金（2 个）
 
 ```
@@ -197,9 +220,9 @@ get_margin_ratio(code_list)  -- 查询融资融券比率
 
 ---
 
-## 推送 Handler（9 个）
+## 推送 Handler（12 个）
 
-### 行情推送（7 个）
+### 行情推送（10 个）
 
 ```
 StockQuoteHandlerBase   -- 报价推送回调
@@ -209,6 +232,9 @@ TickerHandlerBase       -- 逐笔推送回调
 RTDataHandlerBase       -- 分时推送回调
 BrokerHandlerBase       -- 经纪队列推送回调
 PriceReminderHandlerBase -- 到价提醒推送回调
+EventContractOrderBookHandlerBase  -- 事件合约摆盘推送回调（需 subscribe_event_contract 订阅 ORDER_BOOK）
+EventContractKlineHandlerBase      -- 事件合约 K 线推送回调（需订阅对应 K 线类型）
+EventContractTickerHandlerBase     -- 事件合约逐笔推送回调（需订阅 TICKER）
 ```
 
 ### 交易推送（2 个）

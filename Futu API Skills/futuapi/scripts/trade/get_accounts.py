@@ -2,13 +2,14 @@
 """
 获取交易账户列表
 
-功能：查询当前登录用户的所有交易账户
+功能：查询当前登录用户的所有交易账户（证券 + 期货合并）
 用法：python get_accounts.py
 
 接口限制：
 - 无特殊限频
 
 返回字段说明：
+- ctx_type: 账户来源上下文 SEC（证券 OpenSecTradeContext）/ FUTURE（期货 OpenFutureTradeContext）
 - card_num: 综合账户下包含一个或多个业务账户（综合证券、综合期货等），与交易品种有关
 - trdmarket_auth: 账户可交易的市场列表（按账户实际权限返回，比赛账户按比赛规则返回）
 - acc_role: MASTER=主账户，NORMAL=普通账户
@@ -27,7 +28,7 @@ import os as _os
 sys.path.insert(0, _os.path.normpath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..")))
 from common import (
     create_trade_context,
-    check_ret,
+    create_future_trade_context,
     safe_close,
     is_empty,
     safe_get,
@@ -51,7 +52,7 @@ _ALL_SECURITY_FIRMS = [
 ]
 
 
-def _parse_account_row(row):
+def _parse_account_row(row, ctx_type):
     """Parse a single account row into a dict."""
     trdmarket_auth_raw = safe_get(row, "trdmarket_auth", default=[])
     if isinstance(trdmarket_auth_raw, str):
@@ -74,7 +75,30 @@ def _parse_account_row(row):
         "acc_status": format_enum(safe_get(row, "acc_status", default="")),
         "sim_acc_type": sim_acc_type,
         "competition_acc_name": competition_acc_name,
+        "ctx_type": ctx_type,
     }
+
+
+def _collect_from_context(create_ctx, firm, ctx_type, seen_acc_ids, accounts, show_disabled):
+    ctx = None
+    try:
+        ctx = create_ctx(security_firm=firm) if ctx_type == "FUTURE" else create_ctx(market="NONE", security_firm=firm)
+        ret, data = ctx.get_acc_list()
+        if ret != 0 or is_empty(data):
+            return
+        for i in range(len(data)):
+            row = data.iloc[i] if hasattr(data, "iloc") else data[i]
+            acc = _parse_account_row(row, ctx_type)
+            if acc["acc_id"] in seen_acc_ids:
+                continue
+            if not show_disabled and acc["acc_status"] == "DISABLED":
+                continue
+            seen_acc_ids.add(acc["acc_id"])
+            accounts.append(acc)
+    except Exception:
+        pass
+    finally:
+        safe_close(ctx)
 
 
 def get_accounts(output_json=False, show_disabled=False):
@@ -82,24 +106,12 @@ def get_accounts(output_json=False, show_disabled=False):
     accounts = []
 
     for firm in _ALL_SECURITY_FIRMS:
-        ctx = None
-        try:
-            ctx = create_trade_context(market="NONE", security_firm=firm)
-            ret, data = ctx.get_acc_list()
-            if ret != 0 or is_empty(data):
-                continue
-            for i in range(len(data)):
-                row = data.iloc[i] if hasattr(data, "iloc") else data[i]
-                acc = _parse_account_row(row)
-                if acc["acc_id"] not in seen_acc_ids:
-                    if not show_disabled and acc["acc_status"] == "DISABLED":
-                        continue
-                    seen_acc_ids.add(acc["acc_id"])
-                    accounts.append(acc)
-        except Exception:
-            pass
-        finally:
-            safe_close(ctx)
+        _collect_from_context(
+            create_trade_context, firm, "SEC", seen_acc_ids, accounts, show_disabled
+        )
+        _collect_from_context(
+            create_future_trade_context, firm, "FUTURE", seen_acc_ids, accounts, show_disabled
+        )
 
     if not accounts:
         if output_json:
@@ -112,11 +124,11 @@ def get_accounts(output_json=False, show_disabled=False):
         print(json.dumps({"accounts": accounts}, ensure_ascii=False))
     else:
         print("=" * 70)
-        print("交易账户列表")
+        print("交易账户列表（证券 + 期货）")
         print("=" * 70)
         for a in accounts:
             print(f"\n  账户 ID: {a['acc_id']}")
-            print(f"    类型: {a['acc_type']}  角色: {a['acc_role']}  环境: {a['trd_env']}  券商: {a['security_firm']}")
+            print(f"    上下文: {a['ctx_type']}  类型: {a['acc_type']}  角色: {a['acc_role']}  环境: {a['trd_env']}  券商: {a['security_firm']}")
             print(f"    交易市场权限: {', '.join(a['trdmarket_auth']) if a['trdmarket_auth'] else 'N/A'}")
             if a.get("sim_acc_type") and a["sim_acc_type"] != "NONE":
                 print(f"    模拟账户类型: {a['sim_acc_type']}")
@@ -126,7 +138,7 @@ def get_accounts(output_json=False, show_disabled=False):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="获取交易账户列表")
+    parser = argparse.ArgumentParser(description="获取交易账户列表（证券 + 期货）")
     parser.add_argument("--json", action="store_true", dest="output_json", help="输出 JSON 格式")
     parser.add_argument("--show-disabled", action="store_true", help="显示 DISABLED 状态的账户")
     args = parser.parse_args()

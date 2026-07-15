@@ -21,7 +21,9 @@ import os as _os
 
 sys.path.insert(0, _os.path.normpath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..")))
 from common import (
-    create_trade_context,
+    create_sec_or_future_trade_context,
+    normalize_trade_ctx_type,
+    TRADE_CTX_TYPE_CHOICES,
     parse_trd_env,
     parse_security_firm,
     get_default_acc_id,
@@ -80,25 +82,31 @@ def _parse_combo_legs(legs_json):
 
 def comboorder_tradinginfo_query(legs_json, price, quantity, order_type="NORMAL",
                                  order_id=None, acc_id=None, trd_env=None,
-                                 security_firm=None, output_json=False):
+                                 security_firm=None, ctx_type="SEC", output_json=False):
     acc_id = acc_id or get_default_acc_id()
     trd_env = parse_trd_env(trd_env) if trd_env else get_default_trd_env()
 
     combo_legs = _parse_combo_legs(legs_json)
     first_code = safe_get(combo_legs[0], "code", default="")
-    market = infer_market_from_code(first_code)
-    if not market:
-        msg = f"无法从第一条组合腿代码 '{first_code}' 推导交易市场"
-        if output_json:
-            print(json.dumps({"error": msg}, ensure_ascii=False))
-        else:
-            print(f"错误: {msg}")
-        sys.exit(1)
+    resolved_ctx = normalize_trade_ctx_type(ctx_type=ctx_type, codes=combo_legs)
+    market = None
+    if resolved_ctx != "FUTURE":
+        market = infer_market_from_code(first_code)
+        if not market:
+            msg = f"无法从第一条组合腿代码 '{first_code}' 推导交易市场"
+            if output_json:
+                print(json.dumps({"error": msg}, ensure_ascii=False))
+            else:
+                print(f"错误: {msg}")
+            sys.exit(1)
 
     order_type_enum = _resolve_order_type(order_type)
     ctx = None
     try:
-        ctx = create_trade_context(market, security_firm=parse_security_firm(security_firm))
+        ctx = create_sec_or_future_trade_context(
+            market, security_firm=parse_security_firm(security_firm),
+            ctx_type=resolved_ctx,
+        )
         ret, data = ctx.comboorder_tradinginfo_query(
             combo_leg_list=combo_legs,
             price=float(price),
@@ -162,6 +170,8 @@ if __name__ == "__main__":
         default=None,
         help="券商标识",
     )
+    parser.add_argument("--ctx-type", choices=list(TRADE_CTX_TYPE_CHOICES), default="SEC",
+                        help="交易上下文：SEC=证券，FUTURE=期货/事件合约；腿含 EC. 时自动用 FUTURE")
     parser.add_argument("--json", action="store_true", dest="output_json", help="输出 JSON 格式")
     args = parser.parse_args()
 
@@ -174,5 +184,6 @@ if __name__ == "__main__":
         acc_id=args.acc_id,
         trd_env=args.trd_env,
         security_firm=args.security_firm,
+        ctx_type=args.ctx_type,
         output_json=args.output_json,
     )

@@ -23,7 +23,8 @@ import sys
 import os as _os
 sys.path.insert(0, _os.path.normpath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..")))
 from common import (
-    create_trade_context,
+    create_sec_or_future_trade_context,
+    TRADE_CTX_TYPE_CHOICES,
     parse_trd_env,
     parse_market,
     TRD_MARKET_CLI_CHOICES,
@@ -42,13 +43,16 @@ from common import (
 
 def get_history_orders(acc_id=None, market=None, trd_env=None, code=None,
                        start=None, end=None, status_list=None, limit=200,
-                       security_firm=None, output_json=False):
+                       security_firm=None, ctx_type="SEC", output_json=False):
     acc_id = acc_id or get_default_acc_id()
     trd_env = parse_trd_env(trd_env) if trd_env else get_default_trd_env()
 
     ctx = None
     try:
-        ctx = create_trade_context(market, security_firm=parse_security_firm(security_firm))
+        ctx = create_sec_or_future_trade_context(
+            market, security_firm=parse_security_firm(security_firm),
+            ctx_type=ctx_type, code=code,
+        )
         kwargs = {"trd_env": trd_env, "acc_id": acc_id}
         if code:
             kwargs["code"] = code
@@ -131,9 +135,12 @@ if __name__ == "__main__":
     parser.add_argument("--security-firm",
                         choices=["FUTUSECURITIES", "FUTUINC", "FUTUSG", "FUTUAU", "FUTUCA", "FUTUJP", "FUTUMY"],
                         default=None, help="券商标识")
+    parser.add_argument("--ctx-type", choices=list(TRADE_CTX_TYPE_CHOICES), default="SEC",
+                        help="交易上下文：SEC=证券，FUTURE=期货/事件合约；过滤 code 为 EC. 时自动用 FUTURE")
     parser.add_argument("--json", action="store_true", dest="output_json", help="输出 JSON 格式")
     args = parser.parse_args()
     get_history_orders(acc_id=args.acc_id, market=args.market, trd_env=args.trd_env,
                        code=args.code, start=args.start, end=args.end,
                        status_list=args.status, limit=args.limit,
-                       security_firm=args.security_firm, output_json=args.output_json)
+                       security_firm=args.security_firm, ctx_type=args.ctx_type,
+                       output_json=args.output_json)

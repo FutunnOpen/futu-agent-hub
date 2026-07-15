@@ -232,6 +232,38 @@ from futu import (
         OrderBookType,
 )
 
+# 事件合约 (Event Contract) 枚举与数据类（SDK >= 支持版本才提供，低版本降级为 None）
+try:
+    from futu import (
+        ECStatus,
+        ECContractType,
+        ECFrequency,
+        ECMilestoneType,
+        ECKlineSource,
+        PredSide,
+        ComboLeg,
+    )
+except ImportError:
+    ECStatus = None
+    ECContractType = None
+    ECFrequency = None
+    ECMilestoneType = None
+    ECKlineSource = None
+    PredSide = None
+    ComboLeg = None
+
+# 事件合约推送 Handler（同样按版本降级）
+try:
+    from futu import (
+        EventContractKlineHandlerBase,
+        EventContractOrderBookHandlerBase,
+        EventContractTickerHandlerBase,
+    )
+except ImportError:
+    EventContractKlineHandlerBase = None
+    EventContractOrderBookHandlerBase = None
+    EventContractTickerHandlerBase = None
+
 try:
     from futu import TradeDateMarket
 except ImportError:
@@ -245,9 +277,19 @@ except ImportError:
     OpenCryptoTradeContext = None
 
 try:
+    from futu import OpenFutureTradeContext
+except ImportError:
+    OpenFutureTradeContext = None
+
+try:
     from futu import TimeInForce
 except ImportError:
     TimeInForce = None
+
+try:
+    from futu import PredSide
+except ImportError:
+    PredSide = None
 
 
 # ============================================================
@@ -317,6 +359,63 @@ def create_trade_context(market=None, security_firm=None):
         default_firm = get_default_security_firm()
         kwargs["security_firm"] = default_firm if default_firm is not None else SecurityFirm.NONE
     return OpenSecTradeContext(**kwargs)
+
+
+def create_future_trade_context(security_firm=None):
+    """创建期货交易上下文（事件合约 / 期货下单使用，无 filter_trdmarket）"""
+    if OpenFutureTradeContext is None:
+        raise RuntimeError("当前 SDK 不支持 OpenFutureTradeContext，请升级 futu-api")
+    host, port = get_opend_config()
+    _check_opend_alive(host, port)
+    kwargs = dict(host=host, port=port)
+    if _sdk_supports_ai_type:
+        kwargs["ai_type"] = 1
+    if security_firm is not None:
+        kwargs["security_firm"] = security_firm
+    else:
+        default_firm = get_default_security_firm()
+        kwargs["security_firm"] = default_firm if default_firm is not None else SecurityFirm.NONE
+    return OpenFutureTradeContext(**kwargs)
+
+
+def is_event_contract_code(code):
+    """事件合约代码以 EC. 开头（无市场前缀）"""
+    return bool(code) and str(code).strip().upper().startswith("EC.")
+
+
+TRADE_CTX_TYPE_CHOICES = ("SEC", "FUTURE")
+
+
+def normalize_trade_ctx_type(ctx_type=None, code=None, codes=None):
+    """解析交易上下文类型：SEC=证券，FUTURE=期货/事件合约。
+
+    任一 EC. 代码一律走 FUTURE；其余按显式 ctx_type（默认 SEC）。
+    """
+    has_ec = bool(code and is_event_contract_code(code))
+    if not has_ec and codes:
+        for c in codes:
+            code_val = c if isinstance(c, str) else getattr(c, "code", None)
+            if code_val and is_event_contract_code(code_val):
+                has_ec = True
+                break
+    if has_ec:
+        return "FUTURE"
+    if ctx_type is not None and str(ctx_type).strip() != "":
+        key = str(ctx_type).strip().upper()
+        if key in ("FUTURE", "FUTURES"):
+            return "FUTURE"
+        if key == "SEC":
+            return "SEC"
+        raise ValueError(f"无效 ctx_type: {ctx_type}，应为 SEC 或 FUTURE")
+    return "SEC"
+
+
+def create_sec_or_future_trade_context(market=None, security_firm=None, ctx_type="SEC", code=None, codes=None):
+    """按 ctx_type / 代码创建证券或期货交易上下文（与 get_accounts 的 ctx_type 一致）"""
+    resolved = normalize_trade_ctx_type(ctx_type=ctx_type, code=code, codes=codes)
+    if resolved == "FUTURE":
+        return create_future_trade_context(security_firm=security_firm)
+    return create_trade_context(market, security_firm=security_firm)
 
 
 # 加密货币交易对象仅支持 FUTUSECURITIES(香港)、FUTUINC(美国)、FUTUSG(新加坡)
@@ -553,6 +652,120 @@ def parse_subtypes(subtype_names):
             raise ValueError(f"不支持的订阅类型: {name}")
         subtypes.append(getattr(SubType, key))
     return subtypes
+
+
+# ============================================================
+# 事件合约 (Event Contract) 辅助
+# ============================================================
+
+# 事件合约 K 线仅支持这 4 种 KLType
+EC_KLTYPE_CHOICES = ["K_1M", "K_5M", "K_60M", "K_DAY"]
+
+
+def _ec_support_error():
+    """返回当前 SDK 不支持事件合约的错误提示"""
+    try:
+        import futu as _futu
+        cur = getattr(_futu, "__version__", "unknown")
+    except ImportError:
+        cur = "unknown"
+    return (
+        f"当前 futu-api {cur} 不支持事件合约 (Event Contract)，"
+        "请运行: pip install --upgrade futu-api 升级至支持版本后重试"
+    )
+
+
+def assert_event_contract_support(ctx=None, output_json=None):
+    """检测当前 SDK 是否支持事件合约接口，不支持则打印提示并退出。
+
+    :param ctx: 已创建的行情上下文（用于检测方法是否存在），None 时检测枚举导入
+    :param output_json: 是否以 JSON 格式输出错误（None 时按 --json 参数判断）
+    """
+    supported = (ECStatus is not None) and (ComboLeg is not None)
+    if ctx is not None:
+        supported = supported and hasattr(ctx, "get_event_contract_category")
+    if supported:
+        return
+    if output_json is None:
+        try:
+            output_json = "--json" in sys.argv
+        except Exception:
+            output_json = False
+    msg = _ec_support_error()
+    if output_json:
+        print(json.dumps({"error": msg}, ensure_ascii=False))
+    else:
+        print(f"错误: {msg}")
+    sys.exit(1)
+
+
+def parse_pred_side(name):
+    """解析事件合约方向字符串 -> PredSide 枚举（YES/NO），不支持时抛 ValueError"""
+    assert_event_contract_support()
+    if name is None or str(name).strip() == "":
+        return None
+    key = str(name).strip().upper()
+    if not hasattr(PredSide, key):
+        raise ValueError(f"无效的合约方向: {name}，必须为 YES 或 NO")
+    return getattr(PredSide, key)
+
+
+def parse_ec_kline_source(name):
+    """解析事件合约 K 线来源字符串 -> ECKlineSource 枚举（ORDER_BOOK_YES），None 返回 None"""
+    assert_event_contract_support()
+    if name is None or str(name).strip() == "":
+        return None
+    key = str(name).strip().upper()
+    if not hasattr(ECKlineSource, key):
+        raise ValueError(f"无效的 K 线来源: {name}，可选: ORDER_BOOK_YES")
+    return getattr(ECKlineSource, key)
+
+
+def parse_ec_status(name):
+    """解析事件合约状态字符串 -> ECStatus 枚举（如 EVENT_ACTIVE），None 返回 None"""
+    assert_event_contract_support()
+    if name is None or str(name).strip() == "":
+        return None
+    key = str(name).strip().upper()
+    if not hasattr(ECStatus, key):
+        raise ValueError(f"无效的事件状态: {name}，可选: " + ECStatus.get_all_keys())
+    return getattr(ECStatus, key)
+
+
+def ensure_event_contract_subscribed(ctx, code, sub_type, output_json=None,
+                                     kline_source_list=None, action="订阅事件合约"):
+    """订阅事件合约指定类型，已订阅则静默跳过，其他失败打印错误并退出。
+
+    供 get_event_contract_order_book/kline/ticker
+    查询前自动订阅复用，避免重复的订阅逻辑块。
+
+    :param ctx: 已创建的行情上下文
+    :param code: 事件合约代码
+    :param sub_type: SubType 枚举（ORDER_BOOK/TICKER/K_*）
+    :param output_json: 是否以 JSON 格式输出错误（None 时按 --json 参数判断）
+    :param kline_source_list: K 线来源列表（ECKlineSource 枚举），订阅 K 线类型时透传，
+                              与查询时的 kline_source 保持一致；非 K 线类型不传
+    :param action: 错误提示中的操作名
+    """
+    if output_json is None:
+        try:
+            output_json = "--json" in sys.argv
+        except Exception:
+            output_json = False
+    kwargs = {}
+    if kline_source_list:
+        kwargs["kline_source_list"] = kline_source_list
+    ret, err = ctx.subscribe_event_contract([code], [sub_type], **kwargs)
+    if ret == RET_OK:
+        return
+    # 已订阅不致命；真正的权限/账户问题由后续 check_ret 兜底
+    if "already" in str(err).lower() or "已订阅" in str(err):
+        return
+    if output_json:
+        print(json.dumps({"error": f"{action}失败: {err}"}, ensure_ascii=False))
+    else:
+        print(f"{action}失败: {err}")
+    sys.exit(1)
 
 
 # ============================================================

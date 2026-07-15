@@ -1,6 +1,6 @@
 ---
 name: futuapi
-description: 富途 OpenAPI 交易与行情助手。查询股票行情、K线、报价、快照、买卖盘、逐笔成交、分时数据；搜索行情标的、搜索资讯；解析期权简写代码、查询期权链、期权到期日；执行买入/卖出/下单/撤单/改单；查询持仓/资金/账户/订单；订阅实时推送；支持加密货币 (crypto / BTC / ETH / 比特币 / 以太坊) 行情与交易；指标列表与计算（MA/MACD/RSI/KDJ等）；API 接口速查。用户提到行情、报价、价格、K线、快照、买卖盘、摆盘、成交、分时、搜索、搜股票、搜资讯、新闻、公告、买入、卖出、下单、撤单、交易、持仓、资金、账户、订单、委托、futu、API、选股、板块、期权、期权链、期权代码、行权价、到期日、Call、Put、看涨、看跌、认购、认沽、加密货币、数字货币、crypto、BTC、ETH、比特币、以太坊、币对、财报、业绩、财务报表、利润表、资产负债表、现金流、主营构成、营收拆分、分析师评级、目标价、晨星报告、估值、PE、PB、PS、板块估值、指数估值、成分股估值、分红、派息、股息、回购、拆股、合股、拆合股、股东、持股统计、股东分布、持股变动、增持、减持、新进、清仓、持股明细、机构持股、机构持仓、内部人持股、内部人交易、公司概况、公司详情、公司介绍、高管信息、高管背景、经营效率、员工数、人均营收、人均利润、十大经纪商、买卖经纪商、卖空、每日卖空、空头持仓、期权波动率、隐含波动率、IV、期权行权概率、指标、指标列表、指标计算、MA、MACD、RSI、KDJ、BOLL、技术指标、indicator 时自动使用。
+description: 富途 OpenAPI 交易与行情助手。查询股票行情、K线、报价、快照、买卖盘、逐笔成交、分时数据；搜索行情标的、搜索资讯；解析期权简写代码、查询期权链、期权到期日；执行买入/卖出/下单/撤单/改单；查询持仓/资金/账户/订单；订阅实时推送；支持加密货币 (crypto / BTC / ETH / 比特币 / 以太坊) 行情与交易；支持事件合约（Event Contract / EC. / 预测合约 / YES NO 合约 / 赛事预测 / 选举 / Kalshi；下单参数 amount / pred_side / quote_id；组合询价 request_combo_quotes / get_valid_combo_list / Combo 询价）；指标列表与计算（MA/MACD/RSI/KDJ等）；API 接口速查。用户提到行情、报价、价格、K线、快照、买卖盘、摆盘、成交、分时、搜索、搜股票、搜资讯、新闻、公告、买入、卖出、下单、撤单、交易、持仓、资金、账户、订单、委托、futu、API、选股、板块、期权、期权链、期权代码、行权价、到期日、Call、Put、看涨、看跌、认购、认沽、加密货币、数字货币、crypto、BTC、ETH、比特币、以太坊、币对、财报、业绩、财务报表、利润表、资产负债表、现金流、主营构成、营收拆分、分析师评级、目标价、晨星报告、估值、PE、PB、PS、板块估值、指数估值、成分股估值、分红、派息、股息、回购、拆股、合股、拆合股、股东、持股统计、股东分布、持股变动、增持、减持、新进、清仓、持股明细、机构持股、机构持仓、内部人持股、内部人交易、公司概况、公司详情、公司介绍、高管信息、高管背景、经营效率、员工数、人均营收、人均利润、十大经纪商、买卖经纪商、卖空、每日卖空、空头持仓、期权波动率、隐含波动率、IV、期权行权概率、事件合约、预测合约、prediction、event contract、EC、EC.、pred_side、amount、quote_id、组合询价、Combo 询价、request_combo_quotes、get_valid_combo_list、预测市场、YES NO 合约、赛事预测、赛事合约、选举合约、Kalshi、指标、指标列表、指标计算、MA、MACD、RSI、KDJ、BOLL、技术指标、indicator 时自动使用。
 allowed-tools: Bash Read Write Edit
 metadata:
   version: 0.1.1
@@ -375,7 +375,20 @@ ret, data = trd_ctx.order_list_query(
     │   ├── get_fed_watch_dot_plot.py                      # FedWatch 点阵图
     │   ├── get_heat_map_data.py                           # 热力图数据
     │   ├── get_rise_fall_distribution.py                  # 涨跌分布
-    │   └── get_rating_change.py                           # 评级变动
+    │   ├── get_rating_change.py                           # 评级变动
+    │   ├── get_event_contract_category.py                 # 事件合约分类列表
+    │   ├── filter_competition.py                          # 事件合约赛事筛选
+    │   ├── get_event_contract_series_list.py              # 事件合约 Series 列表
+    │   ├── get_event_contract_event_list.py               # 事件合约 Event 列表
+    │   ├── get_event_contract.py                          # 事件合约 Contract 列表
+    │   ├── get_event_contract_milestone_list.py           # 事件合约里程碑列表
+    │   ├── get_valid_combo_list.py                        # 可 Combo 事件列表（含 mvc）
+    │   ├── request_combo_quotes.py                        # Combo 询价
+    │   ├── get_event_contract_snapshot.py                 # 事件合约快照
+    │   ├── get_event_contract_order_book.py               # 事件合约摆盘（需订阅）
+    │   ├── get_event_contract_kline.py                    # 事件合约 K 线（需订阅）
+    │   ├── get_event_contract_ticker.py                   # 事件合约逐笔（需订阅）
+    │   └── request_history_event_contract_kline.py        # 事件合约历史 K 线（无需订阅）
     ├── trade/                        # 交易脚本
     │   ├── get_accounts.py           # 账户列表
     │   ├── get_portfolio.py          # 持仓与资金
@@ -411,7 +424,13 @@ ret, data = trd_ctx.order_list_query(
         ├── push_broker.py             # 接收经纪队列推送
         ├── push_orderbook.py          # 接收买卖盘推送
         ├── push_ticker.py             # 接收逐笔成交推送
-        └── push_rt_data.py            # 接收分时数据推送
+        ├── push_rt_data.py            # 接收分时数据推送
+        ├── subscribe_event_contract.py    # 订阅事件合约
+        ├── unsubscribe_event_contract.py  # 取消订阅事件合约
+        ├── unsubscribe_all_event_contract.py  # 取消所有事件合约订阅
+        ├── push_event_contract_orderbook.py   # 接收事件合约摆盘推送
+        ├── push_event_contract_kline.py       # 接收事件合约 K 线推送
+        └── push_event_contract_ticker.py      # 接收事件合约逐笔推送
 ```
 
 ### 脚本路径查找规则
@@ -852,6 +871,126 @@ python skills/futuapi/scripts/quote/get_option_strategy_analysis.py '[{"code":"H
 ```
 - 返回 **`bid1`/`ask1`（组合摆盘价）**、最大盈亏、盈亏平衡点、盈利概率、Delta、Theta 等
 - **组合期权摆盘价与 `place_combo_order` 的 `--price` 应优先取自本接口**，勿用单腿快照自行计算
+
+## 事件合约命令（Event Contract）
+
+事件合约是针对未来事件（选举、经济数据、赛事等）的 YES/NO 二元预测合约，合约代码格式 `EC.xxx`（如 `EC.KXODIMATCH-26JUL140600INDENG-IND`）。完整调用链：
+
+```
+分类(get_event_contract_category) → 赛事筛选(filter_competition) → Series → Event → Contract → 快照/盘口/K线/逐笔
+```
+
+**硬约束（查询前需订阅）**：`get_event_contract_order_book` / `get_event_contract_kline` / `get_event_contract_ticker` 查询前**必须先订阅对应类型**（`SubType.ORDER_BOOK` / `K_DAY` 等 / `TICKER`），否则返回错误。这些脚本默认自动订阅（`--no-auto-subscribe` 跳过）。`request_history_event_contract_kline`（历史 K 线）与 `get_event_contract_snapshot` 均无需订阅。
+
+**K 线类型限制**：事件合约 K 线仅支持 `K_1M`/`K_5M`/`K_60M`/`K_DAY`，其余报错。
+
+**分页**：`event_list` / `get_event_contract` / `milestone_list` / `valid_combo_list` 默认只取第一页，需续拉时将上次返回的 `next_page` 作为 `--next-page` 传入。
+
+### 获取事件合约分类
+当用户问"事件合约分类"、"事件合约有哪些分类"、"预测合约分类"时：
+```bash
+python skills/futuapi/scripts/quote/get_event_contract_category.py [--category Sports] [--json]
+```
+
+### 赛事筛选
+当用户问"赛事筛选"、"可用赛事"、"玩法全集"时：
+```bash
+python skills/futuapi/scripts/quote/filter_competition.py --category Sports [--tag Baseball] [--json]
+```
+- `competition` 列表中的赛事名称可作为 `get_event_contract_milestone_list` 的 `--competition` 入参
+
+### 获取事件合约 Series 列表
+当用户问"事件合约 Series"、"series 列表"时：
+```bash
+python skills/futuapi/scripts/quote/get_event_contract_series_list.py --category Sports [--tag Football] [--json]
+```
+
+### 获取事件合约 Event 列表
+当用户问"事件合约 Event"、"event 列表"时：
+```bash
+python skills/futuapi/scripts/quote/get_event_contract_event_list.py EC.KXUFCVICROUND.SERIES [--count 20] [--status EVENT_ACTIVE] [--next-page KEY] [--json]
+```
+
+### 获取事件合约 Contract 列表
+当用户问"事件合约 Contract"、"合约列表"、"EC 合约代码"时：
+```bash
+python skills/futuapi/scripts/quote/get_event_contract.py EC.KXUFCVICROUND-26JUL11SAIPIM.EVENT [--count 20] [--next-page KEY] [--json]
+```
+- 返回的 `contract_code`（`EC.xxx`）可作为快照/盘口/K线/逐笔等接口的 `code`
+
+### 获取事件合约里程碑列表
+当用户问"事件合约里程碑"、"赛事时间节点"时：
+```bash
+python skills/futuapi/scripts/quote/get_event_contract_milestone_list.py [--category Sports] [--competition "FIFA World Cup"] [--related-event EC.xxx] [--count 20] [--json]
+```
+
+### 获取可 Combo 事件列表
+当用户问"可 Combo 事件"、"组合事件"、"可组合合约"时：
+```bash
+python skills/futuapi/scripts/quote/get_valid_combo_list.py [--category Sports] [--count 20] [--json]
+```
+- 返回的 `mvc` 必须透传给 `request_combo_quotes` 进行 Combo 询价
+
+### Combo 询价
+当用户问"Combo 询价"、"组合报价"、"事件合约组合价"时：
+```bash
+python skills/futuapi/scripts/quote/request_combo_quotes.py '[{"code":"EC.xxx-FRA","trd_side":"BUY","qty_ratio":1,"pred_side":"YES"},{"code":"EC.xxx-ENG","trd_side":"BUY","qty_ratio":1,"pred_side":"YES"}]' --mvc KALSHI.KXMVECROSSCATEGORY-R [--json]
+```
+- 每条腿字段：`code`（必填）/ `trd_side`（BUY/SELL/SELL_SHORT/BUY_BACK，必填）/ `qty_ratio`（必填）/ `pred_side`（YES/NO，必填）
+- 至少 2 条腿，可来自不同 event；`mvc` 从 `get_valid_combo_list` 透传
+- `quote_id` 有时效性，下单需尽快用 `place_combo_order.py` 传 `quote_id`
+
+### 获取事件合约快照
+当用户问"事件合约快照"、"EC 行情"、"YES NO 报价"时（无需订阅）：
+```bash
+python skills/futuapi/scripts/quote/get_event_contract_snapshot.py EC.KXODIMATCH-26JUL140600INDENG-IND [--json]
+```
+- 快照只返回买卖一档，多档深度盘口用 `get_event_contract_order_book`
+
+### 获取事件合约摆盘
+当用户问"事件合约摆盘"、"EC 盘口"、"YES NO 盘口"时（需订阅 ORDER_BOOK，脚本自动订阅）：
+```bash
+python skills/futuapi/scripts/quote/get_event_contract_order_book.py EC.KXODIMATCH-26JUL140600INDENG-IND [--num 5] [--json]
+```
+
+### 获取事件合约 K 线
+当用户问"事件合约 K 线"、"EC K 线"时（需订阅对应 K 线类型，脚本自动订阅）：
+```bash
+python skills/futuapi/scripts/quote/get_event_contract_kline.py EC.KXODIMATCH-26JUL140600INDENG-IND --ktype K_DAY --pre-side YES [--kline-source ORDER_BOOK_YES] [--max-count 10] [--json]
+```
+
+### 获取事件合约逐笔
+当用户问"事件合约逐笔"、"EC 成交"时（需订阅 TICKER，脚本自动订阅）：
+```bash
+python skills/futuapi/scripts/quote/get_event_contract_ticker.py EC.KXODIMATCH-26JUL140600INDENG-IND [--count 30] [--json]
+```
+
+### 拉取事件合约历史 K 线
+当用户问"事件合约历史 K 线"、"EC 历史 K 线"时（无需订阅，脚本直接拉取历史 K 线）：
+```bash
+python skills/futuapi/scripts/quote/request_history_event_contract_kline.py EC.KXNFLAFCCHAMP-27-CIN --start 2026-07-05 --end 2026-07-09 --pre-side YES --ktype K_DAY [--max-count 10] [--json]
+```
+
+### 订阅事件合约
+当用户问"订阅事件合约"、"订阅 EC"时：
+```bash
+python skills/futuapi/scripts/subscribe/subscribe_event_contract.py EC.KXODIMATCH-26JUL140600INDENG-IND --types ORDER_BOOK TICKER K_DAY [--kline-source ORDER_BOOK_YES] [--json]
+```
+- 接收推送需先用对应推送脚本（`push_event_contract_*`）`set_handler`，或脚本中自行注册 `EventContract*HandlerBase`
+
+### 取消订阅事件合约
+```bash
+python skills/futuapi/scripts/subscribe/unsubscribe_event_contract.py EC.xxx --types TICKER [--json]
+python skills/futuapi/scripts/subscribe/unsubscribe_all_event_contract.py [--json]
+```
+
+### 接收事件合约推送
+当用户问"事件合约推送"、"EC 实时推送"时：
+```bash
+python skills/futuapi/scripts/subscribe/push_event_contract_orderbook.py EC.xxx --duration 60 [--json]
+python skills/futuapi/scripts/subscribe/push_event_contract_kline.py EC.xxx --ktype K_DAY [--duration 300] [--json]
+python skills/futuapi/scripts/subscribe/push_event_contract_ticker.py EC.xxx --duration 60 [--json]
+```
 
 ## F10 基本面 / 研究 / 公司行动 / 股东 / 简况
 
@@ -1958,13 +2097,13 @@ python skills/futuapi/scripts/quote/get_rating_change.py --market US [--change-t
 ```bash
 python skills/futuapi/scripts/trade/get_accounts.py [--json]
 ```
-脚本使用 `FUTUSECURITIES` 券商标识，按 `acc_id` 去重合并，确保不同券商下的实盘账户都能被获取到。
+脚本会遍历各 `SecurityFirm`，分别通过 **证券**（`OpenSecTradeContext`）与 **期货**（`OpenFutureTradeContext`）拉账户，按 `acc_id` 去重合并。返回字段 `ctx_type` 为 `SEC` 或 `FUTURE`。
 
 > **提示**：实盘账户的 `uni_card_num` 后四位等于 app/桌面端上显示的账号数字。展示实盘账户信息时应**优先显示 `uni_card_num`**（而非 `acc_id`），因为用户在 app/桌面端看到的就是这个编号，更容易关联识别。模拟账户无需关注此字段。
 
 > **账号拉取问题**：`create_trade_context()` 默认使用 `filter_trdmarket=TrdMarket.NONE`（不过滤市场），但如果手动创建 `OpenSecTradeContext` 时传了具体市场（如 `TrdMarket.US`、`TrdMarket.HK`），可能导致部分账号被过滤。将 `filter_trdmarket` 改为 `TrdMarket.NONE` 重新拉取即可。
 
-JSON 输出包含 `trdmarket_auth` 字段，表示该账户拥有交易权限的市场列表（如 `["HK", "US", "HKCC", "SG", "MY", "JP"]`）；`acc_role` 字段表示账户角色（如 `MASTER` 为主账户）。下单时应选择 `trdmarket_auth` 包含目标市场且 `acc_role` 不是 `MASTER` 的账户。
+JSON 输出包含 `trdmarket_auth` 字段，表示该账户拥有交易权限的市场列表（如 `["HK", "US", "HKCC", "SG", "MY", "JP"]`，期货/事件合约还可能含 `FUTURES`、`PREDICTION` 等）；`acc_role` 字段表示账户角色（如 `MASTER` 为主账户）。下单时应选择 `trdmarket_auth` 包含目标市场且 `acc_role` 不是 `MASTER` 的账户；**事件合约**选 `ctx_type=FUTURE` 且 `trdmarket_auth` 含 `PREDICTION` 的实盘账户。
 
 ### 新加坡 / 马来西亚 / 日本市场交易（SG / MY / JP）
 
@@ -1983,31 +2122,50 @@ JSON 输出包含 `trdmarket_auth` 字段，表示该账户拥有交易权限的
 ### 获取持仓与资金
 当用户问 "持仓"、"资金"、"我的股票" 时：
 ```bash
-python skills/futuapi/scripts/trade/get_portfolio.py [--market HK] [--trd-env SIMULATE] [--acc-id 12345] [--security-firm FUTUSECURITIES] [--json]
+python skills/futuapi/scripts/trade/get_portfolio.py [--market HK] [--trd-env SIMULATE] [--acc-id 12345] [--ctx-type SEC|FUTURE] [--security-firm FUTUSECURITIES] [--json]
 ```
 - `--market`: US, HK, HKCC, CN, SG, MY, JP
 - `--trd-env`: REAL, SIMULATE（默认 SIMULATE）
+- `--ctx-type`: `SEC`（证券，默认）或 `FUTURE`（期货/事件合约账户，与 `get_accounts` 的 `ctx_type` 一致）
 - `--show-option-strategy-view`: 按期权策略视角查询持仓（透传 `position_list_query(show_option_strategy_view=True)`）
 - `position_list_query` 返回新增字段：`combo_id`、`strategy_type`、`position_type`、`acc_id`、`jp_acc_type`
+
+> 查询事件合约/期货账户持仓、订单、成交、撤改单、现金流水等时，需传 `--ctx-type FUTURE`（与 `get_accounts` 返回的 `ctx_type` 对齐）。带 `EC.` 代码的脚本（如 `get_max_trd_qtys`、`get_history_orders --code`）会自动切期货上下文。
 
 > 持仓与资金的完整字段映射（与 APP 对齐）参见 `docs/FIELD_MAPPING.md`。**关键规则**：持仓盈亏用 `unrealized_pl` / `pl_ratio_avg_cost`（均价口径），禁止用 `cost_price` / `pl_val`（摊薄口径）。多币种汇总必须用 `accinfo_query(currency=目标币种)` 获取账户级数据。
 
 ### 下单
-当用户问 "买入"、"卖出"、"下单" 时：
+当用户问 "买入"、"卖出"、"下单"、"事件合约下单"、"预测合约" 时：
 ```bash
-python skills/futuapi/scripts/trade/place_order.py --code US.AAPL --side BUY --quantity 10 --price 150.0 [--order-type NORMAL] [--trd-env SIMULATE] [--confirmed] [--security-firm FUTUSECURITIES] [--json]
+# 股票 / 期权等
+python skills/futuapi/scripts/trade/place_order.py --code US.AAPL --side BUY --quantity 10 --price 150.0 [--order-type NORMAL] [--trd-env SIMULATE] [--time-in-force DAY] [--expire-time 2026-12-31] [--confirmed] [--security-firm FUTUSECURITIES] [--json]
+
+# 事件合约（代码 EC.xxx，必须用实盘 + pred_side；amount 与 quantity 二选一，amount 优先）
+python skills/futuapi/scripts/trade/place_order.py --code EC.xxx --side BUY --amount 100 --price 0.55 --pred-side YES --trd-env REAL --acc-id {acc_id} --confirmed [--security-firm FUTUSECURITIES] [--json]
 ```
-- `--code`: 股票代码（必填），脚本自动从前缀推断市场，无需指定 `--market`
+- `--code`: 标的代码（必填）。股票等带市场前缀；**事件合约为 `EC.xxx`（无 US./HK. 前缀）**，脚本自动走 `OpenFutureTradeContext`
 - `--side`: BUY/SELL（必填）
-- `--quantity`: 数量（必填）
-- `--price`: 价格（限价单必填，市价单不需要）
+- `--quantity`: 数量；与 `--amount` 二选一。同时传时 **amount 优先**，qty 置 0
+- `--amount`: 订单金额，**仅事件合约**；传 amount 时向 SDK 传 `qty=0`
+- `--pred-side`: YES/NO，**事件合约必填**（无论用 quantity 还是 amount）
+- `--price`: 价格（限价单必填，市价单不需要）；事件合约通常为 0.01~0.99
 - `--order-type`: NORMAL(限价单) / MARKET(市价单)
+- `--time-in-force`: 默认 DAY；传 `GTD` 时必须加 `--expire-time yyyy-MM-dd`
+- `--expire-time`: 仅 `time_in_force=GTD` 时有效
 - `--session`: 美股交易时段，可选 NONE/RTH/ETH/OVERNIGHT/ALL（仅对美股生效）
 - `--confirmed`: 实盘下单必须传入此参数（代码硬约束，不传则返回订单摘要后退出）
-- **下单前务必与用户确认代码、方向、数量、价格**
+- **下单前务必与用户确认代码、方向、数量/金额、价格（及事件合约 pred_side）**
 
-### 组合下单（期权组合/策略）
-当用户问 "组合下单"、"期权组合下单"、"策略单下单" 时：
+#### 事件合约硬性约束
+- 仅 `--trd-env REAL`；传 `SIMULATE` 会直接报错退出（模拟不支持事件合约）
+- 必须使用期货账户上下文；账户 `trdmarket_auth` 需包含 **`PREDICTION`**，否则提示不支持交易事件合约
+- 用 `get_accounts.py --json` 选户：`ctx_type` 为 `FUTURE`、`trd_env` 为 `REAL`、`acc_role` 非 `MASTER`、且 `trdmarket_auth` 含 `PREDICTION`
+- 普通期货仍按「期货交易命令」直接生成 `OpenFutureTradeContext` 代码；**事件合约可通过本脚本下单**
+
+### 组合下单（期权组合/策略 / 事件合约组合）
+当用户问 "组合下单"、"期权组合下单"、"策略单下单"、"事件合约组合下单" 时：
+
+**组合期权：**
 ```bash
 python skills/futuapi/scripts/trade/place_combo_order.py \
   '[{"code":"US.AAPL260529C302500","trd_side":"BUY","qty_ratio":1},{"code":"US.AAPL","trd_side":"SELL","qty_ratio":100}]' \
@@ -2015,9 +2173,43 @@ python skills/futuapi/scripts/trade/place_combo_order.py \
 ```
 - 组合腿 JSON 字段：`code`、`trd_side`（BUY/SELL）、`qty_ratio`、`position_id`（可选，仅日本券商平仓场景）
 - **`--price` 定价**：优先取自同组合 `get_option_strategy_analysis.py` 返回的 `bid1`/`ask1`（买入参考 ask1，卖出参考 bid1）；**禁止**对各腿 `get_snapshot.py` 后手动推算组合价
+- `--quote-id`：组合期权**忽略**（即使传入也静默不传给 SDK）
 - `--price` 与 `--quantity` 必填；每条腿实际数量 = `quantity * qty_ratio`
 - `--time-in-force` 默认 `DAY`；当传 `GTD` 时可加 `--expire-time yyyy-MM-dd`
 - `--confirmed`：实盘组合下单必须传入（不传仅预览）
+
+**事件合约组合（全部腿必须为 `EC.`）：**
+```bash
+# 1) Agent 直接生成 Python：get_valid_combo_list → 取 mvc
+# 2) Agent 直接生成 Python：request_combo_quotes(combo_leg_list, mvc) → quote_id + bid/ask
+# 3) 再调用本脚本下单（价与 quote_id 均来自步骤 2）
+python skills/futuapi/scripts/trade/place_combo_order.py \
+  '[{"code":"EC.xxx","trd_side":"BUY","qty_ratio":1,"pred_side":"YES"},{"code":"EC.yyy","trd_side":"BUY","qty_ratio":1,"pred_side":"YES"}]' \
+  --price {ask_or_bid} --quantity 1 --quote-id {quote_id} --trd-env REAL --acc-id {acc_id} --confirmed [--security-firm FUTUINC]
+```
+
+#### 事件合约组合硬性流程与约束
+1. **腿合法性**：全部腿 `code` 必须以 `EC.` 开头；若 EC. 与非 EC. 混用 → 脚本报「组合不合法」
+2. **方向一致**：全部腿 `trd_side` 必须相同；不一致则报错。用**第一条腿**方向定价：`BUY` → `ask_price`，`SELL` → `bid_price`
+3. **每条腿必填** `pred_side`：`YES` / `NO`
+4. **询价链（暂无独立 skill，由 Agent 生成 Python 执行）**：
+   - `OpenQuoteContext.get_valid_combo_list()` → 取得 **`mvc`（必填）** 及可选 combo 列表
+   - `OpenQuoteContext.request_combo_quotes(combo_leg_list, mvc)` → **`quote_id`**、`bid_price`、`ask_price`；若返回 `should_retry=True` 可短间隔重试
+   - **`--price` 必须**取自该次询价的 ask/bid（禁止用别处价格）；**`--quote-id` 必填**
+5. **交易上下文**：脚本自动用 `OpenFutureTradeContext`；仅 `--trd-env REAL`；账户 `trdmarket_auth` 须含 **`PREDICTION`**；模拟直接报错
+6. 实盘执行前与用户确认腿、方向、pred_side、数量、价格与 quote_id
+
+询价参考代码（Agent 可直接改写执行）：
+```python
+from futu import *
+import time
+qot_ctx = OpenQuoteContext(security_firm=SecurityFirm.FUTUINC)
+ret, combo_df, mvc, _ = qot_ctx.get_valid_combo_list()  # mvc 必填下游
+# 构造 ComboLeg：code/trd_side/qty_ratio/pred_side，且全部腿 trd_side 一致
+ret, quote = qot_ctx.request_combo_quotes(combo_leg_list, mvc)
+# quote['quote_id'], quote['ask_price'], quote['bid_price']；注意 should_retry
+qot_ctx.close()
+```
 - **实盘执行前务必与用户确认组合腿、方向、数量与价格**
 
 ### 查询组合可交易信息
@@ -2438,7 +2630,7 @@ pip install --upgrade "futu-api>=10.5.6508"
 8. **实盘下单两步执行（代码硬约束）**：`place_order.py` 与 `place_combo_order.py` 在实盘环境下强制要求 `--confirmed` 参数。第一次调用不带 `--confirmed` 会返回订单摘要并退出（exit code 2），确认无误后第二次带 `--confirmed` 才真正下单。同时仍应先用 AskUserQuestion 向用户确认订单详情。如果 API 返回解锁错误，提示用户在 OpenD GUI 界面手动解锁交易密码。**例外**：当用户要求运行其自己编写的策略脚本时，无需每次下单前二次确认，因为策略脚本的下单逻辑由用户自行控制
 9. 所有脚本支持 `--json` 参数便于解析
 10. 对于不清楚的接口，先在本技能的 API 速查中查找
-11. **期货交易必须使用 `OpenFutureTradeContext`**：现有交易脚本使用 `OpenSecTradeContext`，不适用于期货。期货下单、查询持仓、撤单等操作需直接生成 Python 代码执行，参照"期货交易命令"章节
+11. **期货交易必须使用 `OpenFutureTradeContext`**：普通期货下单仍建议按「期货交易命令」直接生成代码。**已支持脚本路径**：事件合约（`EC.`）可用 `place_order.py` / `place_combo_order.py`；查询期货/EC 账户持仓、订单、成交、撤改单等传 `--ctx-type FUTURE`（或代码为 `EC.` 时自动切换）
 12. **回测使用纯后台模式**：当用户要求回测或运行回测脚本时，不使用任何 GUI 组件，使用纯后台回测模式，图表保存为文件而非弹窗显示
 13. **调用接口前检查限制** — 详见上方「接口限制」章节
 14. **组合期权摆盘价（硬约束）**：多腿/策略组合的 bid/ask 与组合下单 `--price` **必须**用 `get_option_strategy_analysis.py` 的 `bid1`/`ask1`；**禁止**对各腿 `get_snapshot.py` 后手动加减买卖价

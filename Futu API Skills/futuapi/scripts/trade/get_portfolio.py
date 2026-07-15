@@ -29,7 +29,9 @@ import sys
 import os as _os
 sys.path.insert(0, _os.path.normpath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..")))
 from common import (
-    create_trade_context,
+    create_sec_or_future_trade_context,
+    normalize_trade_ctx_type,
+    TRADE_CTX_TYPE_CHOICES,
     parse_trd_env,
     parse_market,
     TRD_MARKET_CLI_CHOICES,
@@ -47,13 +49,16 @@ from common import (
 
 
 def get_portfolio(acc_id=None, market=None, trd_env=None, currency=None, security_firm=None,
-                  show_option_strategy_view=False, output_json=False):
+                  ctx_type="SEC", show_option_strategy_view=False, output_json=False):
     acc_id = acc_id or get_default_acc_id()
     trd_env = parse_trd_env(trd_env) if trd_env else get_default_trd_env()
+    ctx_type = normalize_trade_ctx_type(ctx_type)
 
     ctx = None
     try:
-        ctx = create_trade_context(market, security_firm=parse_security_firm(security_firm))
+        ctx = create_sec_or_future_trade_context(
+            market, security_firm=parse_security_firm(security_firm), ctx_type=ctx_type
+        )
         # 查询资金（refresh_cache=True 避免返回过时缓存数据，尤其模拟盘）
         query_kwargs = dict(trd_env=trd_env, acc_id=acc_id, refresh_cache=True)
         if currency:
@@ -180,11 +185,14 @@ if __name__ == "__main__":
     parser.add_argument("--security-firm",
                         choices=["FUTUSECURITIES", "FUTUINC", "FUTUSG", "FUTUAU", "FUTUCA", "FUTUJP", "FUTUMY"],
                         default=None, help="券商标识")
+    parser.add_argument("--ctx-type", choices=list(TRADE_CTX_TYPE_CHOICES), default="SEC",
+                        help="交易上下文：SEC=证券，FUTURE=期货/事件合约（与 get_accounts 的 ctx_type 一致）")
     parser.add_argument("--show-option-strategy-view", action="store_true",
                         help="按期权策略维度展示持仓（position_list_query 的 show_option_strategy_view）")
     parser.add_argument("--json", action="store_true", dest="output_json", help="输出 JSON 格式")
     args = parser.parse_args()
     get_portfolio(acc_id=args.acc_id, market=args.market, trd_env=args.trd_env,
                   currency=args.currency, security_firm=args.security_firm,
+                  ctx_type=args.ctx_type,
                   show_option_strategy_view=args.show_option_strategy_view,
                   output_json=args.output_json)

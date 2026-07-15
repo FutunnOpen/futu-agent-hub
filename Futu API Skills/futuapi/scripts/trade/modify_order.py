@@ -22,7 +22,9 @@ import sys
 import os as _os
 sys.path.insert(0, _os.path.normpath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..")))
 from common import (
-    create_trade_context,
+    create_sec_or_future_trade_context,
+    normalize_trade_ctx_type,
+    TRADE_CTX_TYPE_CHOICES,
     parse_trd_env,
     TRD_MARKET_CLI_CHOICES,
     parse_security_firm,
@@ -52,9 +54,11 @@ def _audit_log(entry):
 
 
 def modify_order(order_id, price=None, quantity=None, adjust_limit=0,
-                 acc_id=None, market=None, trd_env=None, security_firm=None, output_json=False):
+                 acc_id=None, market=None, trd_env=None, security_firm=None,
+                 ctx_type="SEC", output_json=False):
     acc_id = acc_id or get_default_acc_id()
     trd_env = parse_trd_env(trd_env) if trd_env else get_default_trd_env()
+    ctx_type = normalize_trade_ctx_type(ctx_type)
 
     if price is None and quantity is None:
         msg = "至少需要指定 --price 或 --quantity 之一"
@@ -90,7 +94,9 @@ def modify_order(order_id, price=None, quantity=None, adjust_limit=0,
 
     ctx = None
     try:
-        ctx = create_trade_context(market, security_firm=parse_security_firm(security_firm))
+        ctx = create_sec_or_future_trade_context(
+            market, security_firm=parse_security_firm(security_firm), ctx_type=ctx_type
+        )
 
         # 自动补全：缺失的 price 或 quantity 从原订单获取
         if price is None or quantity is None:
@@ -173,8 +179,11 @@ if __name__ == "__main__":
     parser.add_argument("--security-firm",
                         choices=["FUTUSECURITIES", "FUTUINC", "FUTUSG", "FUTUAU", "FUTUCA", "FUTUJP", "FUTUMY"],
                         default=None, help="券商标识")
+    parser.add_argument("--ctx-type", choices=list(TRADE_CTX_TYPE_CHOICES), default="SEC",
+                        help="交易上下文：SEC=证券，FUTURE=期货/事件合约（与 get_accounts 的 ctx_type 一致）")
     parser.add_argument("--json", action="store_true", dest="output_json", help="输出 JSON 格式")
     args = parser.parse_args()
     modify_order(order_id=args.order_id, price=args.price, quantity=args.quantity,
                  adjust_limit=args.adjust_limit, acc_id=args.acc_id, market=args.market,
-                 trd_env=args.trd_env, security_firm=args.security_firm, output_json=args.output_json)
+                 trd_env=args.trd_env, security_firm=args.security_firm,
+                 ctx_type=args.ctx_type, output_json=args.output_json)
