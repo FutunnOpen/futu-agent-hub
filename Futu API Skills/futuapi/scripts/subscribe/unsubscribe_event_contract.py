@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-取消订阅事件合约
+取消订阅预测市场
 
-功能：按合约代码、数据类型、K 线来源三个维度精确取消订阅事件合约
+功能：按合约代码、数据类型、K 线来源三个维度精确取消订阅预测市场
 用法：python unsubscribe_event_contract.py EC.xxx --types TICKER [--kline-source ORDER_BOOK_YES] [--json]
 
 接口：OpenQuoteContext.unsubscribe_event_contract(code_list, subtype_list, kline_source_list=None)
@@ -41,7 +41,7 @@ def unsubscribe_event_contract(codes, subtype_names, kline_source_names=None, ou
 
         ret, err = ctx.unsubscribe_event_contract(
             codes, subtypes, kline_source_list=kline_sources)
-        check_ret(ret, err, ctx, "取消订阅事件合约")
+        check_ret(ret, err, ctx, "取消订阅预测市场")
 
         result = {
             "codes": codes,
@@ -54,7 +54,7 @@ def unsubscribe_event_contract(codes, subtype_names, kline_source_names=None, ou
             print(json.dumps(result, ensure_ascii=False))
         else:
             print("=" * 50)
-            print("取消订阅事件合约成功")
+            print("取消订阅预测市场成功")
             print("=" * 50)
             print(f"  合约: {', '.join(codes)}")
             print(f"  类型: {', '.join(result['subtypes'])}")
@@ -71,8 +71,8 @@ def unsubscribe_event_contract(codes, subtype_names, kline_source_names=None, ou
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="取消订阅事件合约")
-    parser.add_argument("codes", nargs="+", help="事件合约代码，如 EC.xxx")
+    parser = argparse.ArgumentParser(description="取消订阅预测市场")
+    parser.add_argument("codes", nargs="+", help="预测市场合约代码，如 EC.xxx")
     parser.add_argument("--types", nargs="+", required=True,
                         help="取消订阅的类型: ORDER_BOOK TICKER K_1M K_5M K_60M K_DAY")
     parser.add_argument("--kline-source", nargs="+", default=None,

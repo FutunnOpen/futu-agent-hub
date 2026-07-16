@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-拉取事件合约历史 K 线
+拉取预测市场历史 K 线
 
-功能：拉取事件合约历史 K 线，无需先下载历史数据，也无需订阅对应 K 线类型；自动处理分页
+功能：拉取预测市场历史 K 线，无需先下载历史数据，也无需订阅对应 K 线类型；自动处理分页
 用法：python request_history_event_contract_kline.py EC.KXNFLAFCCHAMP-27-CIN --start 2026-07-05 --end 2026-07-09 --pre-side YES --ktype K_DAY [--max-count 10] [--page-req-key KEY] [--json]
 
 接口：OpenQuoteContext.request_history_event_contract_kline(code, start=None, end=None,
@@ -65,7 +65,7 @@ def request_history_event_contract_kline(code, start=None, end=None, ktype="K_DA
         ret, data, next_page_req_key = ctx.request_history_event_contract_kline(
             code, start=start, end=end, pre_side=pre_side_enum, ktype=kl_type,
             kline_source=kline_source_enum, max_count=max_count, page_req_key=page_req_key)
-        check_ret(ret, data, ctx, "拉取事件合约历史 K 线")
+        check_ret(ret, data, ctx, "拉取预测市场历史 K 线")
 
         records = [] if is_empty(data) else df_to_records(data)
 
@@ -76,7 +76,7 @@ def request_history_event_contract_kline(code, start=None, end=None, ktype="K_DA
             }, ensure_ascii=False))
         else:
             print("=" * 70)
-            print(f"事件合约历史 K 线 - {code} ({ktype_key})")
+            print(f"预测市场历史 K 线 - {code} ({ktype_key})")
             print(f"区间: {start or '(默认)'} ~ {end or '(默认)'}")
             print("=" * 70)
             if records:
@@ -101,8 +101,8 @@ def request_history_event_contract_kline(code, start=None, end=None, ktype="K_DA
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="拉取事件合约历史 K 线（无需订阅）")
-    parser.add_argument("code", help="事件合约代码")
+    parser = argparse.ArgumentParser(description="拉取预测市场历史 K 线（无需订阅）")
+    parser.add_argument("code", help="预测市场合约代码")
     parser.add_argument("--start", default=None, help="开始时间，如 2025-06-20")
     parser.add_argument("--end", default=None, help="结束时间，如 2025-07-20")
     parser.add_argument("--ktype", choices=EC_KLTYPE_CHOICES, default="K_DAY",

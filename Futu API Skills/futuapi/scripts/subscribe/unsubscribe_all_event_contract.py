@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-取消当前连接所有事件合约订阅
+取消当前连接所有预测市场订阅
 
-功能：一键取消当前连接的所有事件合约订阅
+功能：一键取消当前连接的所有预测市场订阅
 用法：python unsubscribe_all_event_contract.py [--json]
 
 接口：OpenQuoteContext.unsubscribe_all_event_contract()
@@ -32,12 +32,12 @@ def unsubscribe_all_event_contract(output_json=False):
         assert_event_contract_support(ctx, output_json=output_json)
 
         ret, err = ctx.unsubscribe_all_event_contract()
-        check_ret(ret, err, ctx, "取消所有事件合约订阅")
+        check_ret(ret, err, ctx, "取消所有预测市场订阅")
 
         if output_json:
             print(json.dumps({"result": "ok"}, ensure_ascii=False))
         else:
-            print("已取消当前连接所有事件合约订阅")
+            print("已取消当前连接所有预测市场订阅")
 
     except Exception as e:
         if output_json:
@@ -50,7 +50,7 @@ def unsubscribe_all_event_contract(output_json=False):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="取消当前连接所有事件合约订阅")
+    parser = argparse.ArgumentParser(description="取消当前连接所有预测市场订阅")
     parser.add_argument("--json", action="store_true", dest="output_json", help="输出 JSON 格式")
     args = parser.parse_args()
     unsubscribe_all_event_contract(args.output_json)

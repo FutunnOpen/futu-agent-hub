@@ -57,10 +57,10 @@
 | `get_stock_filter` | 单次最多 200 个结果 |
 | `get_search_quote` | 每 30 秒最多 10 次 |
 | `get_search_news` | 每 30 秒最多 10 次 |
-| 事件合约盘口/实时K线/逐笔 | `get_event_contract_order_book`/`get_event_contract_kline`/`get_event_contract_ticker` 查询前必须先 `subscribe_event_contract` 订阅对应类型，否则报错 |
-| `request_history_event_contract_kline` | 事件合约历史 K 线，无需订阅，占用历史 K 线额度 |
+| 预测市场盘口/实时K线/逐笔 | `get_event_contract_order_book`/`get_event_contract_kline`/`get_event_contract_ticker` 查询前必须先 `subscribe_event_contract` 订阅对应类型，否则报错 |
+| `request_history_event_contract_kline` | 预测市场历史 K 线，无需订阅，占用历史 K 线额度 |
 | `get_event_contract_order_book` | num 需 > 0，默认 10 |
-| 事件合约 K 线 | 仅支持 K_1M/K_5M/K_60M/K_DAY，其余类型报错；`max_count` 上限 1000 |
+| 预测市场 K 线 | 仅支持 K_1M/K_5M/K_60M/K_DAY，其余类型报错；`max_count` 上限 1000 |
 | `get_event_contract_ticker` | count 最大 1000 |
 
 ## 加密货币接口限制

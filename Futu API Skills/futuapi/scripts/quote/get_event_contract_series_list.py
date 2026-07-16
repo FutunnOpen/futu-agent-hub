@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-获取事件合约 Series 列表
+获取预测市场 Series 列表
 
 功能：按 category/tag 获取 Series 列表（Series 是一组相关 Event 的集合），无需订阅
 用法：python get_event_contract_series_list.py --category Sports [--tag Football] [--json]
@@ -33,7 +33,7 @@ def get_event_contract_series_list(category=None, tag=None, output_json=False):
         assert_event_contract_support(ctx, output_json=output_json)
 
         ret, data = ctx.get_event_contract_series_list(category=category, tag=tag)
-        check_ret(ret, data, ctx, "获取事件合约 Series 列表")
+        check_ret(ret, data, ctx, "获取预测市场 Series 列表")
 
         if is_empty(data):
             if output_json:
@@ -46,7 +46,7 @@ def get_event_contract_series_list(category=None, tag=None, output_json=False):
             print(json.dumps({"data": df_to_records(data)}, ensure_ascii=False))
         else:
             print("=" * 70)
-            print(f"事件合约 Series 列表 - {category or '全部分类'} {('/' + tag) if tag else ''}")
+            print(f"预测市场 Series 列表 - {category or '全部分类'} {('/' + tag) if tag else ''}")
             print("=" * 70)
             cols = [c for c in ['series_code', 'series_name', 'category', 'tags', 'frequency']
                     if c in data.columns]
@@ -65,7 +65,7 @@ def get_event_contract_series_list(category=None, tag=None, output_json=False):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="获取事件合约 Series 列表（无需订阅）")
+    parser = argparse.ArgumentParser(description="获取预测市场 Series 列表（无需订阅）")
     parser.add_argument("--category", default=None, help="一级分类，如 Sports")
     parser.add_argument("--tag", default=None, help="二级分类，如 Football")
     parser.add_argument("--json", action="store_true", dest="output_json", help="输出 JSON 格式")

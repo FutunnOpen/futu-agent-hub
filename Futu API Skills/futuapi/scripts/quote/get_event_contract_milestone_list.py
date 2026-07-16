@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-获取事件合约里程碑列表
+获取预测市场里程碑列表
 
-功能：获取赛事类事件合约的重要时间节点（如某场比赛），支持分类/赛事/关联事件过滤与分页，无需订阅
+功能：获取赛事类预测市场的重要时间节点（如某场比赛），支持分类/赛事/关联事件过滤与分页，无需订阅
 用法：python get_event_contract_milestone_list.py [--category Sports] [--competition "FIFA World Cup"] [--related-event EC.xxx] [--count 20] [--next-page KEY] [--json]
 
 接口：OpenQuoteContext.get_event_contract_milestone_list(category=None, competition=None,
@@ -39,7 +39,7 @@ def get_event_contract_milestone_list(category=None, competition=None, related_e
         ret, data, page = ctx.get_event_contract_milestone_list(
             category=category, competition=competition, related_event=related_event,
             next_page=next_page, count=count)
-        check_ret(ret, data, ctx, "获取事件合约里程碑列表")
+        check_ret(ret, data, ctx, "获取预测市场里程碑列表")
 
         records = [] if is_empty(data) else df_to_records(data)
 
@@ -47,7 +47,7 @@ def get_event_contract_milestone_list(category=None, competition=None, related_e
             print(json.dumps({"data": records, "next_page": page or ""}, ensure_ascii=False))
         else:
             print("=" * 70)
-            print("事件合约里程碑列表")
+            print("预测市场里程碑列表")
             print("=" * 70)
             if records:
                 cols = [c for c in ['milestone_code', 'title', 'type', 'start_date',
@@ -71,7 +71,7 @@ def get_event_contract_milestone_list(category=None, competition=None, related_e
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="获取事件合约里程碑列表（无需订阅）")
+    parser = argparse.ArgumentParser(description="获取预测市场里程碑列表（无需订阅）")
     parser.add_argument("--category", default=None, help="一级分类，如 Sports")
     parser.add_argument("--competition", default=None, help="赛事名称（来自 filter_competition），如 FIFA World Cup")
     parser.add_argument("--related-event", default=None, help="关联事件代码，如 EC.xxx")

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-获取事件合约实时逐笔
+获取预测市场实时逐笔
 
-功能：获取事件合约实时逐笔成交数据（YES/NO 成交价、成交量、成交方向、逐笔序号），需先订阅 TICKER 类型
+功能：获取预测市场实时逐笔成交数据（YES/NO 成交价、成交量、成交方向、逐笔序号），需先订阅 TICKER 类型
 用法：python get_event_contract_ticker.py EC.KXODIMATCH-26JUL140600INDENG-IND [--count 30] [--no-auto-subscribe] [--json]
 
 接口：OpenQuoteContext.get_event_contract_ticker(code, count=30)
@@ -42,10 +42,10 @@ def get_event_contract_ticker(code, count=30, auto_subscribe=True, output_json=F
         # 查询前自动订阅 TICKER（已订阅静默跳过，其他失败退出）
         if auto_subscribe:
             ensure_event_contract_subscribed(ctx, code, SubType.TICKER,
-                                             output_json=output_json, action="订阅事件合约逐笔")
+                                             output_json=output_json, action="订阅预测市场逐笔")
 
         ret, data = ctx.get_event_contract_ticker(code, count=count)
-        check_ret(ret, data, ctx, "获取事件合约逐笔")
+        check_ret(ret, data, ctx, "获取预测市场逐笔")
 
         if is_empty(data):
             if output_json:
@@ -58,7 +58,7 @@ def get_event_contract_ticker(code, count=30, auto_subscribe=True, output_json=F
             print(json.dumps({"data": df_to_records(data)}, ensure_ascii=False))
         else:
             print("=" * 70)
-            print(f"事件合约逐笔 - {code}")
+            print(f"预测市场逐笔 - {code}")
             print("=" * 70)
             cols = [c for c in ['code', 'time', 'yes_price', 'no_price',
                                 'volume', 'side', 'sequence']
@@ -78,8 +78,8 @@ def get_event_contract_ticker(code, count=30, auto_subscribe=True, output_json=F
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="获取事件合约实时逐笔（需先订阅 TICKER）")
-    parser.add_argument("code", help="事件合约代码，如 EC.KXODIMATCH-26JUL140600INDENG-IND")
+    parser = argparse.ArgumentParser(description="获取预测市场实时逐笔（需先订阅 TICKER）")
+    parser.add_argument("code", help="预测市场合约代码，如 EC.KXODIMATCH-26JUL140600INDENG-IND")
     parser.add_argument("--count", type=int, default=30, help="返回条数，默认 30，最大 1000")
     parser.add_argument("--no-auto-subscribe", action="store_true",
                         help="不自动订阅（适用于已订阅场景）")

@@ -121,7 +121,7 @@ if __name__ == "__main__":
                         choices=["FUTUSECURITIES", "FUTUINC", "FUTUSG", "FUTUAU", "FUTUCA", "FUTUJP", "FUTUMY"],
                         default=None, help="券商标识")
     parser.add_argument("--ctx-type", choices=list(TRADE_CTX_TYPE_CHOICES), default="SEC",
-                        help="交易上下文：SEC=证券，FUTURE=期货/事件合约；code 为 EC. 时自动用 FUTURE")
+                        help="交易上下文：SEC=证券，FUTURE=期货/预测市场；code 为 EC. 时自动用 FUTURE")
     parser.add_argument("--session", choices=["NONE", "RTH", "ETH", "OVERNIGHT", "ALL"],
                         default="NONE", help="美股交易时段（仅对美股生效）")
     parser.add_argument("--json", action="store_true", dest="output_json", help="输出 JSON 格式")

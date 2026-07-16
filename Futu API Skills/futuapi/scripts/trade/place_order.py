@@ -11,11 +11,11 @@
 - 真实账户需先在 OpenD GUI 界面手动解锁交易密码
 
 参数说明：
-- price: 市价单/竞价单仍需传参（可传任意值）。精度：期货整数8位小数9位，美股期权小数2位，美股≤$1允许小数4位，其他小数3位超出四舍五入；事件合约 0.01~0.99 允许2位小数
+- price: 市价单/竞价单仍需传参（可传任意值）。精度：期货整数8位小数9位，美股期权小数2位，美股≤$1允许小数4位，其他小数3位超出四舍五入；预测市场 0.01~0.99 允许2位小数
 - qty / --quantity: 期权期货单位是"张"。与 --amount 二选一，同时传时 amount 优先且 qty 置 0
-- amount: 订单金额，仅事件合约（EC.）有效；传 amount 时 qty 传 0
-- pred_side: 事件合约预测方向 YES/NO，事件合约必填
-- code: 期货主连代码会自动转为实际合约代码；事件合约为 EC.xxx（无市场前缀），走 OpenFutureTradeContext
+- amount: 订单金额，仅预测市场（EC.）有效；传 amount 时 qty 传 0
+- pred_side: 预测市场方向 YES/NO，预测市场下单必填
+- code: 期货主连代码会自动转为实际合约代码；预测市场代码为 EC.xxx（无市场前缀），走 OpenFutureTradeContext
 - adjust_limit: 正数向上调整，负数向下调整，如 0.015 表示向上调整幅度不超过 1.5%
 - remark: utf8 长度上限 64 字节
 - time_in_force: 港股、A 股、环球期货的市价单仅支持当日有效；GTD 时可配 expire_time
@@ -127,10 +127,10 @@ def place_order(code, side, quantity=None, price=None, order_type="NORMAL",
     firm_enum = parse_security_firm(security_firm)
 
     if is_ec and format_enum(trd_env) == "SIMULATE":
-        _fail("模拟交易不支持事件合约，请使用 --trd-env REAL", output_json)
+        _fail("模拟交易不支持预测市场，请使用 --trd-env REAL", output_json)
 
     if is_ec and not pred_side:
-        _fail("事件合约必须指定 --pred-side YES 或 NO", output_json)
+        _fail("预测市场下单必须指定 --pred-side YES 或 NO", output_json)
 
     pred_side_enum = None
     if pred_side:
@@ -141,10 +141,10 @@ def place_order(code, side, quantity=None, price=None, order_type="NORMAL",
 
     if amount is not None:
         if not is_ec:
-            _fail("--amount 仅事件合约（EC.）可用", output_json)
+            _fail("--amount 仅预测市场（EC.）可用", output_json)
         qty = 0
     elif quantity is None:
-        _fail("必须指定 --quantity，或事件合约使用 --amount", output_json)
+        _fail("必须指定 --quantity，或预测市场使用 --amount", output_json)
     else:
         try:
             if int(quantity) <= 0:
@@ -158,7 +158,7 @@ def place_order(code, side, quantity=None, price=None, order_type="NORMAL",
         if not market:
             _fail(
                 f"无法从代码 '{code}' 推导交易市场，请使用完整格式如 US.AAPL、HK.00700、SG.D05、MY.1155、JP.7203；"
-                f"事件合约请使用 EC.xxx",
+                f"预测市场请使用 EC.xxx",
                 output_json,
             )
     else:
@@ -214,7 +214,7 @@ def place_order(code, side, quantity=None, price=None, order_type="NORMAL",
             else:
                 print(f"  数量:     {qty}")
             if pred_side:
-                print(f"  预测方向: {str(pred_side).upper()}")
+                print(f"  预测市场方向: {str(pred_side).upper()}")
             print(f"  价格:     {price}")
             print(f"  类型:     {order_type}")
             print(f"  有效期:   {tif_name}")
@@ -232,7 +232,7 @@ def place_order(code, side, quantity=None, price=None, order_type="NORMAL",
         else:
             ctx = create_trade_context(market, security_firm=firm_enum)
 
-        # 校验账户角色：MASTER 不允许下单；事件合约需 PREDICTION 权限
+        # 校验账户角色：MASTER 不允许下单；预测市场需 PREDICTION 权限
         if acc_id:
             ret, acc_data = ctx.get_acc_list()
             if ret == RET_OK and not is_empty(acc_data):
@@ -259,11 +259,11 @@ def place_order(code, side, quantity=None, price=None, order_type="NORMAL",
                                     break
                         if not has_any_prediction:
                             _fail(
-                                "当前不支持交易事件合约（期货账户 trdmarket_auth 均无 PREDICTION）",
+                                "当前不支持交易预测市场（期货账户 trdmarket_auth 均无 PREDICTION）",
                                 output_json,
                             )
                         _fail(
-                            f"账户 {acc_id} 的 trdmarket_auth 不含 PREDICTION，无法交易事件合约",
+                            f"账户 {acc_id} 的 trdmarket_auth 不含 PREDICTION，无法交易预测市场",
                             output_json,
                         )
                     break
@@ -277,7 +277,7 @@ def place_order(code, side, quantity=None, price=None, order_type="NORMAL",
                                 break
                     if not has_any_prediction:
                         _fail(
-                            "当前不支持交易事件合约（期货账户 trdmarket_auth 均无 PREDICTION）",
+                            "当前不支持交易预测市场（期货账户 trdmarket_auth 均无 PREDICTION）",
                             output_json,
                         )
         elif is_ec:
@@ -290,7 +290,7 @@ def place_order(code, side, quantity=None, price=None, order_type="NORMAL",
                     for i in range(len(acc_data))
                 ):
                     _fail(
-                        "当前不支持交易事件合约（期货账户 trdmarket_auth 均无 PREDICTION）",
+                        "当前不支持交易预测市场（期货账户 trdmarket_auth 均无 PREDICTION）",
                         output_json,
                     )
 
@@ -356,7 +356,7 @@ def place_order(code, side, quantity=None, price=None, order_type="NORMAL",
             else:
                 print(f"  数量:     {qty}")
             if pred_side:
-                print(f"  预测方向: {str(pred_side).upper()}")
+                print(f"  预测市场方向: {str(pred_side).upper()}")
             print(f"  价格:     {price}")
             print(f"  类型:     {order_type}")
             print(f"  环境:     {format_enum(trd_env)}")
@@ -376,13 +376,13 @@ def place_order(code, side, quantity=None, price=None, order_type="NORMAL",
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="下单（买入/卖出股票/事件合约）")
-    parser.add_argument("--code", required=True, help="标的代码（如 US.AAPL；事件合约 EC.xxx）")
+    parser = argparse.ArgumentParser(description="下单（买入/卖出股票/预测市场）")
+    parser.add_argument("--code", required=True, help="标的代码（如 US.AAPL；预测市场 EC.xxx）")
     parser.add_argument("--side", required=True, choices=["BUY", "SELL"], help="交易方向")
     parser.add_argument("--quantity", type=int, default=None, help="数量（与 --amount 二选一；传 amount 时 qty=0）")
-    parser.add_argument("--amount", type=float, default=None, help="订单金额（仅事件合约；与 quantity 二选一，优先）")
+    parser.add_argument("--amount", type=float, default=None, help="订单金额（仅预测市场；与 quantity 二选一，优先）")
     parser.add_argument("--pred-side", choices=["YES", "NO"], default=None, dest="pred_side",
-                        help="事件合约预测方向（事件合约必填）")
+                        help="预测市场方向（预测市场下单必填）")
     parser.add_argument("--price", type=float, default=None, help="价格（限价单必填）")
     parser.add_argument("--order-type", default="NORMAL", choices=["NORMAL", "MARKET"], help="订单类型")
     parser.add_argument("--time-in-force", default="DAY", dest="time_in_force",

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-获取事件合约实时摆盘
+获取预测市场实时摆盘
 
-功能：获取事件合约 YES/NO 双向多档买卖盘，需先订阅 ORDER_BOOK 类型
+功能：获取预测市场 YES/NO 双向多档买卖盘，需先订阅 ORDER_BOOK 类型
 用法：python get_event_contract_order_book.py EC.KXODIMATCH-26JUL140600INDENG-IND [--num 5] [--no-auto-subscribe] [--json]
 
 接口：OpenQuoteContext.get_event_contract_order_book(code, num=10)
@@ -50,10 +50,10 @@ def get_event_contract_order_book(code, num=10, auto_subscribe=True, output_json
         # 查询前自动订阅 ORDER_BOOK（已订阅静默跳过，其他失败退出）
         if auto_subscribe:
             ensure_event_contract_subscribed(ctx, code, SubType.ORDER_BOOK,
-                                             output_json=output_json, action="订阅事件合约摆盘")
+                                             output_json=output_json, action="订阅预测市场摆盘")
 
         ret, data = ctx.get_event_contract_order_book(code, num=num)
-        check_ret(ret, data, ctx, "获取事件合约摆盘")
+        check_ret(ret, data, ctx, "获取预测市场摆盘")
 
         result = {
             "code": data.get("code", code),
@@ -67,7 +67,7 @@ def get_event_contract_order_book(code, num=10, auto_subscribe=True, output_json
             print(json.dumps(result, ensure_ascii=False))
         else:
             print("=" * 64)
-            print(f"事件合约摆盘 - {result['code']}")
+            print(f"预测市场摆盘 - {result['code']}")
             print("=" * 64)
             for label, side in [("YES 买盘 (bid)", "yes_bids"), ("YES 卖盘 (ask)", "yes_asks")]:
                 levels = result[side]
@@ -98,8 +98,8 @@ def get_event_contract_order_book(code, num=10, auto_subscribe=True, output_json
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="获取事件合约实时摆盘（需先订阅 ORDER_BOOK）")
-    parser.add_argument("code", help="事件合约代码，如 EC.KXODIMATCH-26JUL140600INDENG-IND")
+    parser = argparse.ArgumentParser(description="获取预测市场实时摆盘（需先订阅 ORDER_BOOK）")
+    parser.add_argument("code", help="预测市场合约代码，如 EC.KXODIMATCH-26JUL140600INDENG-IND")
     parser.add_argument("--num", type=int, default=10, help="请求摆盘档数，默认 10，需大于 0")
     parser.add_argument("--no-auto-subscribe", action="store_true",
                         help="不自动订阅（适用于已订阅场景）")

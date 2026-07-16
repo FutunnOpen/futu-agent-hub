@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-获取事件合约 Contract 列表
+获取预测市场 Contract 列表
 
 功能：按 Event 代码获取合约（Contract）列表，含合约类型、时间、状态、结果、交易属性等，无需订阅
 用法：python get_event_contract.py EC.KXUFCVICROUND-26JUL11SAIPIM.EVENT [--count 20] [--next-page KEY] [--json]
@@ -40,7 +40,7 @@ def get_event_contract(event_code, next_page=None, count=None, output_json=False
 
         ret, data, page = ctx.get_event_contract(
             event_code, next_page=next_page, count=count)
-        check_ret(ret, data, ctx, "获取事件合约 Contract 列表")
+        check_ret(ret, data, ctx, "获取预测市场 Contract 列表")
 
         contract_df = data.get("contract_list") if isinstance(data, dict) else None
         recommends = data.get("recommend_contracts", []) if isinstance(data, dict) else []
@@ -55,7 +55,7 @@ def get_event_contract(event_code, next_page=None, count=None, output_json=False
             }, ensure_ascii=False))
         else:
             print("=" * 70)
-            print(f"事件合约 Contract 列表 - {event_code}")
+            print(f"预测市场 Contract 列表 - {event_code}")
             print("=" * 70)
             if records:
                 cols = [c for c in ['contract_code', 'contract_type', 'title', 'status',
@@ -81,7 +81,7 @@ def get_event_contract(event_code, next_page=None, count=None, output_json=False
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="获取事件合约 Contract 列表（无需订阅）")
+    parser = argparse.ArgumentParser(description="获取预测市场 Contract 列表（无需订阅）")
     parser.add_argument("event_code", help="Event 代码，如 EC.KXUFCVICROUND-26JUL11SAIPIM.EVENT")
     parser.add_argument("--next-page", default=None, help="翻页标记，首页不传，续拉传上次返回的 next_page")
     parser.add_argument("--count", type=int, default=None, help="单页最大返回数，默认 100，最大 1000")

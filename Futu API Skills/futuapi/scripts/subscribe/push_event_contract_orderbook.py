@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-接收事件合约摆盘推送
+接收预测市场摆盘推送
 
-功能：订阅事件合约摆盘（YES/NO 买卖盘）并通过 Handler 接收实时推送
+功能：订阅预测市场摆盘（YES/NO 买卖盘）并通过 Handler 接收实时推送
 用法：python push_event_contract_orderbook.py EC.KXODIMATCH-26JUL140600INDENG-IND --duration 60 [--json]
 
 接口：EventContractOrderBookHandlerBase 推送（需先 set_handler + 订阅 SubType.ORDER_BOOK）
@@ -32,13 +32,13 @@ from common import (
 
 from futu import RET_ERROR
 
-# 推送 Handler 基类仅支持事件合约的 SDK 版本提供；旧版本回退为 object 以保证模块可导入
+# 推送 Handler 基类仅支持预测市场的 SDK 版本提供；旧版本回退为 object 以保证模块可导入
 # （-h 仍可用），实际可用性在 main() 中由 assert_event_contract_support() 校验
 _EC_OB_BASE = EventContractOrderBookHandlerBase if EventContractOrderBookHandlerBase else object
 
 
 class EventContractOrderBookHandler(_EC_OB_BASE):
-    """事件合约摆盘推送回调处理类"""
+    """预测市场摆盘推送回调处理类"""
     def __init__(self, output_json=False):
         super().__init__()
         self.output_json = output_json
@@ -64,7 +64,7 @@ class EventContractOrderBookHandler(_EC_OB_BASE):
                     "no_asks": ob.get("no_asks", []),
                 }, ensure_ascii=False, default=str), flush=True)
             else:
-                print(f"\n[事件合约摆盘推送] {time.strftime('%H:%M:%S')} - {ob.get('code', '')}")
+                print(f"\n[预测市场摆盘推送] {time.strftime('%H:%M:%S')} - {ob.get('code', '')}")
                 for label, key in [("YES 买盘", "yes_bids"), ("YES 卖盘", "yes_asks"),
                                    ("NO 买盘", "no_bids"), ("NO 卖盘", "no_asks")]:
                     levels = ob.get(key, [])
@@ -83,10 +83,10 @@ def push_event_contract_orderbook(codes, duration=60, output_json=False):
         ctx.set_handler(handler)
 
         ret, msg = ctx.subscribe_event_contract(codes, [SubType.ORDER_BOOK], subscribe_push=True)
-        check_ret(ret, msg, ctx, "订阅事件合约摆盘推送")
+        check_ret(ret, msg, ctx, "订阅预测市场摆盘推送")
 
         if not output_json:
-            print(f"已订阅事件合约摆盘推送: {', '.join(codes)}")
+            print(f"已订阅预测市场摆盘推送: {', '.join(codes)}")
             print(f"等待推送 {duration} 秒...")
 
         time.sleep(duration)
@@ -105,8 +105,8 @@ def push_event_contract_orderbook(codes, duration=60, output_json=False):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="接收事件合约摆盘推送")
-    parser.add_argument("codes", nargs="+", help="事件合约代码，如 EC.xxx")
+    parser = argparse.ArgumentParser(description="接收预测市场摆盘推送")
+    parser.add_argument("codes", nargs="+", help="预测市场合约代码，如 EC.xxx")
     parser.add_argument("--duration", type=int, default=60, help="持续接收时间（秒，默认: 60）")
     parser.add_argument("--json", action="store_true", dest="output_json", help="输出 JSON 格式")
     args = parser.parse_args()

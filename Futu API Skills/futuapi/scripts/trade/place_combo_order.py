@@ -2,11 +2,11 @@
 """
 组合下单
 
-功能：提交组合期权/组合策略/事件合约组合订单
+功能：提交组合期权/组合策略/预测市场组合订单
 用法：
   # 组合期权
   python place_combo_order.py '[{"code":"US.AAPL260529C302500","trd_side":"BUY","qty_ratio":1},{"code":"US.AAPL","trd_side":"SELL","qty_ratio":100}]' --price 9.9 --quantity 1
-  # 事件合约组合（全部腿为 EC.，必填 quote_id 与每腿 pred_side）
+  # 预测市场组合（全部腿为 EC.，必填 quote_id 与每腿 pred_side）
   python place_combo_order.py '[{"code":"EC.xxx","trd_side":"BUY","qty_ratio":1,"pred_side":"YES"},{"code":"EC.yyy","trd_side":"BUY","qty_ratio":1,"pred_side":"YES"}]' --price 0.55 --quantity 1 --quote-id {id} --trd-env REAL --confirmed
 
 接口限制：
@@ -15,9 +15,9 @@
 - 与 place_order 共用一个限频
 
 参数说明：
-- combo_leg_list: 组合腿 JSON；期权：code/trd_side/qty_ratio/position_id(可选)；事件合约另须 pred_side
-- quote_id: 事件合约组合必填（来自 request_combo_quotes）；组合期权忽略
-- price: 订单价格；事件合约须取自 request_combo_quotes 的 ask/bid
+- combo_leg_list: 组合腿 JSON；期权：code/trd_side/qty_ratio/position_id(可选)；预测市场另须 pred_side
+- quote_id: 预测市场 Combo 询价返回的报价 ID（预测市场组合必填）；组合期权忽略
+- price: 订单价格；预测市场须取自 request_combo_quotes 的 ask/bid
 - qty: 组合数量；每条腿实际数量 = qty * qty_ratio
 - time_in_force: 默认 DAY；GTD 时可配合 expire_time
 """
@@ -116,7 +116,7 @@ def _classify_combo_legs(items):
         return True
     if not any(flags):
         return False
-    raise ValueError("组合不合法：事件合约腿（EC.）与非事件合约腿不能混用，全部腿须同为 EC. 或全部不是")
+    raise ValueError("组合不合法：预测市场腿（EC.）与非预测市场腿不能混用，全部腿须同为 EC. 或全部不是")
 
 
 def _parse_combo_legs(legs_json):
@@ -160,14 +160,14 @@ def _parse_combo_legs(legs_json):
         if is_ec:
             pred = item.get("pred_side")
             if pred in (None, ""):
-                raise ValueError(f"事件合约组合第 {idx} 条腿缺少 pred_side（YES/NO）")
+                raise ValueError(f"预测市场组合第 {idx} 条腿缺少 pred_side（YES/NO）")
             leg.pred_side = _resolve_pred_side(pred)
 
         combo_legs.append(leg)
 
     if is_ec and len(set(side_names)) > 1:
         raise ValueError(
-            f"事件合约组合所有腿的 trd_side 必须完全一致，当前为: {side_names}"
+            f"预测市场组合所有腿的 trd_side 必须完全一致，当前为: {side_names}"
         )
 
     return combo_legs, is_ec
@@ -196,21 +196,21 @@ def _validate_prediction_account(ctx, acc_id, output_json):
                             break
                 if not has_any:
                     _fail(
-                        "当前不支持交易事件合约（期货账户 trdmarket_auth 均无 PREDICTION）",
+                        "当前不支持交易预测市场（期货账户 trdmarket_auth 均无 PREDICTION）",
                         output_json,
                     )
                 _fail(
-                    f"账户 {acc_id} 的 trdmarket_auth 不含 PREDICTION，无法交易事件合约组合",
+                    f"账户 {acc_id} 的 trdmarket_auth 不含 PREDICTION，无法交易预测市场组合",
                     output_json,
                 )
     if not has_any:
         _fail(
-            "当前不支持交易事件合约（期货账户 trdmarket_auth 均无 PREDICTION）",
+            "当前不支持交易预测市场（期货账户 trdmarket_auth 均无 PREDICTION）",
             output_json,
         )
     if acc_id and not matched and not has_any:
         _fail(
-            "当前不支持交易事件合约（期货账户 trdmarket_auth 均无 PREDICTION）",
+            "当前不支持交易预测市场（期货账户 trdmarket_auth 均无 PREDICTION）",
             output_json,
         )
 
@@ -228,12 +228,12 @@ def place_combo_order(legs_json, price, quantity, order_type="NORMAL",
     except ValueError as e:
         _fail(str(e), output_json)
 
-    # 组合期权静默忽略 quote_id；事件合约必填
+    # 组合期权静默忽略 quote_id；预测市场必填
     if is_ec:
         if not quote_id:
-            _fail("事件合约组合下单必须指定 --quote-id（来自 request_combo_quotes）", output_json)
+            _fail("预测市场组合下单必须指定 --quote-id（来自 request_combo_quotes）", output_json)
         if format_enum(trd_env) == "SIMULATE":
-            _fail("模拟交易不支持事件合约组合，请使用 --trd-env REAL", output_json)
+            _fail("模拟交易不支持预测市场组合，请使用 --trd-env REAL", output_json)
         market = None
     else:
         quote_id = None
@@ -385,17 +385,17 @@ def place_combo_order(legs_json, price, quantity, order_type="NORMAL",
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="组合下单（组合期权/策略/事件合约组合）")
+    parser = argparse.ArgumentParser(description="组合下单（组合期权/策略/预测市场组合）")
     parser.add_argument(
         "legs",
         help='组合腿 JSON。期权例：\'[{"code":"US.AAPL260529C302500","trd_side":"BUY","qty_ratio":1},...]\'；'
-             '事件合约须全部 EC. 且含 pred_side',
+             '预测市场须全部 EC. 且含 pred_side',
     )
     parser.add_argument("--price", type=float, required=True,
-                        help="订单价格（事件合约须取自 request_combo_quotes 的 ask/bid）")
+                        help="订单价格（预测市场须取自 request_combo_quotes 的 ask/bid）")
     parser.add_argument("--quantity", type=float, required=True, help="组合数量")
     parser.add_argument("--quote-id", default=None, dest="quote_id",
-                        help="报价 ID（事件合约组合必填，来自 request_combo_quotes；组合期权忽略）")
+                        help="报价 ID（预测市场 Combo 询价返回；预测市场组合必填；组合期权忽略）")
     parser.add_argument("--order-type", default="NORMAL", help="订单类型（默认 NORMAL）")
     parser.add_argument("--acc-id", type=int, default=None, help="账户 ID")
     parser.add_argument("--trd-env", choices=["REAL", "SIMULATE"], default=None, help="交易环境")

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-获取事件合约实时 K 线
+获取预测市场实时 K 线
 
-功能：获取事件合约实时 K 线（合约级成交价 K 线或 YES 子合约摆盘 K 线），需先订阅对应 K 线类型
+功能：获取预测市场实时 K 线（合约级成交价 K 线或 YES 子合约摆盘 K 线），需先订阅对应 K 线类型
 用法：python get_event_contract_kline.py EC.KXODIMATCH-26JUL140600INDENG-IND --ktype K_DAY --pre-side YES [--kline-source ORDER_BOOK_YES] [--max-count 10] [--no-auto-subscribe] [--json]
 
 接口：OpenQuoteContext.get_event_contract_kline(code, pre_side=None, ktype=KLType.K_DAY,
@@ -39,7 +39,7 @@ from common import (
 )
 
 
-# K 线类型字符串 -> SubType（事件合约仅支持这 4 种）
+# K 线类型字符串 -> SubType（预测市场仅支持这 4 种）
 _KLTYPE_SUBTYPE_MAP = {
     "K_1M": SubType.K_1M,
     "K_5M": SubType.K_5M,
@@ -79,12 +79,12 @@ def get_event_contract_kline(code, ktype="K_DAY", pre_side=None, kline_source=No
             ensure_event_contract_subscribed(ctx, code, sub_type,
                                              output_json=output_json,
                                              kline_source_list=src_list,
-                                             action="订阅事件合约 K 线")
+                                             action="订阅预测市场 K 线")
 
         ret, data = ctx.get_event_contract_kline(
             code, pre_side=pre_side_enum, ktype=kl_type,
             kline_source=kline_source_enum, max_count=max_count)
-        check_ret(ret, data, ctx, "获取事件合约 K 线")
+        check_ret(ret, data, ctx, "获取预测市场 K 线")
 
         if is_empty(data):
             if output_json:
@@ -97,7 +97,7 @@ def get_event_contract_kline(code, ktype="K_DAY", pre_side=None, kline_source=No
             print(json.dumps({"data": df_to_records(data)}, ensure_ascii=False))
         else:
             print("=" * 70)
-            print(f"事件合约 K 线 - {code} ({ktype_key})")
+            print(f"预测市场 K 线 - {code} ({ktype_key})")
             print("=" * 70)
             cols = [c for c in ['code', 'pre_side', 'name', 'time_key', 'open',
                                 'high', 'low', 'close', 'volume']
@@ -117,8 +117,8 @@ def get_event_contract_kline(code, ktype="K_DAY", pre_side=None, kline_source=No
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="获取事件合约实时 K 线（需先订阅对应 K 线类型）")
-    parser.add_argument("code", help="事件合约代码，如 EC.KXODIMATCH-26JUL140600INDENG-IND")
+    parser = argparse.ArgumentParser(description="获取预测市场实时 K 线（需先订阅对应 K 线类型）")
+    parser.add_argument("code", help="预测市场合约代码，如 EC.KXODIMATCH-26JUL140600INDENG-IND")
     parser.add_argument("--ktype", choices=EC_KLTYPE_CHOICES, default="K_DAY",
                         help="K 线类型（仅支持 K_1M/K_5M/K_60M/K_DAY，默认 K_DAY）")
     parser.add_argument("--pre-side", choices=["YES", "NO"], default=None,

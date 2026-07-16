@@ -96,7 +96,7 @@ if __name__ == "__main__":
                         choices=["FUTUSECURITIES", "FUTUINC", "FUTUSG", "FUTUAU", "FUTUCA", "FUTUJP", "FUTUMY"],
                         default=None, help="券商标识")
     parser.add_argument("--ctx-type", choices=list(TRADE_CTX_TYPE_CHOICES), default="SEC",
-                        help="交易上下文：SEC=证券，FUTURE=期货/事件合约（与 get_accounts 的 ctx_type 一致）")
+                        help="交易上下文：SEC=证券，FUTURE=期货/预测市场（与 get_accounts 的 ctx_type 一致）")
     parser.add_argument("--json", action="store_true", dest="output_json", help="输出 JSON 格式")
     args = parser.parse_args()
     get_order_fill_list(acc_id=args.acc_id, market=args.market, trd_env=args.trd_env,

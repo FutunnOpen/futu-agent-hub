@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-获取事件合约 Event 列表
+获取预测市场 Event 列表
 
 功能：按 Series 代码获取 Event 列表，支持按状态过滤与分页，无需订阅
 用法：python get_event_contract_event_list.py EC.KXUFCVICROUND.SERIES [--count 20] [--status EVENT_ACTIVE] [--next-page KEY] [--json]
@@ -47,7 +47,7 @@ def get_event_contract_event_list(series_code, status=None, next_page=None, coun
 
         ret, data, page = ctx.get_event_contract_event_list(
             series_code, status=status_enum, next_page=next_page, count=count)
-        check_ret(ret, data, ctx, "获取事件合约 Event 列表")
+        check_ret(ret, data, ctx, "获取预测市场 Event 列表")
 
         records = [] if is_empty(data) else df_to_records(data)
 
@@ -55,7 +55,7 @@ def get_event_contract_event_list(series_code, status=None, next_page=None, coun
             print(json.dumps({"data": records, "next_page": page or ""}, ensure_ascii=False))
         else:
             print("=" * 70)
-            print(f"事件合约 Event 列表 - {series_code}")
+            print(f"预测市场 Event 列表 - {series_code}")
             print("=" * 70)
             if records:
                 cols = [c for c in ['event_code', 'event_name', 'status', 'start_date',
@@ -79,7 +79,7 @@ def get_event_contract_event_list(series_code, status=None, next_page=None, coun
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="获取事件合约 Event 列表（无需订阅）")
+    parser = argparse.ArgumentParser(description="获取预测市场 Event 列表（无需订阅）")
     parser.add_argument("series_code", help="Series 代码，如 EC.KXUFCVICROUND.SERIES")
     parser.add_argument("--status", default=None, choices=_EVENT_STATUS_CHOICES,
                         help="事件状态过滤，如 EVENT_ACTIVE")

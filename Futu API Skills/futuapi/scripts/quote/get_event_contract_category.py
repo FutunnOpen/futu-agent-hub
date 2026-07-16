@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-获取事件合约分类列表
+获取预测市场分类列表
 
-功能：获取事件合约一级分类及其下属二级分类（tags），无需订阅
+功能：获取预测市场一级分类及其下属二级分类（tags），无需订阅
 用法：python get_event_contract_category.py [--category Sports] [--json]
 
 接口：OpenQuoteContext.get_event_contract_category(category=None)
@@ -34,7 +34,7 @@ def get_event_contract_category(category=None, output_json=False):
         assert_event_contract_support(ctx, output_json=output_json)
 
         ret, data = ctx.get_event_contract_category(category=category)
-        check_ret(ret, data, ctx, "获取事件合约分类")
+        check_ret(ret, data, ctx, "获取预测市场分类")
 
         if is_empty(data):
             if output_json:
@@ -47,7 +47,7 @@ def get_event_contract_category(category=None, output_json=False):
             print(json.dumps({"data": df_to_records(data)}, ensure_ascii=False))
         else:
             print("=" * 70)
-            print("事件合约分类")
+            print("预测市场分类")
             print("=" * 70)
             print_display_df(data, max_colwidth=60)
             print(f"\n共 {len(data)} 个分类")
@@ -64,7 +64,7 @@ def get_event_contract_category(category=None, output_json=False):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="获取事件合约分类列表（无需订阅）")
+    parser = argparse.ArgumentParser(description="获取预测市场分类列表（无需订阅）")
     parser.add_argument("--category", default=None, help="一级分类标识，如 Sports；不填返回全部分类")
     parser.add_argument("--json", action="store_true", dest="output_json", help="输出 JSON 格式")
     args = parser.parse_args()
