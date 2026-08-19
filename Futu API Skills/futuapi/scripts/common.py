@@ -52,7 +52,7 @@ def get_config() -> FutuConfig:
         - FUTU_OPEND_HOST: OpenD 主机地址 (默认: 127.0.0.1)
         - FUTU_OPEND_PORT: OpenD 端口 (默认: 11111)
         - FUTU_TRD_ENV: 交易环境 (默认: SIMULATE)
-        - FUTU_DEFAULT_MARKET: 默认市场 (默认: US)
+        - FUTU_DEFAULT_MARKET: 默认市场 (默认: NONE)
 
     Returns:
         FutuConfig: 配置对象

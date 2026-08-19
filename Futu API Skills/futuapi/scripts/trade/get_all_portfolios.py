@@ -145,7 +145,7 @@ def query_portfolio(host, port, acc_id, trd_env, ctx_type="SEC", show_option_str
                     "combo_id": safe_get(row, "combo_id", default=""),
                     "strategy_type": safe_get(row, "strategy_type", default=""),
                     "position_type": safe_get(row, "position_type", default=""),
-                    "acc_id": safe_get(row, "acc_id", default=""),
+                    "acc_id": safe_int(safe_get(row, "acc_id", default=0)),
                     "jp_acc_type": safe_get(row, "jp_acc_type", default=""),
                 })
 

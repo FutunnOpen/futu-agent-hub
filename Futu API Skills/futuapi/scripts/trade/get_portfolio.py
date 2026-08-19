@@ -44,6 +44,7 @@ from common import (
     is_empty,
     safe_get,
     safe_float,
+    safe_int,
     format_enum,
 )
 
@@ -123,7 +124,7 @@ def get_portfolio(acc_id=None, market=None, trd_env=None, currency=None, securit
                     "combo_id": safe_get(row, "combo_id", default=""),
                     "strategy_type": safe_get(row, "strategy_type", default=""),
                     "position_type": safe_get(row, "position_type", default=""),
-                    "acc_id": safe_get(row, "acc_id", default=""),
+                    "acc_id": safe_int(safe_get(row, "acc_id", default=0)),
                     "jp_acc_type": safe_get(row, "jp_acc_type", default=""),
                 })
 

@@ -17,7 +17,7 @@
 - pred_side: 预测市场方向 YES/NO，预测市场下单必填
 - code: 期货主连代码会自动转为实际合约代码；预测市场代码为 EC.xxx（无市场前缀），走 OpenFutureTradeContext
 - adjust_limit: 正数向上调整，负数向下调整，如 0.015 表示向上调整幅度不超过 1.5%
-- remark: utf8 长度上限 64 字节
+- remark: 可选备注；未填时传 AISKILL，有内容时传 AISKILL+外部输入（UTF-8 总长上限 64 字节）
 - time_in_force: 港股、A 股、环球期货的市价单仅支持当日有效；GTD 时可配 expire_time
 - expire_time: 订单到期日 yyyy-MM-dd，仅 time_in_force=GTD 时有效
 - fill_outside_rth: 用于港股盘前竞价与美股盘前盘后，盘前盘后时段不支持市价单
@@ -116,10 +116,19 @@ def _account_has_prediction(row):
     return "PREDICTION" in _parse_trdmarket_auth(row)
 
 
+def _build_remark(remark):
+    """未填 remark 时为 AISKILL；有外部输入时为 AISKILL+外部内容。"""
+    user_remark = str(remark or "").strip()
+    if not user_remark:
+        return "AISKILL"
+    return f"AISKILL{user_remark}"
+
+
 def place_order(code, side, quantity=None, price=None, order_type="NORMAL",
                 acc_id=None, trd_env=None, security_firm=None, output_json=False,
                 confirmed=False, fill_outside_rth=False, session_str="NONE",
-                amount=None, pred_side=None, time_in_force="DAY", expire_time=None):
+                amount=None, pred_side=None, time_in_force="DAY", expire_time=None,
+                remark=""):
     acc_id = acc_id or get_default_acc_id()
     trd_env = parse_trd_env(trd_env) if trd_env else get_default_trd_env()
     trd_side = parse_trd_side(side)
@@ -304,6 +313,7 @@ def place_order(code, side, quantity=None, price=None, order_type="NORMAL",
             trd_env=trd_env,
             acc_id=acc_id,
             time_in_force=tif_enum,
+            remark=_build_remark(remark),
         )
         if fill_outside_rth:
             order_kwargs["fill_outside_rth"] = True
@@ -398,6 +408,7 @@ if __name__ == "__main__":
                         help="允许盘前盘后成交（美股盘前盘后、港股竞价盘）")
     parser.add_argument("--session", choices=["NONE", "RTH", "ETH", "OVERNIGHT", "ALL"],
                         default="NONE", help="美股交易时段（仅对美股生效）")
+    parser.add_argument("--remark", default="", help="备注（未填默认 AISKILL；有内容时为 AISKILL+备注，UTF-8 最长 64 字节）")
     parser.add_argument("--confirmed", action="store_true", help="实盘下单确认标志（不传则只预览不执行）")
     parser.add_argument("--json", action="store_true", dest="output_json", help="输出 JSON 格式")
     args = parser.parse_args()
@@ -407,4 +418,5 @@ if __name__ == "__main__":
                 output_json=args.output_json, confirmed=args.confirmed,
                 fill_outside_rth=args.fill_outside_rth, session_str=args.session,
                 amount=args.amount, pred_side=args.pred_side,
-                time_in_force=args.time_in_force, expire_time=args.expire_time)
+                time_in_force=args.time_in_force, expire_time=args.expire_time,
+                remark=args.remark)

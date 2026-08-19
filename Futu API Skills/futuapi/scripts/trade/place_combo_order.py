@@ -20,6 +20,7 @@
 - price: 订单价格；预测市场须取自 request_combo_quotes 的 ask/bid
 - qty: 组合数量；每条腿实际数量 = qty * qty_ratio
 - time_in_force: 默认 DAY；GTD 时可配合 expire_time
+- remark: 可选备注；未填时传 AISKILL，有内容时传 AISKILL+外部输入（UTF-8 总长上限 64 字节）
 """
 import argparse
 import json
@@ -215,6 +216,14 @@ def _validate_prediction_account(ctx, acc_id, output_json):
         )
 
 
+def _build_remark(remark):
+    """未填 remark 时为 AISKILL；有外部输入时为 AISKILL+外部内容。"""
+    user_remark = str(remark or "").strip()
+    if not user_remark:
+        return "AISKILL"
+    return f"AISKILL{user_remark}"
+
+
 def place_combo_order(legs_json, price, quantity, order_type="NORMAL",
                       acc_id=None, trd_env=None, security_firm=None, remark="",
                       time_in_force="DAY", expire_time=None, confirmed=False,
@@ -310,7 +319,7 @@ def place_combo_order(legs_json, price, quantity, order_type="NORMAL",
             order_type=order_type_enum,
             trd_env=trd_env,
             acc_id=acc_id,
-            remark=remark,
+            remark=_build_remark(remark),
             time_in_force=tif_enum,
             expire_time=expire_time,
         )
@@ -405,7 +414,7 @@ if __name__ == "__main__":
         default=None,
         help="券商标识",
     )
-    parser.add_argument("--remark", default="", help="备注（UTF-8 最长 64 字节）")
+    parser.add_argument("--remark", default="", help="备注（未填默认 AISKILL；有内容时为 AISKILL+备注，UTF-8 最长 64 字节）")
     parser.add_argument("--time-in-force", default="DAY", help="有效期限（默认 DAY）")
     parser.add_argument("--expire-time", default=None, help="过期时间（yyyy-MM-dd，仅 GTD 时有效）")
     parser.add_argument("--confirmed", action="store_true", help="实盘下单确认标志（不传则只预览不执行）")
