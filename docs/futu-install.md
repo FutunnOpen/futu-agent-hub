@@ -1,6 +1,6 @@
 # Futu Skill Installation Guide
 
-Install Futu Skills into your AI client in three steps.
+Install Futu Skills into your AI client with `npx`. Each skill's `description` is what the client uses to decide when to trigger it.
 
 ---
 
@@ -8,36 +8,15 @@ Install Futu Skills into your AI client in three steps.
 
 | Dependency | Purpose | Check |
 |------------|---------|-------|
-| `python3` | Runs anomaly-detection scripts and the `futu-skills` CLI | `python3 --version` |
-| `curl` | Downloads the installer | `curl --version` |
-| Node.js 18+ | Provides `npx` for `npx skills add` | `node -v` |
+| Node.js 22.20+ | Provides `npx` for `npx skills add` and `npx skills update` | `node -v` |
+| `python3` | Runs OpenAPI and anomaly-detection scripts | `python3 --version` |
+| `curl` | Content skills call public HTTP APIs | `curl --version` |
 
-> macOS ships `python3` and `curl`. Linux: `apt install python3 curl` / `yum install python3 curl`. Windows: WSL or Git Bash + the official Node.js installer.
-
----
-
-## Step 1 — Install the `futu-skills` CLI
-
-`futu-skills` manages skill versions and self-upgrades.
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/FutunnOpen/futu-agent-hub/main/futu-install.sh | bash
-```
-
-Verify:
-
-```bash
-futu-skills --version
-futu-skills check        # Check for skill updates
-```
-
-If `futu-skills` is not found, ensure `~/.local/bin` (or `/usr/local/bin`) is in your `PATH`, or open a new terminal.
+> macOS ships `python3` and `curl`. Linux: `apt install python3 curl` / `yum install python3 curl`. Windows: the official Node.js installer. Quote and trading skills also need the official `futu` CLI; the install commands are in those skills (`install.sh` on macOS / Linux, `install.ps1` on Windows).
 
 ---
 
-## Step 2 — Install Skill Files
-
-Install search and anomaly-detection skills into your AI client's skills directory:
+## Step 1 — Install Skill Files
 
 ```bash
 npx skills add -y -g FutunnOpen/futu-agent-hub
@@ -52,7 +31,14 @@ Other useful invocations:
 npx skills add -y -g FutunnOpen/futu-agent-hub#<branch-or-tag>
 
 # Upgrade installed skills
-npx skills update futu-skill
+npx skills update -g
+```
+
+`npx skills update` refreshes the current slug and leaves a renamed directory in place. If an older short name is still installed (`news-search`, `stock-digest`, `comment-sentiment`, `install-opend`, `capital-anomaly`, `derivatives-anomaly`, `technical-anomaly`), remove it once, then install again:
+
+```bash
+bash scripts/migrate-renamed-skills.sh
+npx skills add -y -g FutunnOpen/futu-agent-hub
 ```
 
 ### Per-Client Targets
@@ -73,13 +59,13 @@ npx skills update futu-skill
 
 ---
 
-## Step 3 — Install OpenD (required for OpenAPI / Anomaly Skills)
+## Step 2 — Install OpenD (required for OpenAPI / Anomaly Skills)
 
 OpenAPI Skills and Anomaly Detection Skills need the OpenD service running locally.
 
-After Step 2 completes, invoke `/install-futu-opend` in your AI client. The skill directly downloads, installs, and starts OpenD (Windows / macOS / Linux supported) — no extra confirmation needed.
+After Step 1 completes, invoke `/install-futu-opend` in your AI client. The skill directly downloads, installs, and starts OpenD (Windows / macOS / Linux supported) — no extra confirmation needed.
 
-If `/install-futu-opend` is not registered, re-run Step 2 to make sure all skills from this repo are installed.
+If `/install-futu-opend` is not registered, re-run Step 1 to make sure all skills from this repo are installed.
 
 ---
 
@@ -95,7 +81,7 @@ Some clients require a restart or a new chat session to pick up newly installed 
 <details>
 <summary><b><code>npx skills add</code> fails</b></summary>
 
-- Confirm Node.js 18+: `node -v`
+- Confirm Node.js 22.20+: `node -v`
 - `command not found: skills` -> upgrade npm: `npm install -g npm@latest`
 - Private-repo clone failure -> ensure an SSH key or HTTPS credential helper is configured for `github.com`; verify with a manual `git clone`
 - Restricted network -> use HTTPS with a token: `npx skills add -y -g https://<token>@github.com/FutunnOpen/futu-agent-hub.git`
@@ -107,6 +93,6 @@ Some clients require a restart or a new chat session to pick up newly installed 
 
 - OpenD must be running and logged in (status: connected)
 - Default port `11111`
-- If OpenD is not installed, run `/install-futu-opend` (see Step 3)
+- If OpenD is not installed, run `/install-futu-opend` (see Step 2)
 
 </details>

@@ -35,47 +35,6 @@ If the user only says a broad request such as `英伟达异动`, `NVDA 异动`, 
 
 ---
 
-## CLI: Version Update Check
-
-Embed the version check into the skill's **single Bash call**. **Do not create any separate tool call** for the version check. The same inline check must detect three things:
-
-1. whether the `futu-skills` manager is installed locally;
-2. whether this skill has a new version available;
-3. whether the `futu-skills` manager itself has a new version available.
-
-Start the check as a backgrounded subprocess **before** the business command (e.g. `curl`), then append `wait` **after** the business command to collect the result, all in one invocation:
-
-```bash
-( _c=""; command -v futu-skills >/dev/null 2>&1 && _c=futu-skills || { [ -x "$HOME/.local/bin/futu-skills" ] && _c="$HOME/.local/bin/futu-skills"; }; if [ -n "$_c" ]; then "$_c" check --quiet --slug futu-derivatives-anomaly 2>/dev/null; else echo '__CLI_MISSING__'; fi ) > /tmp/.futu-derivatives-anomaly-update 2>/dev/null & curl -sG '...' ...; wait; cat /tmp/.futu-derivatives-anomaly-update 2>/dev/null; rm -f /tmp/.futu-derivatives-anomaly-update
-```
-
-Based on the `cat` output:
-
-- **No content** (skill is up-to-date or the check failed): do not show any upgrade prompt.
-- **Output `__CLI_MISSING__`** (`futu-skills` is not installed locally, so version check/upgrade cannot run): append a notice at the **end** of your reply:
-  > The `futu-skills` manager is not installed yet, so I cannot auto-check or upgrade skill versions. If you agree, I can install it for you now.
-
-  If the user agrees, first run:
-  ```bash
-  curl -fsSL https://raw.githubusercontent.com/FutunnOpen/futu-agent-hub/main/futu-install.sh | bash
-  ```
-  After install completes, run `futu-skills upgrade futu-derivatives-anomaly` to bring this skill to the latest version.
-- **Output containing a line starting with `futu-derivatives-anomaly`** (this skill has an update available): append a notice at the **end** of your reply:
-  > `futu-derivatives-anomaly` has a new version available. If you agree, I can upgrade it for you right away.
-
-  If the user agrees, run `futu-skills upgrade futu-derivatives-anomaly` to perform the upgrade. (This command also auto-upgrades the `futu-skills` manager itself, so a separate CLI prompt is unnecessary when a skill update is available.)
-- **Output containing only a line starting with `cli`** (this skill is up-to-date but the `futu-skills` manager itself has a new version): append a notice at the **end** of your reply:
-  > The `futu-skills` manager has a new version available. If you agree, I can upgrade it for you right away.
-
-  If the user agrees, run `futu-skills self-upgrade` to perform the upgrade.
-
-  If both a `cli` line and a `futu-derivatives-anomaly` line appear, only show the skill upgrade prompt above — the manager will be refreshed as a side effect of `futu-skills upgrade futu-derivatives-anomaly`.
-
-**Never** run the install command or `futu-skills upgrade …` without explicit user consent. Any error (command failure, network issue) must be silently skipped without affecting normal skill execution.
-
-**Important**: The version check (write + read) must all be embedded in this single Bash call. Do not produce any additional tool calls.
-
-<!-- This section follows docs/templates/opend-prerequisite.md. Keep it in sync with that template. -->
 ## Prerequisite: OpenD Must Be Running
 
 This skill depends on Futu **OpenD** (default `127.0.0.1:11111`) to fetch derivatives anomaly data. OpenD installation and startup are owned by the peer `install-futu-opend` skill — do **not** attempt to detect, install, or start OpenD from inside this skill.
@@ -85,7 +44,16 @@ This skill depends on Futu **OpenD** (default `127.0.0.1:11111`) to fetch deriva
 Silently probe OpenD reachability before the workflow. **Do not announce this step to the user.**
 
 ```bash
-futu-skills check-opend
+python3 -c 'import os,socket
+host=os.environ.get("FUTU_OPEND_HOST","127.0.0.1")
+port=int(os.environ.get("FUTU_OPEND_PORT","11111"))
+s=socket.socket(); s.settimeout(2)
+try:
+    s.connect((host, port)); print("ok")
+except OSError:
+    print("not-running")
+finally:
+    s.close()'
 ```
 
 Behavior:

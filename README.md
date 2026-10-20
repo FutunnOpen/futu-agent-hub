@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="#快速开始">快速开始</a> · <a href="#skills-概览">Skills 概览</a> · <a href="#futu-api-skill">Futu API Skill</a> · <a href="#异动检测-skills">异动检测 Skills</a> · <a href="#内容-skills">内容 Skills</a> · <a href="#使用示例">使用示例</a>
+  <a href="#快速开始">快速开始</a> · <a href="#skills-概览">Skills 概览</a> · <a href="#行情交易-skills">行情交易 Skills</a> · <a href="#futu-api-skill">Futu API Skill</a> · <a href="#异动检测-skills">异动检测 Skills</a> · <a href="#内容-skills">内容 Skills</a> · <a href="#使用示例">使用示例</a>
 </p>
 
 
@@ -19,7 +19,7 @@
 
 ## 什么是 Futu Agent Hub？
 
-Futu Agent Hub 是 **富途** 官方推出的 AI Agent 技能中心，将 Futu API 的完整能力和金融内容服务封装为标准化的 Skills。让 AI 助手能够直接查询实时行情、执行交易、检索金融资讯、感知市场情绪 — 全部通过自然语言完成。
+Futu Agent Hub 是 **富途** 官方推出的 AI Agent 技能中心，把官方 `futu` 命令行、Futu API 和金融内容服务封装为标准化的 Skills。让 AI 助手能够直接查询实时行情、执行交易、识别异动、检索金融资讯、感知市场情绪 — 全部通过自然语言完成。
 
 支持 **Claude Code**、**Cursor**、**Claude Desktop**、**VS Code** 等 MCP 兼容的 AI 工具接入。
 
@@ -27,19 +27,22 @@ Futu Agent Hub 是 **富途** 官方推出的 AI Agent 技能中心，将 Futu A
 
 ## Skills 概览
 
-Futu Agent Hub 提供 **7 个开箱即用的 Skills**，分为三大类：
+Futu Agent Hub 提供 **12 个 Skills**，分为行情交易、Futu API、异动检测、内容四类。`install-futu-opend` 是 OpenD 安装助手。
 
-| Skill | 类别 | 是否需要 OpenD | 说明 |
-|-------|------|----------------|------|
-| Futu API（`futuapi`） | 交易 & 行情 | ✅ | 封装 Futu API 全部能力 — 实时报价、K 线、下单、持仓、账户管理等 |
-| 资金异动（`futu-capital-anomaly`） | 异动检测 | ✅ | 资金流向、买卖经纪商、卖空异动等资金面异常信号 |
-| 衍生品异动（`futu-derivatives-anomaly`） | 异动检测 | ✅ | 期权大单、隐含波动率、牛熊证街货、PCR 等衍生品异常信号 |
-| 技术面异动（`futu-technical-anomaly`） | 异动检测 | ✅ | K 线形态及 MACD / RSI / KDJ / BOLL 等技术指标异常信号 |
-| 资讯搜索（`futu-news-search`） | 内容 | ❌ | 搜索富途平台上的新闻、公告、研报 |
-| 个股解读（`futu-stock-digest`） | 内容 | ❌ | 围绕标的推送最新事实信息与核心解读 |
-| 情绪温度计（`futu-comment-sentiment`） | 内容 | ❌ | 聚合社区情绪、大V观点，输出标准化情绪参考 |
-
-> 此外随 Futu API Skill 附带一个安装助手 `install-futu-opend`，用于一键安装 / 升级本地 OpenD 网关与 Python SDK。
+| Skill | 类别 | 运行依赖 | 说明 |
+|-------|------|----------|------|
+| 行情（`futu-quote`） | 行情交易 | `futu` CLI | 报价、K 线、买卖盘、资金流向、公司资料、自选股等；不下单 |
+| 证券交易（`futu-trading`） | 行情交易 | `futu` CLI | 证券账户、资金、持仓、下单、改单、撤单、成交 |
+| 模拟交易（`futu-sim-trading`） | 行情交易 | `futu` CLI | 模拟账户的资金、持仓与纸面委托；不影响真实账户 |
+| 加密货币（`futu-crypto`） | 行情交易 | `futu` CLI | 加密货币账户、余额、下单、改单、撤单、成交 |
+| Futu API（`futuapi`） | Futu API | OpenD | 通过 OpenAPI 查行情、下单、查持仓和账户，含期权与加密货币 |
+| OpenD 安装（`install-futu-opend`） | Futu API | — | 下载安装 OpenD，并升级 Python SDK `futu-api` |
+| 资金异动（`futu-capital-anomaly`） | 异动检测 | OpenD | 资金流向、买卖经纪商、卖空异动等资金面异常信号 |
+| 衍生品异动（`futu-derivatives-anomaly`） | 异动检测 | OpenD | 期权大单、隐含波动率、牛熊证街货、PCR 等衍生品异常信号 |
+| 技术面异动（`futu-technical-anomaly`） | 异动检测 | OpenD | K 线形态及 MACD / RSI / KDJ / BOLL 等技术指标异常信号 |
+| 资讯搜索（`futu-news-search`） | 内容 | 无 | 搜索富途平台上的新闻、公告、研报 |
+| 个股解读（`futu-stock-digest`） | 内容 | 无 | 围绕标的整理最新事实并给出核心解读 |
+| 情绪温度计（`futu-comment-sentiment`） | 内容 | 无 | 聚合社区情绪、大V观点，输出标准化情绪参考 |
 
 ---
 
@@ -87,6 +90,95 @@ Futu API Skill 将 [Futu API](https://openapi.futunn.com/futu-api-doc/) 的完�
 | 🇨🇳 A 股 | 股票、ETF、指数 |
 | 🇸🇬 新加坡 | 股票 |
 | 🇯🇵 日本 | 股票 |
+
+---
+
+## 行情交易 Skills
+
+通过官方 [`futu` 命令行](https://github.com/FutunnOpen/futu-cli) 查行情和下单，不经过 OpenD。macOS / Linux 安装到 `$HOME/.futu/bin/futu`，Windows 安装到 `%LOCALAPPDATA%\FutuCLI\bin\futu.exe`。使用前需要 `futu auth login`。更新命令行本身用 `futu update`。
+
+四个 skill 分工明确：行情查询不下单；证券实盘、模拟盘、加密货币各自独立。
+
+### 行情（`futu-quote`）
+
+| 功能 | 说明 |
+|------|------|
+| 报价与快照 | 实时报价、市场快照、标的基本信息 |
+| K 线 / 逐笔 / 分时 | 最新与历史 K 线、逐笔成交、盘中分时 |
+| 买卖盘与排行 | 多档买卖盘、成交量 / 成交额 / 涨跌幅排行 |
+| 期权 | 期权链、组合期权报价、期权筛选 |
+| 资金与公司 | 资金流向、公司资料、财务、股东、估值 |
+| 板块 / 自选 / 日历 | 板块成份、自选股、交易日历、新股列表、选股、窝轮筛选、期货信息 |
+
+**示例提问：**
+```
+查一下腾讯现在的报价
+特斯拉最近 30 天的日 K 线
+美股今天涨幅排行
+把苹果加到我的自选
+```
+
+---
+
+### 证券交易（`futu-trading`）
+
+真实证券账户。下单、改单、撤单会改动资产，执行前需要用户明确确认。
+
+| 功能 | 说明 |
+|------|------|
+| 账户与资金 | 账户列表、可用资金 |
+| 持仓 | 当前持仓 |
+| 委托 | 买入、卖出、下单、改单、撤单 |
+| 查询 | 当日与历史订单、订单详情、当日与历史成交 |
+| 可买可卖 | 指定标的的最大可买 / 可卖数量 |
+
+**示例提问：**
+```
+我的港股账户还有多少可用资金？
+查看我的美股持仓
+以 150 港元限价买入腾讯 1000 股
+撤销刚才那笔挂单
+```
+
+---
+
+### 模拟交易（`futu-sim-trading`）
+
+只操作模拟账户，不改动真实持仓和资金。账户、标的、方向、数量或价格不明确时先查询再下单。
+
+| 功能 | 说明 |
+|------|------|
+| 模拟账户 | 账户列表、资金、持仓 |
+| 纸面委托 | 买入、卖出、下单、改单、撤单 |
+| 查询 | 当前委托、历史委托（可翻页）、最大可买 / 可卖数量 |
+
+**示例提问：**
+```
+列出我的模拟账户
+用模拟账户市价买入 1 股苹果
+看看模拟账户里腾讯的持仓
+撤销模拟账户里的那笔挂单
+```
+
+---
+
+### 加密货币（`futu-crypto`）
+
+加密货币账户的余额和真实委托。下单前确认账户、币对、方向和数量。证券账户的资金、持仓和委托走 `futu-trading`。
+
+| 功能 | 说明 |
+|------|------|
+| 账户与余额 | 加密货币账户列表、余额 |
+| 委托 | 下单、买入、卖出、改单、撤单 |
+| 查询 | 当前与历史订单、订单详情、成交、最大可买 / 可卖数量 |
+
+**示例提问：**
+```
+看看我的加密货币账户余额
+买入 0.01 个 BTC
+这笔加密货币订单成交了没有？
+撤销刚才的 BTC 挂单
+```
 
 ---
 
@@ -214,38 +306,29 @@ NVDA 隐含波动率有异动吗？
 |------|------|------|
 | [富途牛牛](https://www.futunn.com/) 账户 | 交易 & 行情（API 权限需在 App 内开通） | — |
 | [Claude Code](https://docs.anthropic.com/en/docs/claude-code) 或其它 MCP 兼容客户端 | 加载并调用 Skills | — |
-| `python3` | 运行异动检测脚本与 `futu-skills` CLI | `python3 --version` |
-| `curl` | 下载安装器 | `curl --version` |
-| Node.js 18+ | 提供 `npx skills add` | `node -v` |
+| Node.js 22.20+ | 提供 `npx skills add` / `npx skills update` | `node -v` |
+| `python3` | 仅 Futu API 与异动检测脚本需要 | `python3 --version` |
+| `curl` | 内容 Skill 请求公开接口 | `curl --version` |
+
+行情、交易类 Skill 另外需要官方 `futu` 命令行。安装命令写在对应 skill 里，macOS / Linux 用 `install.sh`，Windows 用 `install.ps1`。
 
 ---
 
-### Step 1 — 安装 `futu-skills` CLI
+### Step 1 — 安装 Skill 文件
 
-`futu-skills` 用于管理 Skill 版本与自升级，所有用法（含纯内容 Skill）都建议先装 CLI。
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/FutunnOpen/futu-agent-hub/main/futu-install.sh | bash
-```
-
-验证：
-
-```bash
-futu-skills --version
-futu-skills check
-```
-
----
-
-### Step 2 — 安装 Skill 文件
-
-通过 `npx skills add` 一键将本仓库的 Skills 安装到 AI 客户端的 skills 目录：
+通过 `npx skills add` 将本仓库的 Skills 安装到 AI 客户端的 skills 目录。各 skill 的触发条件写在自己的 `description` 里，客户端扫描目录即可发现，不需要单独的发现工具。
 
 ```bash
 npx skills add -y -g FutunnOpen/futu-agent-hub
 ```
 
 > `-y` 跳过交互式选择；`-g` 安装到全局（所有项目共享）。去掉 `-y` 可交互选择部分 Skill；去掉 `-g` 仅安装到当前项目。
+
+升级已安装的 skill：
+
+```bash
+npx skills update -g
+```
 
 更详细的客户端适配（Cursor / JetBrains / Claude Desktop 等）见 [`docs/futu-install.md`](docs/futu-install.md)。
 
@@ -257,13 +340,19 @@ npx skills add -y -g FutunnOpen/futu-agent-hub
 > 看看社区对小米的情绪怎么样
 ```
 
+如果以前装过旧目录名（`news-search`、`stock-digest`、`comment-sentiment`、`install-opend`、`capital-anomaly`、`derivatives-anomaly`、`technical-anomaly`），`npx skills update` 不会删掉旧目录。先跑一次改名清理，再执行上面的安装命令：
+
+```bash
+bash scripts/migrate-renamed-skills.sh
+```
+
 ---
 
-### Step 3 — 安装 OpenD（仅 Futu API / 异动检测 Skill 需要）
+### Step 2 — 安装 OpenD（仅 Futu API / 异动检测 Skill 需要）
 
 `futuapi` 与三个异动检测 Skill 通过本地 **OpenD** 网关连接富途服务器；纯内容 Skill 可跳过本步。
 
-完成 Step 2 后，在 AI 客户端中调用 `/install-futu-opend`，Agent 会自动完成：
+完成 Step 1 后，在 AI 客户端中调用 `/install-futu-opend`，Agent 会自动完成：
 
 1. 下载并安装 OpenD（支持 **Windows / macOS / CentOS / Ubuntu**）
 2. 安装 / 升级 Python SDK（`futu-api`）
@@ -274,7 +363,7 @@ npx skills add -y -g FutunnOpen/futu-agent-hub
 完成后确认以下 Skill 可用：
 
 - `install-futu-opend` — OpenD 安装助手
-- `futuapi` — 行情交易助手
+- `futuapi` — OpenAPI 行情与交易
 - `futu-capital-anomaly` / `futu-derivatives-anomaly` / `futu-technical-anomaly` — 异动检测
 
 ```
@@ -320,49 +409,54 @@ npx skills add -y -g FutunnOpen/futu-agent-hub
 腾讯有什么最新研报？
 ```
 
+### 命令行行情与交易
+```
+美股今天涨幅排行
+用模拟账户市价买入 1 股苹果
+看看我的加密货币账户余额
+```
+
 ---
 
 ## 架构
 
 ```
-┌──────────────────────────────────────────────────────┐
-│                    AI 助手                            │
-│      (Claude Code / Cursor / Claude Desktop)         │
-└──────────────────────┬───────────────────────────────┘
-                       │ Skills 协议
-                       ▼
-┌──────────────────────────────────────────────────────┐
-│                 Futu Agent Hub                       │
-│                                                      │
-│  ┌──────────┐  ┌─────────────┐  ┌────────────────┐   │
-│  │ Futu API │  │ 异动检测     │  │   内容 Skills  │   │
-│  │  Skill   │  │ Skills       │  │                │   │
-│  │          │  │              │  │ ┌────────────┐ │   │
-│  │ 交易执行 │  │ 资金异动     │  │ │ 资讯搜索   │ │   │
-│  │ 行情查询 │  │ 衍生品异动   │  │ ├────────────┤ │   │
-│  │ 账户管理 │  │ 技术面异动   │  │ │ 个股解读   │ │   │
-│  │ 期权数据 │  │              │  │ ├────────────┤ │   │
-│  │   ...    │  │              │  │ │ 情绪温度计 │ │   │
-│  └────┬─────┘  └──────┬───────┘  │ └─────┬──────┘ │   │
-│       │               │           │       │        │   │
-└───────┼───────────────┼───────────┴───────┼────────┘   │
-        │               │                   │
-        └───────┬───────┘                   │
-                ▼                           ▼
-       ┌────────────────┐         ┌──────────────────────┐
-       │     OpenD      │         │   富途内容服务 API   │
-       │    (网关)      │         │   (公开 HTTP)        │
-       │                │         │                      │
-       │  本地 TCP 连接 │         │  ai-news-search      │
-       │                │         │  .futunn.com         │
-       └────────┬───────┘         └──────────────────────┘
-                │
-                ▼
-       ┌────────────────┐
-       │   富途服务器   │
-       │  (港股/美股/   │
-       │  A股/新/日)    │
-       └────────────────┘
+┌──────────────────────────────────────────────────────────────────────────┐
+│                               AI 助手                                     │
+│                 Claude Code / Cursor / Claude Desktop                    │
+└──────────────────────────────────┬───────────────────────────────────────┘
+                                   │ Skills
+                                   ▼
+┌──────────────────────────────────────────────────────────────────────────┐
+│                            Futu Agent Hub                                 │
+│                                                                           │
+│  ┌──────────────────┐  ┌────────────────┐  ┌────────────┐  ┌───────────┐ │
+│  │ 行情交易          │  │ Futu API       │  │ 异动检测    │  │ 内容       │ │
+│  │                  │  │                │  │            │  │           │ │
+│  │ futu-quote       │  │ futuapi        │  │ 资金异动    │  │ 资讯搜索   │ │
+│  │ futu-trading     │  │                │  │ 衍生品异动  │  │ 个股解读   │ │
+│  │ futu-sim-trading │  │                │  │ 技术面异动  │  │ 情绪温度计 │ │
+│  │ futu-crypto      │  │                │  │            │  │           │ │
+│  └────────┬─────────┘  └───────┬────────┘  └─────┬──────┘  └─────┬─────┘ │
+└───────────┼────────────────────┼─────────────────┼───────────────┼───────┘
+            │                    │                 │               │
+            │                    │    install-futu-opend 安装       │
+            │                    └────────┬────────┘               │
+            ▼                             ▼                        ▼
+   ┌─────────────────┐           ┌─────────────────┐     ┌──────────────────┐
+   │    futu CLI     │           │      OpenD      │     │ 富途内容服务 API  │
+   │                 │           │                 │     │                  │
+   │ OAuth 登录      │           │ 本地 TCP 网关    │     │ 公开 HTTP         │
+   │ 本机二进制       │           │                 │     │ ai-news-search   │
+   └────────┬────────┘           └────────┬────────┘     │ .futunn.com      │
+            │                             │              └──────────────────┘
+            └──────────────┬──────────────┘
+                           ▼
+                  ┌─────────────────┐
+                  │    富途服务器     │
+                  │ 港股 / 美股 /    │
+                  │ A股 / 新 / 日    │
+                  └─────────────────┘
 ```
 
 ---
@@ -375,13 +469,14 @@ npx skills add -y -g FutunnOpen/futu-agent-hub
 - **只读模式** — 不配置交易密码即可限制为仅查询行情
 - **频率限制** — 遵循 Futu API 内置的频率限制和权限控制
 - **内容 Skills** — 调用公开接口，不传输用户凭证；返回数据仅供参考
+- **行情交易 Skills** — 通过 `futu` 命令行的 OAuth 登录访问账户；skill 不读取 token 文件
 
 ---
 
 ## 常见问题
 
 **Q: 所有 Skills 都需要 OpenD 吗？**
-A: 不需要。**Futu API Skill** 与**三个异动检测 Skill**（资金 / 衍生品 / 技术面异动）依赖 OpenD；**内容类 Skills**（资讯搜索、个股解读、情绪温度计）直接调用公开 HTTP 接口，无需 OpenD。
+A: 不需要。**Futu API Skill** 与**三个异动检测 Skill**（资金 / 衍生品 / 技术面异动）依赖 OpenD。**行情交易 Skills**（`futu-quote` / `futu-trading` / `futu-sim-trading` / `futu-crypto`）走官方 `futu` 命令行，不经过 OpenD。**内容类 Skills**（资讯搜索、个股解读、情绪温度计）直接调用公开 HTTP 接口。
 
 **Q: 使用 Futu Agent Hub 有额外费用吗？**
 A: 没有。通过 Futu API 交易不收取额外费用，仅按正常佣金标准收费。
