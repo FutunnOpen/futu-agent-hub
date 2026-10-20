@@ -70,6 +70,42 @@
       "description": "Futu technical-analysis anomaly detection",
       "keywords": ["futu", "technical", "anomaly", "技术面", "K线", "MACD", "RSI", "异动"],
       "discovery_hint": "用户询问技术面情况、技术信号、K线形态、金叉/死叉、超买超卖、MACD、RSI、KDJ 等技术指标异动，或给出宽泛的异动请求如'腾讯有没有异常'时"
+    },
+    {
+      "slug": "futu-quote",
+      "name": "futu-quote",
+      "product": "futu",
+      "category": "quote-trade",
+      "description": "Futu CLI market data — quotes, K-lines, snapshots, order books, and company data",
+      "keywords": ["futu", "quote", "行情", "报价", "K线", "快照", "摆盘", "自选股", "资金流"],
+      "discovery_hint": "用户想查行情、报价、最新价、涨跌幅、K线、快照、逐笔、分时、买卖盘/摆盘、排行、资金流、公司资料、财务、股东、估值、板块、IPO、交易日历、自选股时。典型必中例：『腾讯现在多少钱』『AAPL 日K』『港股涨幅榜』『看看我的自选股』。SKIP：真实下单/改单/撤单（→ futu-trading）、模拟交易（→ futu-sim-trading）、加密货币下单（→ futu-crypto）。"
+    },
+    {
+      "slug": "futu-trading",
+      "name": "futu-trading",
+      "product": "futu",
+      "category": "quote-trade",
+      "description": "Futu CLI securities trading — accounts, orders, fills, and positions",
+      "keywords": ["futu", "trade", "order", "交易", "下单", "持仓", "撤单", "成交", "账户"],
+      "discovery_hint": "用户想查看证券账户、资金、持仓、最大可买卖，或对股票/期权做真实买入、卖出、下单、改单、撤单、查订单、查成交时。典型必中例：『我的持仓』『买入 1 股苹果』『撤销这笔订单』。SKIP：只查行情不下单（→ futu-quote）、模拟盘（→ futu-sim-trading）、加密货币交易（→ futu-crypto）。"
+    },
+    {
+      "slug": "futu-sim-trading",
+      "name": "futu-sim-trading",
+      "product": "futu",
+      "category": "quote-trade",
+      "description": "Futu CLI paper trading — sim accounts, paper orders, and positions",
+      "keywords": ["futu", "sim", "paper", "模拟", "模拟盘", "模拟交易", "纸交易"],
+      "discovery_hint": "用户明确要模拟交易、模拟盘、纸交易：查看模拟账户/资金/持仓，或模拟买入、卖出、改单、撤单、查历史模拟订单时。典型必中例：『模拟买入腾讯』『看看模拟账户持仓』。SKIP：真实证券交易（→ futu-trading）、加密货币交易（→ futu-crypto）、只查行情（→ futu-quote）。"
+    },
+    {
+      "slug": "futu-crypto",
+      "name": "futu-crypto",
+      "product": "futu",
+      "category": "quote-trade",
+      "description": "Futu CLI crypto trading — balances, orders, and fills",
+      "keywords": ["futu", "crypto", "BTC", "ETH", "加密货币", "数字货币", "币对", "比特币"],
+      "discovery_hint": "用户想查看加密货币账户、余额、最大可买卖，或对 BTC/ETH 等币对做买入、卖出、改单、撤单、查订单、查成交时。典型必中例：『买 0.01 个 BTC』『加密货币账户余额』。SKIP：证券股票交易（→ futu-trading）、模拟交易（→ futu-sim-trading）、只查币对行情不下单（→ futu-quote）。"
     }
   ]
 }

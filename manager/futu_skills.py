@@ -213,15 +213,8 @@ def read_skill_version(skill_dir: Path) -> str:
     return m2.group(1).strip() if m2 else ""
 
 
-def read_skill_deps(skill_dir: Path) -> List[str]:
-    """Read declared skill-to-skill deps from SKILL.md frontmatter.
-
-    Canonical path is ``metadata.requires.skills``. The parser accepts a
-    ``skills:`` list under any ``requires:`` block in the frontmatter, so
-    extra namespace levels (e.g. legacy ``metadata.openclaw.requires``) also
-    work. Returns slug list in declared order, deduped. Empty list if
-    frontmatter is absent or the field is missing.
-    """
+def _read_requires_list(skill_dir: Path, field: str) -> List[str]:
+    """Read a list under any ``requires:`` block in SKILL.md frontmatter."""
     p = skill_dir / "SKILL.md"
     if not p.is_file():
         return []
@@ -232,46 +225,140 @@ def read_skill_deps(skill_dir: Path) -> List[str]:
     m = re.match(r"^---\s*\n(.*?)\n---", text, re.DOTALL)
     if not m:
         return []
-    lines = m.group(1).splitlines()
+    return _parse_requires_list(m.group(1).splitlines(), field)
+
+
+def _parse_requires_list(lines: List[str], field: str) -> List[str]:
+    label = field + ":"
     in_requires = False
     requires_indent = -1
-    in_skills_list = False
-    skills_indent = -1
-    deps: List[str] = []
+    in_list = False
+    list_indent = -1
+    items: List[str] = []
     seen: set = set()
 
     def _push(item: str) -> None:
-        s = item.strip().strip("'\"")
-        if s and s not in seen:
-            seen.add(s)
-            deps.append(s)
+        value = item.strip().strip("'\"")
+        if value and value not in seen:
+            seen.add(value)
+            items.append(value)
 
     for line in lines:
         stripped = line.lstrip(" ")
         indent = len(line) - len(stripped)
         if not stripped or stripped.startswith("#"):
             continue
-        if in_skills_list:
-            if indent > skills_indent and stripped.startswith("- "):
+        if in_list:
+            if indent > list_indent and stripped.startswith("- "):
                 _push(stripped[2:])
                 continue
-            in_skills_list = False
+            in_list = False
         if in_requires:
             if indent <= requires_indent:
                 in_requires = False
-            elif stripped.startswith("skills:"):
-                rest = stripped[len("skills:"):].strip()
+            elif stripped.startswith(label):
+                rest = stripped[len(label):].strip()
                 if rest.startswith("[") and rest.endswith("]"):
                     for item in rest[1:-1].split(","):
                         _push(item)
                 else:
-                    in_skills_list = True
-                    skills_indent = indent
+                    in_list = True
+                    list_indent = indent
                 continue
         if stripped.startswith("requires:"):
             in_requires = True
             requires_indent = indent
-    return deps
+    return items
+
+
+def read_skill_deps(skill_dir: Path) -> List[str]:
+    """Read declared skill-to-skill deps from SKILL.md frontmatter.
+
+    Canonical path is ``metadata.requires.skills``. The parser accepts a
+    ``skills:`` list under any ``requires:`` block in the frontmatter, so
+    extra namespace levels (e.g. legacy ``metadata.openclaw.requires``) also
+    work. Returns slug list in declared order, deduped. Empty list if
+    frontmatter is absent or the field is missing.
+    """
+    return _read_requires_list(skill_dir, "skills")
+
+
+def read_skill_bins(skill_dir: Path) -> List[str]:
+    """Read ``metadata.requires.bins`` from SKILL.md frontmatter."""
+    return _read_requires_list(skill_dir, "bins")
+
+
+FUTU_CLI_INSTALL_UNIX = (
+    "curl -fsSL https://raw.githubusercontent.com/FutunnOpen/futu-cli/main/scripts/install.sh | sh"
+)
+FUTU_CLI_INSTALL_WINDOWS_DOWNLOAD = (
+    "iwr -UseBasicParsing https://raw.githubusercontent.com/FutunnOpen/futu-cli/main/scripts/install.ps1 -OutFile install.ps1"
+)
+FUTU_CLI_INSTALL_WINDOWS_RUN = "powershell -ExecutionPolicy Bypass -File .\\install.ps1"
+
+
+def futu_cli_candidates() -> List[Path]:
+    """Install locations used by the official futu CLI installers."""
+    home = Path.home()
+    candidates = [
+        home / ".futu" / "bin" / "futu",
+        home / ".futu" / "bin" / "futu.exe",
+    ]
+    local_app = os.environ.get("LOCALAPPDATA")
+    if local_app:
+        candidates.append(Path(local_app) / "FutuCLI" / "bin" / "futu.exe")
+    if sys.platform == "win32":
+        candidates.append(home / "AppData" / "Local" / "FutuCLI" / "bin" / "futu.exe")
+    return candidates
+
+
+def find_futu_cli() -> Optional[str]:
+    """Return a usable futu binary path, or None when it is not installed."""
+    found = shutil.which("futu")
+    if found:
+        return found
+    for path in futu_cli_candidates():
+        if path.is_file():
+            return str(path)
+    return None
+
+
+def runtime_bin_available(name: str) -> bool:
+    if name == "futu":
+        return find_futu_cli() is not None
+    return shutil.which(name) is not None
+
+
+def missing_runtime_bins(skill_dir: Path) -> List[str]:
+    return [name for name in read_skill_bins(skill_dir) if not runtime_bin_available(name)]
+
+
+def print_futu_cli_install_hint() -> None:
+    """Print both official installers. install.sh does not support Windows."""
+    print("futu CLI is not installed. This command was not run automatically.", file=sys.stderr)
+    print("macOS / Linux:", file=sys.stderr)
+    print(f"  {FUTU_CLI_INSTALL_UNIX}", file=sys.stderr)
+    print("Windows (PowerShell, amd64):", file=sys.stderr)
+    print(f"  {FUTU_CLI_INSTALL_WINDOWS_DOWNLOAD}", file=sys.stderr)
+    print(f"  {FUTU_CLI_INSTALL_WINDOWS_RUN}", file=sys.stderr)
+
+
+def warn_missing_runtime_bins(install_root: Path, slugs: List[str]) -> None:
+    missing: List[str] = []
+    seen: set = set()
+    for slug in slugs:
+        for name in missing_runtime_bins(install_root / slug):
+            if name not in seen:
+                seen.add(name)
+                missing.append(name)
+    if not missing:
+        return
+    print(
+        "warning: missing runtime command(s): " + ", ".join(missing),
+        file=sys.stderr,
+    )
+    if "futu" in missing:
+        print_futu_cli_install_hint()
 
 
 def resolve_skill_version(
@@ -821,6 +908,9 @@ def run_update_check(install_root: Path, *, timeout: int) -> Dict[str, Any]:
         }
         if dep_info:
             skill_entry["deprecation"] = dep_info
+        missing_bins = missing_runtime_bins(dest)
+        if missing_bins:
+            skill_entry["missing_runtime"] = missing_bins
         out["skills"].append(skill_entry)
 
     return out
@@ -1800,6 +1890,7 @@ def cmd_upgrade(args: argparse.Namespace) -> None:
                 status = "no catalog info"
             print(f"{slug}\tlocal={local_ver or '?'}\tremote={remote_ver or '?'}\t{status}{origin}")
             _enqueue_deps(dest, queue, seen)
+        warn_missing_runtime_bins(install_root, list(targets))
         return
 
     # Process deprecation removals
@@ -1876,6 +1967,7 @@ def cmd_upgrade(args: argparse.Namespace) -> None:
             print(f"error: {kind} {slug}: {e}", file=sys.stderr)
             failed += 1
     write_lock(install_root, meta, lock)
+    warn_missing_runtime_bins(install_root, list(processed))
 
     # Cleanup cached repos after upgrade
     _cleanup_repo_cache(repo_refreshed)
@@ -1933,6 +2025,38 @@ def cmd_detect(args: argparse.Namespace) -> None:
     else:
         print(f"# {reason}", file=sys.stderr)
         print(path)
+
+
+def _print_missing_runtime_from_report(report: Dict[str, Any]) -> None:
+    missing: List[str] = []
+    seen: set = set()
+    for skill in report.get("skills") or []:
+        for name in skill.get("missing_runtime") or []:
+            if name not in seen:
+                seen.add(name)
+                missing.append(name)
+    if not missing:
+        return
+    print(
+        "warning: missing runtime command(s): " + ", ".join(missing),
+        file=sys.stderr,
+    )
+    if "futu" in missing:
+        print_futu_cli_install_hint()
+
+
+def cmd_check_cli(args: argparse.Namespace) -> None:
+    """Check whether the official futu CLI binary is installed."""
+    path = find_futu_cli()
+    if args.json:
+        print(json.dumps({"ok": bool(path), "path": path or ""}, ensure_ascii=False))
+    elif path:
+        print("ok")
+    else:
+        print("not-installed")
+        print_futu_cli_install_hint()
+    if not path:
+        raise SystemExit(1)
 
 
 def cmd_check_opend(args: argparse.Namespace) -> None:
@@ -2034,6 +2158,7 @@ def cmd_check(args: argparse.Namespace) -> None:
                 print(f"  {s['slug']}: not listed in catalog (local {s['local']})")
             else:
                 print(f"  {s['slug']}: {s['status']} (local {s['local']})")
+    _print_missing_runtime_from_report(r)
 
     if r["outdated"]:
         print(
@@ -2245,6 +2370,13 @@ def build_parser() -> argparse.ArgumentParser:
         parents=[common],
     )
     rd.set_defaults(func=cmd_refresh_discovery)
+
+    cc = sub.add_parser(
+        "check-cli",
+        help="check if the futu CLI binary is installed (exits 0=ok, 1=not installed)",
+    )
+    cc.add_argument("--json", action="store_true", help="JSON with ok and path")
+    cc.set_defaults(func=cmd_check_cli)
 
     co = sub.add_parser(
         "check-opend",

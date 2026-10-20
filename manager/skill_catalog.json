@@ -1,5 +1,5 @@
 {
-  "updated": "2026-05-11",
+  "updated": "2026-10-20",
   "note": "Published latest versions for installed skills; bump when a skill ships without requiring a new CLI.",
   "deprecations": {
     "news-search": {
@@ -21,6 +21,21 @@
       "action": "migrate",
       "replace_with": "install-futu-opend",
       "message": "install-opend has been renamed to install-futu-opend."
+    },
+    "capital-anomaly": {
+      "action": "migrate",
+      "replace_with": "futu-capital-anomaly",
+      "message": "capital-anomaly has been renamed to futu-capital-anomaly."
+    },
+    "derivatives-anomaly": {
+      "action": "migrate",
+      "replace_with": "futu-derivatives-anomaly",
+      "message": "derivatives-anomaly has been renamed to futu-derivatives-anomaly."
+    },
+    "technical-anomaly": {
+      "action": "migrate",
+      "replace_with": "futu-technical-anomaly",
+      "message": "technical-anomaly has been renamed to futu-technical-anomaly."
     }
   },
   "skills": {
@@ -31,6 +46,10 @@
     "install-futu-opend": "0.1.1",
     "futu-capital-anomaly": "0.0.1",
     "futu-derivatives-anomaly": "0.0.1",
-    "futu-technical-anomaly": "0.0.1"
+    "futu-technical-anomaly": "0.0.1",
+    "futu-quote": "0.0.2",
+    "futu-trading": "0.0.2",
+    "futu-sim-trading": "0.0.2",
+    "futu-crypto": "0.0.2"
   }
 }
