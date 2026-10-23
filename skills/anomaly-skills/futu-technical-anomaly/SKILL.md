@@ -9,17 +9,15 @@ description: >-
   or gives a broad stock-anomaly request such as “英伟达异动”、“NVDA 异动”、
   “腾讯有没有异动/异常” without narrowing the dimension. For broad anomaly
   requests, this skill should be used together with `capital-anomaly` and
-  `derivatives-anomaly`. Before calling the script, you must first normalize the
+  `derivatives-anomaly`. Before calling the CLI, you must first normalize the
   user-mentioned stock name, Chinese company name, English company name, or
   ticker into a standard symbol such as `US.NVDA` or `HK.00700`.
+allowed-tools: Bash Read
 metadata:
-  version: 0.0.1
+  version: 0.0.2
   requires:
     bins:
-      - python3
-    skills:
-      - install-futu-opend
-      - futuapi
+      - futu
   author: Futu
 license: MIT
 ---
@@ -34,36 +32,11 @@ If the user only says a broad request such as `英伟达异动`, `NVDA 异动`, 
 
 ---
 
-## Prerequisite: OpenD Must Be Running
+## Prerequisite: Futu CLI
 
-This skill depends on Futu **OpenD** (default `127.0.0.1:11111`) to fetch technical anomaly data. OpenD installation and startup are owned by the peer `install-futu-opend` skill — do **not** attempt to detect, install, or start OpenD from inside this skill.
+This skill calls **`futu anomaly technical`** (OAuth REST via the official CLI). Do **not** use OpenD, `futu-api`, or removed `futuapi` scripts.
 
-### Pre-flight Check
-
-Silently probe OpenD reachability before the workflow. **Do not announce this step to the user.**
-
-```bash
-python3 -c 'import os,socket
-host=os.environ.get("FUTU_OPEND_HOST","127.0.0.1")
-port=int(os.environ.get("FUTU_OPEND_PORT","11111"))
-s=socket.socket(); s.settimeout(2)
-try:
-    s.connect((host, port)); print("ok")
-except OSError:
-    print("not-running")
-finally:
-    s.close()'
-```
-
-Behavior:
-
-- **`ok`** — proceed straight to the Workflow. Do not mention OpenD or the pre-flight check; the user does not need to see it.
-- **`not-running`** — ask the user for consent in one short, friendly line, e.g.:
-  > 该 skill 需要本地 OpenD 服务（127.0.0.1:11111）才能拉取技术异动数据，目前未检测到。需要我现在帮你通过 `/install-futu-opend` 安装/启动吗？
-  - If the user agrees, hand off by invoking `/install-futu-opend`. Resume this skill's Workflow once OpenD is reachable.
-  - If the user declines, stop here — do **not** execute `scripts/handle_technical_anomaly.py`.
-
-> **Hard rule**: When OpenD is not running, **do not execute `scripts/handle_technical_anomaly.py` directly**. Hand off to `/install-futu-opend` first.
+Before the workflow, follow [CLI runtime](../references/cli-runtime.md): probe `futu auth status --format json` silently. If the CLI is missing or the user is not logged in, stop and resolve before calling anomaly commands. If `futu anomaly` is not recognized, say anomaly needs a newer CLI — see repo `docs/migration-gaps-and-rest-api.md`.
 
 ---
 
@@ -82,7 +55,7 @@ If the target stock is missing, ask a follow-up question instead of guessing.
 
 ### 2. Normalize the Stock Target into a Standard Symbol
 
-Before calling the script, convert the user-mentioned stock target into a standard symbol such as `US.NVDA`, `HK.00700`, `SH.600519`, or `SZ.000001`.
+Before calling the CLI, convert the user-mentioned stock target into a standard symbol such as `US.NVDA`, `HK.00700`, `SH.600519`, or `SZ.000001`.
 
 Normalization rules:
 
@@ -159,28 +132,26 @@ Default strategy:
 - English user -> `2`
 - If unclear, default to `0`
 
-### 5. Call the Script
+### 5. Call the CLI
 
-After extracting and normalizing the parameters, call the script with a Python 3 interpreter. Prefer `python3`; only fall back to `python` when `python3` is unavailable. This avoids the common macOS case where `python` is not installed or not on `PATH`.
-
-Script entry:
+After extracting and normalizing the parameters, run (repeat `--indicator-filters` for each filter, or pass a comma-separated list if the CLI accepts it):
 
 ```bash
-PYTHON_BIN="$(command -v python3 || command -v python)" && "$PYTHON_BIN" scripts/handle_technical_anomaly.py <STANDARD_SYMBOL> --time-range <DAYS> [--indicator-filters ...] [--language-id <ID>] --json
+futu anomaly technical <STANDARD_SYMBOL> --time-range <DAYS> [--indicator-filters <FILTER> ...] [--language-id <ID>] --format json --source skill
 ```
 
 Examples:
 
 ```bash
-PYTHON_BIN="$(command -v python3 || command -v python)" && "$PYTHON_BIN" scripts/handle_technical_anomaly.py US.NVDA --time-range 7 --json
-PYTHON_BIN="$(command -v python3 || command -v python)" && "$PYTHON_BIN" scripts/handle_technical_anomaly.py HK.00700 --time-range 7 --indicator-filters MACD RSI6 RSI12 RSI24 --json
-PYTHON_BIN="$(command -v python3 || command -v python)" && "$PYTHON_BIN" scripts/handle_technical_anomaly.py SH.600519 --time-range 14 --indicator-filters BOLL MA --json
+futu anomaly technical US.NVDA --time-range 7 --format json --source skill
+futu anomaly technical HK.00700 --time-range 7 --indicator-filters MACD RSI6 RSI12 RSI24 --language-id 0 --format json --source skill
+futu anomaly technical SH.600519 --time-range 14 --indicator-filters BOLL MA --format json --source skill
 ```
 
 ### 6. Check the Result
 
-- If the script exits successfully, use the returned data to build a structured technical-anomaly summary.
-- If the script returns an error, surface the error message and do not fabricate results.
+- If the CLI exits successfully, use the JSON to build a structured technical-anomaly summary.
+- If the CLI returns an error, surface the error message and do not fabricate results.
 - If a requested indicator has no anomaly in the window, explicitly say `No anomaly`.
 
 ---
@@ -245,11 +216,11 @@ When the user only asks for a subset, keep only `Candlestick Patterns` plus the 
 
 ## Behavior Rules
 
-1. Always normalize the user-mentioned stock target into a standard symbol before calling the script.
+1. Always normalize the user-mentioned stock target into a standard symbol before calling the CLI.
 2. If the target stock is missing, ask a follow-up question.
 3. If the market is ambiguous, ask a follow-up question instead of guessing.
 4. If the user asks a broad technical question, omit `indicator_filters` and use the full interface.
-5. Do not output raw JSON by default when talking to the user, even if the script returns JSON.
+5. Do not output raw JSON by default when talking to the user, even if the CLI returns JSON.
 6. Do not interpret the result as investment advice or trading guidance.
 7. Do not invent extra signal explanations beyond what the interface returns.
 

@@ -9,10 +9,10 @@ Install Futu Skills into your AI client with `npx`. Each skill's `description` i
 | Dependency | Purpose | Check |
 |------------|---------|-------|
 | Node.js 22.20+ | Provides `npx` for `npx skills add` and `npx skills update` | `node -v` |
-| `python3` | Runs OpenAPI and anomaly-detection scripts | `python3 --version` |
 | `curl` | Content skills call public HTTP APIs | `curl --version` |
+| `futu` CLI | Quote, trading, and anomaly skills | `futu version` |
 
-> macOS ships `python3` and `curl`. Linux: `apt install python3 curl` / `yum install python3 curl`. Windows: the official Node.js installer. Quote and trading skills also need the official `futu` CLI; the install commands are in those skills (`install.sh` on macOS / Linux, `install.ps1` on Windows).
+> macOS ships `curl`. Quote, trading, and anomaly skills need the official `futu` CLI (`install.sh` on macOS / Linux, `install.ps1` on Windows). See [futu-cli](https://github.com/FutunnOpen/futu-cli). Upgrading from OpenD: [upgrade-from-opend.md](./upgrade-from-opend.md).
 
 ---
 
@@ -59,13 +59,21 @@ npx skills add -y -g FutunnOpen/futu-agent-hub
 
 ---
 
-## Step 2 — Install OpenD (required for OpenAPI / Anomaly Skills)
+## Step 2 — Install and authorize Futu CLI
 
-OpenAPI Skills and Anomaly Detection Skills need the OpenD service running locally.
+Quote, trading, and anomaly skills use the official **`futu` CLI** (OAuth). OpenD and Python SDK are **not** required.
 
-After Step 1 completes, invoke `/install-futu-opend` in your AI client. The skill directly downloads, installs, and starts OpenD (Windows / macOS / Linux supported) — no extra confirmation needed.
+After Step 1, install the CLI if needed (see `futu-quote` or [futu-cli README](https://github.com/FutunnOpen/futu-cli/blob/main/README.md)), then:
 
-If `/install-futu-opend` is not registered, re-run Step 1 to make sure all skills from this repo are installed.
+```bash
+futu version
+futu auth login
+futu auth status --format json
+futu check
+futu quote HK.00700 --format json
+```
+
+Anomaly skills call `futu anomaly ...`; if the subcommand is missing, upgrade the CLI when released — see [migration-gaps-and-rest-api.md](./migration-gaps-and-rest-api.md).
 
 ---
 
@@ -89,10 +97,11 @@ Some clients require a restart or a new chat session to pick up newly installed 
 </details>
 
 <details>
-<summary><b>OpenAPI connection fails</b></summary>
+<summary><b><code>futu</code> CLI or quote fails</b></summary>
 
-- OpenD must be running and logged in (status: connected)
-- Default port `11111`
-- If OpenD is not installed, run `/install-futu-opend` (see Step 2)
+- Run `futu auth status` — if not logged in, run `futu auth login`
+- Run `futu check` for connectivity
+- `PERMISSION_DENIED` usually means missing quote/trade permission in the app, not a missing local token
+- Anomaly: if `futu anomaly` is unknown, see [migration-gaps-and-rest-api.md](./migration-gaps-and-rest-api.md)
 
 </details>
