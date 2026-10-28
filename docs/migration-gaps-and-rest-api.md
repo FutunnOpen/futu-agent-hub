@@ -33,13 +33,20 @@
 | `get_financial_unusual` | `futu-capital-anomaly` |
 | `get_derivative_unusual` | `futu-derivatives-anomaly` |
 
-### 2.2 实时订阅与推送（P1）
+### 2.2 实时订阅与推送（P1）— Hub 已处理
 
-原 `futuapi/scripts/subscribe/`（subscribe、push_quote、push_orderbook、push_kline、push_ticker、push_rt_data、push_broker 等）。**OpenD 长连接已移除**；替代方式为 **Open API 行情推送 WebSocket**（`wss://webapi-quote.futunn.com/ws`）：连接 → OAuth/API Key **鉴权** → JSON **subscribe** → 按 `type` 收包。
+原 `futuapi/scripts/subscribe/`（subscribe、push_quote、push_orderbook、push_kline、push_ticker、push_rt_data、push_broker 等）。**OpenD TCP 推送已移除**；官方替代为 **Open API 行情推送 WebSocket（WSS）**。
 
-**用户指引：** [websocket-quote-push.md](./websocket-quote-push.md)（含订阅字段与 **`BROKER_QUEUE` 经纪队列**说明）。
+| 项 | 状态 |
+|----|------|
+| 服务端 | Open API 已实现（[行情推送概览](https://open.futunn.com/zh-cn/api/quote/push/overview)） |
+| 端点 | `wss://webapi-quote.futunn.com/ws` |
+| Hub 用户文档 | [websocket-quote-push.md](./websocket-quote-push.md)（鉴权 → subscribe → 收包；**`BROKER_QUEUE`** 经纪队列） |
+| 升级指引 | [upgrade-from-opend.md](./upgrade-from-opend.md) §5 |
+| Agent | **`futu-quote`**：REST 用 CLI；实时流/经纪队列 **指引 WSS**，禁止回退 OpenD（见 `references/websocket-push.md`） |
+| futu-cli | **不计划**封装 `futu subscribe`；推送由用户/集成方 **自建 WSS 客户端**（OAuth 与 `futu auth login` 同源 token） |
 
-Skill Hub 的 **`futu-quote` 仍用 CLI 做 REST 查询**；持续推送需用户/集成方**自研 WSS 客户端**（`futu-cli` 暂未封装 subscribe 子命令）。
+WSS 流程摘要：连接 → **auth**（Bearer）→ **subscribe**（`quote` / `order_book` / `ticker` / `kline`）→ 按 `type` 分发；断线须 **重新鉴权并重新订阅**。
 
 ### 2.3 原 futuapi 有、Open API 多已具备（P2，可选）
 
@@ -56,7 +63,7 @@ Skill Hub 的 **`futu-quote` 仍用 CLI 做 REST 查询**；持续推送需用�
 | `get_warrant.py` | **已有替代：** OpenD `Qot_GetWarrant`(3210) 与 `Qot_WarrantScreen`(3254) 均落到后端 `FetchWarrantListV2`；BFF **`POST /api/v1.0/quote/warrant-screen`** → CLI **`futu warrant-screen`**。单标的/简单条件用 `stock_owner` + 筛选组即可；**涡轮筛选**为同链路 **V2 加强版**（跨市场、`screen_groups`、多字段排序）。见 `futu-quote` / `quote.warrant_screen` |
 | `resolve_option_code.py` | **已有替代：** BFF 用 `securitycache`（`stock_id` / `id_to_symbol`）在网关内换算，**不必**再调已废弃的 6320/6321。简写「标的 + 到期 + 行权价 + Call/Put」→ CLI **`futu option chain <标的> --start/--end`**（`GET .../option-chain`），在返回的 `option_chain` 里按到期、行权价、`option_type` 取标准 **`MARKET.CODE`** |
 | `set_price_reminder.py` / `get_price_reminder.py` | 到价提醒 → **产品不做**，不排 REST/CLI |
-| `modify_user_security.py` / `get_user_security_group.py` | 自选股分组细粒度管理（部分由 `futu watchlist` 覆盖） |
+| `modify_user_security.py` / `get_user_security_group.py` / `get_user_security.py` | **与 OpenD 三接口等价：** `futu watchlist`（groups / list / add / delete / move-out）→ BFF user-security-group / user-security / modify-user-security。OpenD **无**建组/改名/删空组/组内排序 API；App 侧分组管理不在 API 范围 |
 | `get_global_state.py` / `get_user_info.py` | OpenD 本地/登录态 → 用 `futu auth status`、`futu check` 替代 |
 
 ### 2.4 已由 CLI 覆盖（删除 futuapi 不丢主流程）
@@ -171,28 +178,21 @@ moomoo-cli 同构（`moomoo anomaly *`）；Host 用各自 `api_base`。联调�
 - 与 OpenD 链路 **字段级等价**（T07 固定样本 diff）
 - OAuth scope：与行情读权限对齐或独立 `unusual_read`（待产品/API 确认）
 
-### P1 — 推送（Open API WebSocket；用户按文档自建客户端）
+### P1 — 推送（WSS）
 
-| 项 | 说明 |
-|----|------|
-| 端点 | `wss://webapi-quote.futunn.com/ws`（Moomoo：`wss://webapi-quote.moomoo.com/ws`） |
-| 文档 | [行情推送概览](https://open.futunn.com/zh-cn/api/quote/push/overview) → 鉴权 / 订阅 / 数据格式 / 保活 |
-| Hub 指引 | [websocket-quote-push.md](./websocket-quote-push.md) |
-| 经纪队列 | 推送 `type` = **`BROKER_QUEUE`**（非独立 subscribe 字段；见上） |
-| futu-cli | **未**封装 WSS；Agent 对用户说明 WS 路径，REST 仍用 `futu quote` |
+**Hub 侧已闭环**（文档 + Skill 路由），详见 **§2.2**。Moomoo 端点：`wss://webapi-quote.moomoo.com/ws`，文档 [open.moomoo.com 行情推送](https://open.moomoo.com/api/quote/push/overview)。
 
-### P2 — Open API 已实现、CLI 缺口（见 `internal/client/endpoints.go`）
+后续可选（非 Hub 阻塞）：`futu-cli` 封装 WSS 订阅子命令。
 
-| 业务 | Open API（已实现） | futu-cli / moomoo-cli |
-|------|-------------------|------------------------|
-| 订单费用 | `GET /api/v1.0/accounts/{acc_id}/orders/{order_id}/fees` | **`order fees`** |
-| 融资融券 | `GET /api/v1.0/margin_ratio` | **`margin-ratio`** |
-| 资金流水 | `GET /api/v1.0/accounts/{acc_id}/cash_logs` | **`account cash-logs`** |
-| 自选股分组 | `GET/POST` user-security / modify-user-security 等 | **部分已有**（`watchlist`、`quote.user_security*`） |
+### P2 — Open API 已实现；CLI / Skill 见 §2.3
 
-**待产品/文档核对是否在 Open API 列出：** 加密账户流水、历史 K 线额度。权证与期权解析见 §2.3（`warrant-screen` / `option chain`）。若某能力文档未列出，则不算「文档已实现」，需另立项。
+[P2 可选能力](https://open.futunn.com/zh-cn/api/overview) 在服务端 **多数已在 Open API 文档列出**；本仓 **不按「缺 REST」跟踪**，只看 **futu-cli / moomoo-cli 是否注册** 与 **Skill 是否写进 references**。
 
-**不做 / 非 REST：** 到价提醒；经纪队列（P1 WS）。
+- **逐条对照（原 futuapi 脚本 → 现 CLI/Skill/WSS）**：见 **§2.3** 表格。
+- **交易 P2 三条**（订单费用、融资融券、资金流水）：CLI 已接，**`futu-trading`** 已文档化。
+- **自选股**：OpenD/Open API 仅三接口；**`futu watchlist`** 已覆盖（§2.3）。
+- **仍待核对**：加密账户流水、历史 K 线额度是否在 Open API 列出及 CLI 是否接。
+- **不做**：到价提醒。实时经纪队列走 **P1 WSS**（§2.2），非 REST。
 
 ---
 
