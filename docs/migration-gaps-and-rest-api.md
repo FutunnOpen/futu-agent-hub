@@ -33,9 +33,13 @@
 | `get_financial_unusual` | `futu-capital-anomaly` |
 | `get_derivative_unusual` | `futu-derivatives-anomaly` |
 
-### 2.2 实时订阅与推送（P1，可选）
+### 2.2 实时订阅与推送（P1）
 
-原 `futuapi/scripts/subscribe/`（subscribe、push_quote、push_orderbook、push_kline、push_ticker、push_rt_data、push_broker 等）。**Skill Hub 默认不迁移 OpenD 长连接**；若产品保留 Agent/CLI 推送能力，用 **WebSocket** 替代（REST 管订阅生命周期，WS 管推送流）。未排期前官网勿承诺「多类推送」。
+原 `futuapi/scripts/subscribe/`（subscribe、push_quote、push_orderbook、push_kline、push_ticker、push_rt_data、push_broker 等）。**OpenD 长连接已移除**；替代方式为 **Open API 行情推送 WebSocket**（`wss://webapi-quote.futunn.com/ws`）：连接 → OAuth/API Key **鉴权** → JSON **subscribe** → 按 `type` 收包。
+
+**用户指引：** [websocket-quote-push.md](./websocket-quote-push.md)（含订阅字段与 **`BROKER_QUEUE` 经纪队列**说明）。
+
+Skill Hub 的 **`futu-quote` 仍用 CLI 做 REST 查询**；持续推送需用户/集成方**自研 WSS 客户端**（`futu-cli` 暂未封装 subscribe 子命令）。
 
 ### 2.3 原 futuapi 有、Open API 多已具备、**futu-cli / Skill 未接**（P2，可选）
 
@@ -48,7 +52,7 @@
 | `get_acc_cash_flow.py` | 资金流水 → Open API [get-cash-logs](https://open.futunn.com/zh-cn/api/trading/account/get-cash-logs)；**CLI 未接** |
 | `get_crypto_cash_flow.py` | 加密货币账户流水（与 `crypto deal history` 可能不等价） |
 | `get_history_kl_quota.py` | 历史 K 线额度 |
-| `get_broker_queue.py` | 经纪队列 → **P1 WebSocket `broker` 推送**（不做 P2 REST） |
+| `get_broker_queue.py` | 实时经纪队列 → WebSocket 推送 **`BROKER_QUEUE`**（订阅 `order_book` 后由服务端附带；见 [websocket-quote-push.md](./websocket-quote-push.md)） |
 | `get_warrant.py` | 单权证报价（筛选见 `futu warrant-screen`） |
 | `resolve_option_code.py` | 行权价/到期日 → 期权合约代码 |
 | `set_price_reminder.py` / `get_price_reminder.py` | 到价提醒 → **产品不做**，不排 REST/CLI |
@@ -167,9 +171,15 @@ moomoo-cli 同构（`moomoo anomaly *`）；Host 用各自 `api_base`。联调�
 - 与 OpenD 链路 **字段级等价**（T07 固定样本 diff）
 - OAuth scope：与行情读权限对齐或独立 `unusual_read`（待产品/API 确认）
 
-### P1 — 推送（Open API 已有 WS；**futu-cli 未接**）
+### P1 — 推送（Open API WebSocket；用户按文档自建客户端）
 
-Open API 概览已含 [行情推送 WebSocket](https://open.futunn.com/zh-cn/api/overview)（Host：`wss://webapi-quote.futunn.com/ws` 等，以文档为准）。**待办：** CLI 订阅/鉴权/收包；经纪队列走 WS **`broker`** channel。Hub 未排期前不教 Agent 用 OpenD subscribe。
+| 项 | 说明 |
+|----|------|
+| 端点 | `wss://webapi-quote.futunn.com/ws`（Moomoo：`wss://webapi-quote.moomoo.com/ws`） |
+| 文档 | [行情推送概览](https://open.futunn.com/zh-cn/api/quote/push/overview) → 鉴权 / 订阅 / 数据格式 / 保活 |
+| Hub 指引 | [websocket-quote-push.md](./websocket-quote-push.md) |
+| 经纪队列 | 推送 `type` = **`BROKER_QUEUE`**（非独立 subscribe 字段；见上） |
+| futu-cli | **未**封装 WSS；Agent 对用户说明 WS 路径，REST 仍用 `futu quote` |
 
 ### P2 — Open API 已实现、CLI 缺口（见 `internal/client/endpoints.go`）
 

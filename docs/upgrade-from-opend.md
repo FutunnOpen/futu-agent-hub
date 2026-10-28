@@ -39,6 +39,12 @@ futu check
 | 技术面 / 资金 / 衍生品异动 | `futu-technical-anomaly`、`futu-capital-anomaly`、`futu-derivatives-anomaly`（需 CLI `futu anomaly`，见 [migration-gaps-and-rest-api.md](./migration-gaps-and-rest-api.md)） |
 | 综合 OpenAPI 脚本包 | **已移除** — 按上表拆分到对应 Skill |
 
-## 5. 不再支持的能力
+## 5. 原 OpenD 订阅 / 推送 / 经纪队列
 
-实时订阅推送、部分 futuapi 边角脚本等 — 详见 [migration-gaps-and-rest-api.md](./migration-gaps-and-rest-api.md)。
+| 原 futuapi | 现做法 |
+|------------|--------|
+| `subscribe/*`、`push_*` | **Open API WebSocket** 行情推送：鉴权 → `subscribe`（`quote` / `order_book` / `ticker` / `kline`）→ 收 `QUOTE` 等推送 |
+| `get_broker_queue.py`、`push_broker` | 同一 WebSocket 上收 **`BROKER_QUEUE`**（通常在你已订阅 `order_book` 的港股等标的上附带推送） |
+
+逐步说明与示例：[websocket-quote-push.md](./websocket-quote-push.md)。  
+其它边角能力（到价提醒、部分 P2 脚本等）见 [migration-gaps-and-rest-api.md](./migration-gaps-and-rest-api.md)。

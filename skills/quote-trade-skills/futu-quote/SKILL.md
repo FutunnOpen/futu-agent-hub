@@ -65,9 +65,11 @@ To update an already installed `futu` CLI, use `futu update --check` and, after 
 - The current quote CLI does not paginate automatically. When the user asks for more, the next page, or the full list, use `--format json`, read the response cursor, and continue according to the pagination reference.
 - `watchlist --action add/delete/move-out` modifies the user's watchlist. Confirm the target group and symbol first unless the user has already explicitly asked to change it.
 - Do not run real-trading or paper-trading commands. Use `futu-trading` for securities trading, `futu-sim-trading` for paper trading, and `futu-crypto` for crypto trading.
+- For **live streaming** (subscribe, push quote/order book/ticker/K-line, real-time **broker queue**), the CLI does not replace OpenD. Direct the user to **Open API Quote Push WebSocket** (`wss://webapi-quote.futunn.com/ws`): auth, then subscribe; broker queue arrives as `BROKER_QUEUE` messages. Read [WebSocket push reference](references/websocket-push.md) and hub [websocket-quote-push.md](../../../../docs/websocket-quote-push.md). Do not use OpenD or removed `futuapi` subscribe scripts.
 
 ## References
 
 - When building a specific quote command, choosing a selector, or checking required, default, or pagination parameters, read [CLI parameters](references/cli-parameters.md).
 - When explaining or choosing markets, security types, K-line types, adjustment types, trading sessions, plate types, option filters, and other quote enums, read [quote naming dictionary](references/dictionaries.md).
 - When handling the next page, more results, or all results, or when `next_key`, `next_time`, `limit`, or `count` is needed, read [quote pagination](references/pagination.md).
+- When the user needs live push or broker queue instead of one-off REST quotes, read [websocket-push](references/websocket-push.md).

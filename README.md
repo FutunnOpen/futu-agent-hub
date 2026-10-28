@@ -42,7 +42,7 @@ Futu Agent Hub 提供 **10 个 Skills**（另含量化策略由交易团队单�
 | 个股解读（`futu-stock-digest`） | 内容 | `curl` | 围绕标的整理最新事实并给出核心解读 |
 | 情绪温度计（`futu-comment-sentiment`） | 内容 | `curl` | 聚合社区情绪、大V观点，输出标准化情绪参考 |
 
-原 **`futuapi` / `install-futu-opend`** 已移除。升级见 [`docs/upgrade-from-opend.md`](docs/upgrade-from-opend.md)；能力缺口与待补 REST API 见 [`docs/migration-gaps-and-rest-api.md`](docs/migration-gaps-and-rest-api.md)。
+原 **`futuapi` / `install-futu-opend`** 已移除。升级见 [`docs/upgrade-from-opend.md`](docs/upgrade-from-opend.md)；能力缺口与待补 REST API 见 [`docs/migration-gaps-and-rest-api.md`](docs/migration-gaps-and-rest-api.md)。**实时订阅与经纪队列**改用 Open API WebSocket，见 [`docs/websocket-quote-push.md`](docs/websocket-quote-push.md)。
 
 ---
 
