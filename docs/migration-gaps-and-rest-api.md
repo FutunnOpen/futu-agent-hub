@@ -6,7 +6,7 @@
 
 参考：[Futu Skill Hub 升级需求文档](https://futu.feishu.cn/docx/MzvRdL9ZMooDqpxyYnJcP0TUnIb)
 
-**产品已确认：** 到价提醒 **不做**；经纪队列走 **WebSocket `broker` channel**（Open API 行情推送能力），不单独立项 REST 拉取。
+**产品已确认：** 到价提醒 **不做**；实时经纪队列走 Open API WebSocket 推送 **`BROKER_QUEUE`**（见 [websocket-quote-push.md](./websocket-quote-push.md)），不单独立项 REST 拉取。
 
 ---
 
@@ -23,9 +23,9 @@
 
 ## 2. 改完后仍缺失或未承诺的能力
 
-### 2.1 阻塞：技术分析三类异动（P0）
+### 2.1 三类异动（P0）
 
-原 OpenD SDK 方法，现由三个 anomaly Skill 通过 **`futu anomaly *` CLI** 调用（CLI/REST 联调完成前无法使用）。
+原 OpenD SDK 方法，由三个 anomaly Skill 通过 **`futu anomaly *` CLI** 调用。CLI 已实现；**发版、OAuth/`api_base` 网关、T07 验收**未闭环前，生产环境需确认 SkillWrap 路径可达。
 
 | 原 SDK 方法 | Skill |
 |-------------|--------|
@@ -47,14 +47,14 @@ Skill Hub 的 **`futu-quote` 仍用 CLI 做 REST 查询**；持续推送需用�
 
 | 原脚本 | 说明 |
 |--------|------|
-| `get_order_fee.py` | 订单费用明细 → Open API [get-order-fees](https://open.futunn.com/zh-cn/api/trading/order/get-order-fees)；**CLI 未接** |
-| `get_margin_ratio.py` | 融资融券 → Open API [get-margin-ratio](https://open.futunn.com/zh-cn/api/trading/trade/get-margin-ratio)；**CLI 未接** |
-| `get_acc_cash_flow.py` | 资金流水 → Open API [get-cash-logs](https://open.futunn.com/zh-cn/api/trading/account/get-cash-logs)；**CLI 未接** |
+| `get_order_fee.py` | 订单费用 → [get-order-fees](https://open.futunn.com/zh-cn/api/trading/order/get-order-fees)；CLI **`futu order fees`**（Skill 未写） |
+| `get_margin_ratio.py` | 融资融券 → [get-margin-ratio](https://open.futunn.com/zh-cn/api/trading/trade/get-margin-ratio)；CLI **`futu margin-ratio`**（Skill 未写） |
+| `get_acc_cash_flow.py` | 资金流水 → [get-cash-logs](https://open.futunn.com/zh-cn/api/trading/account/get-cash-logs)；CLI **`futu account cash-logs`**（Skill 未写） |
 | `get_crypto_cash_flow.py` | 加密货币账户流水（与 `crypto deal history` 可能不等价） |
 | `get_history_kl_quota.py` | 历史 K 线额度 |
 | `get_broker_queue.py` | 实时经纪队列 → WebSocket 推送 **`BROKER_QUEUE`**（订阅 `order_book` 后由服务端附带；见 [websocket-quote-push.md](./websocket-quote-push.md)） |
-| `get_warrant.py` | 单权证报价（筛选见 `futu warrant-screen`） |
-| `resolve_option_code.py` | 行权价/到期日 → 期权合约代码 |
+| `get_warrant.py` | **已有替代：** OpenD `Qot_GetWarrant`(3210) 与 `Qot_WarrantScreen`(3254) 均落到后端 `FetchWarrantListV2`；BFF **`POST /api/v1.0/quote/warrant-screen`** → CLI **`futu warrant-screen`**。单标的/简单条件用 `stock_owner` + 筛选组即可；**涡轮筛选**为同链路 **V2 加强版**（跨市场、`screen_groups`、多字段排序）。见 `futu-quote` / `quote.warrant_screen` |
+| `resolve_option_code.py` | **已有替代：** BFF 用 `securitycache`（`stock_id` / `id_to_symbol`）在网关内换算，**不必**再调已废弃的 6320/6321。简写「标的 + 到期 + 行权价 + Call/Put」→ CLI **`futu option chain <标的> --start/--end`**（`GET .../option-chain`），在返回的 `option_chain` 里按到期、行权价、`option_type` 取标准 **`MARKET.CODE`** |
 | `set_price_reminder.py` / `get_price_reminder.py` | 到价提醒 → **产品不做**，不排 REST/CLI |
 | `modify_user_security.py` / `get_user_security_group.py` | 自选股分组细粒度管理（部分由 `futu watchlist` 覆盖） |
 | `get_global_state.py` / `get_user_info.py` | OpenD 本地/登录态 → 用 `futu auth status`、`futu check` 替代 |
@@ -190,7 +190,7 @@ moomoo-cli 同构（`moomoo anomaly *`）；Host 用各自 `api_base`。联调�
 | 资金流水 | `GET /api/v1.0/accounts/{acc_id}/cash_logs` | **`account cash-logs`** |
 | 自选股分组 | `GET/POST` user-security / modify-user-security 等 | **部分已有**（`watchlist`、`quote.user_security*`） |
 
-**待产品/文档核对是否在 Open API 列出：** 加密账户流水、历史 K 线额度、单权证（非 warrant-screen）、期权代码解析。若文档无，则不算「文档已实现」，需另立项。
+**待产品/文档核对是否在 Open API 列出：** 加密账户流水、历史 K 线额度。权证与期权解析见 §2.3（`warrant-screen` / `option chain`）。若某能力文档未列出，则不算「文档已实现」，需另立项。
 
 **不做 / 非 REST：** 到价提醒；经纪队列（P1 WS）。
 
