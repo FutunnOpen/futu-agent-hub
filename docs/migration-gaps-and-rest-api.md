@@ -6,7 +6,7 @@
 
 参考：[Futu Skill Hub 升级需求文档](https://futu.feishu.cn/docx/MzvRdL9ZMooDqpxyYnJcP0TUnIb)
 
-**产品已确认：** 到价提醒 **不做**；实时经纪队列走 Open API WebSocket 推送 **`BROKER_QUEUE`**（见 [websocket-quote-push.md](./websocket-quote-push.md)），不单独立项 REST 拉取。
+**产品已确认：** 到价提醒 **不做**；**历史 K 线额度**（原 `get_history_kl_quota.py`）**暂时不做**，不排 Open API/CLI/Skill；实时经纪队列走 Open API WebSocket 推送 **`BROKER_QUEUE`**（见 [websocket-quote-push.md](./websocket-quote-push.md)），不单独立项 REST 拉取。
 
 ---
 
@@ -58,7 +58,7 @@ WSS 流程摘要：连接 → **auth**（Bearer）→ **subscribe**（`quote` / 
 | `get_margin_ratio.py` | 融资融券 → [get-margin-ratio](https://open.futunn.com/zh-cn/api/trading/trade/get-margin-ratio)；CLI **`futu margin-ratio`**（**`futu-trading`**） |
 | `get_acc_cash_flow.py` | 资金流水 → [get-cash-logs](https://open.futunn.com/zh-cn/api/trading/account/get-cash-logs)；CLI **`futu account cash-logs`**（**`futu-trading`**） |
 | `get_crypto_cash_flow.py` | 加密货币账户流水（与 `crypto deal history` 可能不等价） |
-| `get_history_kl_quota.py` | 历史 K 线额度 |
+| `get_history_kl_quota.py` | 历史 K 线额度 → **产品暂时不做**（与 `futu history-kline` 拉 K 线数据不同；额度查询不迁移） |
 | `get_broker_queue.py` | 实时经纪队列 → WebSocket 推送 **`BROKER_QUEUE`**（订阅 `order_book` 后由服务端附带；见 [websocket-quote-push.md](./websocket-quote-push.md)） |
 | `get_warrant.py` | **已有替代：** OpenD `Qot_GetWarrant`(3210) 与 `Qot_WarrantScreen`(3254) 均落到后端 `FetchWarrantListV2`；BFF **`POST /api/v1.0/quote/warrant-screen`** → CLI **`futu warrant-screen`**。单标的/简单条件用 `stock_owner` + 筛选组即可；**涡轮筛选**为同链路 **V2 加强版**（跨市场、`screen_groups`、多字段排序）。见 `futu-quote` / `quote.warrant_screen` |
 | `resolve_option_code.py` | **已有替代：** BFF 用 `securitycache`（`stock_id` / `id_to_symbol`）在网关内换算，**不必**再调已废弃的 6320/6321。简写「标的 + 到期 + 行权价 + Call/Put」→ CLI **`futu option chain <标的> --start/--end`**（`GET .../option-chain`），在返回的 `option_chain` 里按到期、行权价、`option_type` 取标准 **`MARKET.CODE`** |
@@ -191,7 +191,8 @@ moomoo-cli 同构（`moomoo anomaly *`）；Host 用各自 `api_base`。联调�
 - **逐条对照（原 futuapi 脚本 → 现 CLI/Skill/WSS）**：见 **§2.3** 表格。
 - **交易 P2 三条**（订单费用、融资融券、资金流水）：CLI 已接，**`futu-trading`** 已文档化。
 - **自选股**：OpenD/Open API 仅三接口；**`futu watchlist`** 已覆盖（§2.3）。
-- **仍待核对**：加密账户流水、历史 K 线额度是否在 Open API 列出及 CLI 是否接。
+- **仍待核对**：加密账户流水是否在 Open API 列出及 CLI 是否接。
+- **暂时不做**：历史 K 线额度（§2.3）。
 - **不做**：到价提醒。实时经纪队列走 **P1 WSS**（§2.2），非 REST。
 
 ---
