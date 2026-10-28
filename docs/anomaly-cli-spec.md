@@ -35,25 +35,35 @@ futu anomaly derivatives US.NVDA --time-range 7 --analysis-dimensions option_unu
 
 重复 flag 与逗号分隔：`--analysis-dimensions a b` 与 `--analysis-dimensions a,b` 均应支持（与现有 CLI 习惯对齐即可）。
 
-## 2. REST 映射（`internal/client/endpoints.go`）
+## 2. REST 映射（对齐 FutuOpenD SkillWrap）
 
-建议新增 endpoint ID（Method/Path 以 API 定稿为准）：
+OpenD 现网（`FutuOpenD/Src/NNProtoCenter/Quote/NNBiz_Qot_SkillWrap.cpp`）：
 
-| Endpoint ID | Method | Path（建议） | CLI |
-|-------------|--------|--------------|-----|
-| `quote.technical_unusual` | GET 或 POST | `/api/v1.0/quote/{symbol}/unusual/technical` | `anomaly technical` |
-| `quote.financial_unusual` | GET 或 POST | `/api/v1.0/quote/{symbol}/unusual/capital` | `anomaly capital` |
-| `quote.derivative_unusual` | GET 或 POST | `/api/v1.0/quote/{symbol}/unusual/derivatives` | `anomaly derivatives` |
+- **POST** `{api_host}/api/v1/get_technical_unusual`
+- **POST** `{api_host}/api/v1/get_financial_unusual`
+- **POST** `{api_host}/api/v1/get_derivative_unusual`
 
-Query / body 字段（与 OpenD SDK 对齐）：
+`api_host`：Futu `https://api.futunn.com`，Moomoo `https://api.moomoo.com`。OAuth CLI 应在用户 `api_base` 上提供**同 path、同 JSON body** 的三条接口（或网关等价转发）。
 
-| 字段 | 类型 | 适用 |
-|------|------|------|
-| `symbol` | string (path) | 全部；`MARKET.CODE` |
-| `time_range` | int | 全部 |
-| `language_id` | int | 全部 |
-| `indicator_filters` | string[] | technical |
-| `analysis_dimensions` | string[] | capital, derivatives |
+OpenAPI **Pb Proto 协议号**（SDK `ProtoId.SkillWrap_*`，与 OpenD 头同值）：**3801 / 3802 / 3803**（`SkillWrapAPI.proto` + `constant.py`）。不是 `NN_ProtoCmd`。
+
+| Endpoint ID（建议） | Method | Path | CLI |
+|---------------------|--------|------|-----|
+| `skillwrap.technical_unusual` | POST | `/api/v1/get_technical_unusual` | `anomaly technical` |
+| `skillwrap.financial_unusual` | POST | `/api/v1/get_financial_unusual` | `anomaly capital` |
+| `skillwrap.derivative_unusual` | POST | `/api/v1/get_derivative_unusual` | `anomaly derivatives` |
+
+POST body（proto 字段名，`SkillWrapAPI.proto`）：
+
+| 字段 | 适用 |
+|------|------|
+| `stock_symbol` | 全部（CLI  positional `<symbol>` 写入此字段） |
+| `time_range` | 全部，默认 7 |
+| `language_id` | 全部，默认 0 |
+| `indicator_filters` | technical |
+| `analysis_dimensions` | capital, derivatives |
+
+HTTP 响应 JSON 字段（OpenD 映射）：`code` → errCode，`message`，`time_range`，`content`（主内容）。详见 [migration-gaps-and-rest-api.md](./migration-gaps-and-rest-api.md) §3.4。
 
 `internal/reporting/routes.go` 同步注册三条路由供 telemetry。
 
@@ -71,21 +81,20 @@ Query / body 字段（与 OpenD SDK 对齐）：
 
 ## 4. JSON 响应契约（Skill 验收 T07）
 
-CLI `--format json` 建议在顶层包含：
+CLI `--format json` 最小集应对齐 OpenD `*UnusualRsp` + HTTP 回包：
 
 ```json
 {
-  "symbol": "US.NVDA",
-  "time_range": 7,
-  "language_id": 0,
-  "method": "get_technical_unusual",
-  "data": {}
+  "retType": 0,
+  "errCode": 0,
+  "retMsg": "",
+  "time_range": "2026.4.2-2026.4.9",
+  "content": "...",
+  "method": "get_technical_unusual"
 }
 ```
 
-`method` 取值：`get_technical_unusual` | `get_financial_unusual` | `get_derivative_unusual`。
-
-`data` **字段级等价**于当前 OpenD SDK 返回（Agent Hub 已删除 Python 脚本；以历史 `handle_*_anomaly.py` 或固定样本为 golden）。Skill 展示逻辑见：
+`content` 与 OpenD SDK 返回的 `content` **字段级等价**（T07 golden）。可选附加请求镜像字段 `stock_symbol` / `time_range` / filters。Skill 展示逻辑见：
 
 - `skills/anomaly-skills/futu-technical-anomaly/SKILL.md`
 - `skills/anomaly-skills/futu-capital-anomaly/SKILL.md`

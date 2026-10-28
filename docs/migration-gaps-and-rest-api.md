@@ -1,8 +1,12 @@
-# OpenD / futuapi 迁移：能力缺口与 REST API 补充清单
+# OpenD / futuapi 迁移：能力缺口清单
 
-本文档记录移除 `skills/futu-api-skills/`（`futuapi`、`install-futu-opend`）后，**Skill Hub 不再提供的能力**，以及 **CLI/API 团队需补充的 RESTful 接口**。行情与四类交易由现有 `futu-*` Skills + `futu` CLI 承接。
+本文档记录移除 `skills/futu-api-skills/` 后 **Skill Hub / futu-cli 仍缺的能力**。
+
+**约定：** [FUTUNN Open API](https://open.futunn.com/zh-cn/api/overview) **文档里已列出的 HTTP/WS 接口，视为服务端已实现**（Host 一般为 `https://webapi.futunn.com`，行情 WS 见快速开始）。本仓 backlog **不是**「让后端再写一遍 REST」，而是 **CLI 接入、OAuth 网关暴露（若与 OpenD Skill 路径不同）、Skill 是否承诺**。
 
 参考：[Futu Skill Hub 升级需求文档](https://futu.feishu.cn/docx/MzvRdL9ZMooDqpxyYnJcP0TUnIb)
+
+**产品已确认：** 到价提醒 **不做**；经纪队列走 **WebSocket `broker` channel**（Open API 行情推送能力），不单独立项 REST 拉取。
 
 ---
 
@@ -29,25 +33,25 @@
 | `get_financial_unusual` | `futu-capital-anomaly` |
 | `get_derivative_unusual` | `futu-derivatives-anomaly` |
 
-### 2.2 本期不迁移：实时订阅与推送（P1）
+### 2.2 实时订阅与推送（P1，可选）
 
-原 `futuapi/scripts/subscribe/`（subscribe、push_quote、push_orderbook、push_kline、push_ticker、push_rt_data、push_broker 等）。**Skill Hub 不再提供**；官网勿承诺「多类推送」。
+原 `futuapi/scripts/subscribe/`（subscribe、push_quote、push_orderbook、push_kline、push_ticker、push_rt_data、push_broker 等）。**Skill Hub 默认不迁移 OpenD 长连接**；若产品保留 Agent/CLI 推送能力，用 **WebSocket** 替代（REST 管订阅生命周期，WS 管推送流）。未排期前官网勿承诺「多类推送」。
 
-### 2.3 原 futuapi 有、当前 CLI 未暴露的边角能力（P2，可选）
+### 2.3 原 futuapi 有、Open API 多已具备、**futu-cli / Skill 未接**（P2，可选）
 
-删除 `futuapi` 后，下列能力**不在**四个 quote/trade Skill 的主承诺内；若产品需要 Agent 可调用，需补 REST + CLI。
+下列能力**不在**四个 quote/trade Skill 主承诺内。Open API 文档已有时 **只缺 CLI（+ 是否写进 Skill）**；文档未列出者单独标注。
 
 | 原脚本 | 说明 |
 |--------|------|
-| `get_order_fee.py` | 预估订单费用 |
-| `get_margin_ratio.py` | 融资融券比例 |
-| `get_acc_cash_flow.py` | 证券账户现金流水 |
+| `get_order_fee.py` | 订单费用明细 → Open API [get-order-fees](https://open.futunn.com/zh-cn/api/trading/order/get-order-fees)；**CLI 未接** |
+| `get_margin_ratio.py` | 融资融券 → Open API [get-margin-ratio](https://open.futunn.com/zh-cn/api/trading/trade/get-margin-ratio)；**CLI 未接** |
+| `get_acc_cash_flow.py` | 资金流水 → Open API [get-cash-logs](https://open.futunn.com/zh-cn/api/trading/account/get-cash-logs)；**CLI 未接** |
 | `get_crypto_cash_flow.py` | 加密货币账户流水（与 `crypto deal history` 可能不等价） |
 | `get_history_kl_quota.py` | 历史 K 线额度 |
-| `get_broker_queue.py` | 经纪队列（与 `futu broker` 十档/历史可能不等价） |
+| `get_broker_queue.py` | 经纪队列 → **P1 WebSocket `broker` 推送**（不做 P2 REST） |
 | `get_warrant.py` | 单权证报价（筛选见 `futu warrant-screen`） |
 | `resolve_option_code.py` | 行权价/到期日 → 期权合约代码 |
-| `set_price_reminder.py` / `get_price_reminder.py` | 到价提醒 |
+| `set_price_reminder.py` / `get_price_reminder.py` | 到价提醒 → **产品不做**，不排 REST/CLI |
 | `modify_user_security.py` / `get_user_security_group.py` | 自选股分组细粒度管理（部分由 `futu watchlist` 覆盖） |
 | `get_global_state.py` / `get_user_info.py` | OpenD 本地/登录态 → 用 `futu auth status`、`futu check` 替代 |
 
@@ -57,46 +61,128 @@
 
 ---
 
-## 3. 需要补充的 RESTful API
+## 3. 待办按类型拆分（非「后端缺 REST」）
 
-### P0 — 异动（与 OpenD SDK 字段级等价，验收 T07）
+### P0 — 异动（OpenD Skill HTTP；**通常不在 Open API 文档**）
 
-建议统一命名空间（路径以 API 团队定稿为准）：
+OpenD 走 **Pb 3801–3803 → POST** `https://api.futunn.com/api/v1/get_*_unusual`（见 FutuOpenD `NNBiz_Qot_SkillWrap.cpp`）。与 `webapi.futunn.com` 的 `/api/v1.0/...` 不是同套文档。**待办：** OAuth/CLI 暴露同等 JSON + `futu anomaly *`（验收 T07）。若产品要求只走 Open API 文档内接口，需单独在 Open API 立项，不在「文档已实现」范围内。
 
-| 方法 | 请求参数 | 建议 REST | 建议 CLI |
-|------|----------|-----------|----------|
-| `get_technical_unusual` | `stock_symbol`, `time_range`, `indicator_filters[]`, `language_id` | `GET/POST /api/v1.0/quote/unusual/technical` | `futu anomaly technical <symbol> ...` |
-| `get_financial_unusual` | `stock_symbol`, `time_range`, `analysis_dimensions[]`, `language_id` | `GET/POST /api/v1.0/quote/unusual/capital` | `futu anomaly capital <symbol> ...` |
-| `get_derivative_unusual` | `stock_symbol`, `time_range`, `analysis_dimensions[]`, `language_id` | `GET/POST /api/v1.0/quote/unusual/derivatives` | `futu anomaly derivatives <symbol> ...` |
+#### 3.1 命令字对照（**NN_ProtoCmd** / OpenAPI Pb / HTTP / CLI）
+
+在 **FutuOpenD 现网代码**里检索 `NNBase_Define_ProtoCmd.h`、`NNProtoFile/Server/PB/`：**P0 三条异动没有 `NN_ProtoCmd`**，也 **没有** 对应的 `FTCmd*.proto`。OpenD 路径是：OpenAPI Pb（3801–3803）→ `INNBiz_Qot_SkillWrap::Pull*Unusual` → **`StartHttpRequest_CommonPost`**（`NNBiz_Qot_SkillWrap.cpp`），不调用 `SendTCPProto_ProtoBuf(..., NN_ProtoCmd_*, ...)`。
+
+| 能力 | Python / Skill | **`NN_ProtoCmd`（行情 TCP）** | OpenAPI Pb `ProtoId` | Req / Rsp | Skill **HTTP** | futu-cli |
+|------|----------------|-------------------------------|----------------------|-----------|----------------|----------|
+| 技术面异动 | `get_technical_unusual` | **无** | **3801** `SkillWrap_TechnicalUnusual` | `TechnicalUnusualReq` / `Rsp` | `POST /api/v1/get_technical_unusual` | `futu anomaly technical` |
+| 资金面异动 | `get_financial_unusual` | **无** | **3802** `SkillWrap_FinancialUnusual` | `FinancialUnusualReq` / `Rsp` | `POST /api/v1/get_financial_unusual` | `futu anomaly capital` |
+| 衍生品异动 | `get_derivative_unusual` | **无** | **3803** `SkillWrap_DerivativeUnusual` | `DerivativeUnusualReq` / `Rsp` | `POST /api/v1/get_derivative_unusual` | `futu anomaly derivatives` |
+
+**对照（有 ProtoCmd 的行情能力，便于对齐文档习惯）：**
+
+| OpenAPI | `NN_ProtoCmd` | OpenD 发请求方式 |
+|---------|---------------|------------------|
+| `Qot_GetCapitalFlow`（3211） | `NN_ProtoCmd_Qot_Pull_CapitalFlow` = **6694** | `SendTCPProto_ProtoBuf` + `FTCmd6516` 等 |
+| P0 异动（3801–3803） | **未定义** | 仅 HTTP → `api.futunn.com` / `api.moomoo.com` |
+
+**OpenD 内部回调（不是 ProtoCmd）：** `NN_OMEvent_Qot_Pull_SkillWrap*` = `NN_OMEvSatrt + 43703/43704/43705`（`NNBase_Define_OMEvent.h`）— 这是 OpenD 模块间 OM 消息，**不能**当作 `NN_ProtoCmd` 填表。
+
+**Agent Hub / futu-cli P0：** 应对齐 **OpenAPI Pb + Skill HTTP**；**无法**从 OpenD 抄现成的 ProtoCmd 号。若平台要求 OAuth 也走行情 TCP ProtoCmd，需在 **`NNBase_Define_ProtoCmd.h` + 后台 Skill 服务 + OpenD** 联合新增三条 Pull 命令（当前仓库未实现）。
+
+Pb 定义：`FutuOpenD/Src/NNProtoFile/API/PB/SkillWrapAPI.proto`；SDK：`ProtoId.SkillWrap_*`（`constant.py`）。OpenD 限频：**3801–3803**，30 次 / 30 秒。
+
+#### 3.2 OpenD 实际调用的 HTTP（Skill 后端）
+
+OpenD **不**走 `/api/v1.0/quote/...` BFF，而是 CommonPost JSON body：
+
+| 能力 | Method | Path | Host（OpenD 按客户端类型） |
+|------|--------|------|---------------------------|
+| 技术面 | POST | `/api/v1/get_technical_unusual` | Futu：`https://api.futunn.com`；Moomoo：`https://api.moomoo.com` |
+| 资金面 | POST | `/api/v1/get_financial_unusual` | 同上 |
+| 衍生品 | POST | `/api/v1/get_derivative_unusual` | 同上 |
+
+实现：`Src/NNProtoCenter/Quote/NNBiz_Qot_SkillWrap.cpp`（`Pull*Unusual` → `PostSkillWrapUnusualWithJsonBody`）。
+
+**futu-cli P0 建议：** 在 CLI `api_base` 上调用与 OpenD **同 body/响应** 的三条 POST（或网关 rewrite 到 Skill 域）；Bearer OAuth + 行情权限。
+
+#### 3.3 请求 JSON body（POST）
+
+OpenD 将 `SkillWrapAPI.*UnusualReq` 转为 JSON（`preserve_proto_field_names=true`），字段名如下：
+
+**TechnicalUnusualReq**
+
+| 字段 | 类型 | 默认 / 说明 |
+|------|------|-------------|
+| `stock_symbol` | string | 必填，`HK.00700` / `US.AAPL` 等（OpenD 支持 HK/US/SH/SZ/SG/JP 前缀） |
+| `time_range` | int32 | 缺省或 ≤0 时 OpenD 置 **7**（自然日） |
+| `indicator_filters` | string[] | 可选；不传表示全量指标 |
+| `language_id` | int32 | 缺省 **0**；0 简中 / 1 繁中 / 2 英文 / 4 泰语 / 5 日语 |
+
+**FinancialUnusualReq / DerivativeUnusualReq**
+
+| 字段 | 类型 | 默认 / 说明 |
+|------|------|-------------|
+| `stock_symbol` | string | 必填 |
+| `time_range` | int32 | 默认 7 |
+| `analysis_dimensions` | string[] | 可选；不传表示全量维度 |
+| `language_id` | int32 | 默认 0 |
+
+枚举取值见各 anomaly `SKILL.md`（`funds_*`、`option_*`、`warrant_*`、指标名等）。
+
+示例 body：
+
+```json
+{
+  "stock_symbol": "US.NVDA",
+  "time_range": 7,
+  "language_id": 0,
+  "indicator_filters": ["MACD", "RSI6"]
+}
+```
+
+#### 3.4 HTTP 响应 JSON → OpenAPI / CLI
+
+Skill 服务 HTTP 回包为 JSON 对象，OpenD 映射为 `*UnusualRsp`（`APIServer_Qot_SkillWrap.cpp` → `FillSkillWrapRspFromJson`）：
+
+| HTTP 字段 | OpenAPI 字段 | 说明 |
+|-----------|--------------|------|
+| `code` | `errCode` | 业务错误码（OpenD 注释：多种含义，透传） |
+| `message` | `retMsg` | 错误或提示文案 |
+| `time_range` | `time_range` | 展示用区间，如 `"2026.4.2-2026.4.9"` |
+| `content` | `content` | **异动正文**（Skill 解析展示的主载荷，常为结构化文本/JSON 字符串） |
+
+OpenAPI 层还有 `retType`（成功/失败）。CLI `--format json` 建议同时输出：`retType`/`errCode`/`retMsg`/`time_range`/`content`，并与 Skill 历史 golden 对齐；可选附加 `method: get_*_unusual` 便于 Agent 路由。
+
+#### 3.5 futu-cli 实现要点（P0）
+
+| Endpoint ID | HTTP | CLI | 状态 |
+|-------------|------|-----|------|
+| `skillwrap.technical_unusual` | `POST /api/v1/get_technical_unusual` | `futu anomaly technical` | **已接**（本地 futu-cli / moomoo-cli） |
+| `skillwrap.financial_unusual` | `POST /api/v1/get_financial_unusual` | `futu anomaly capital` | **已接** |
+| `skillwrap.derivative_unusual` | `POST /api/v1/get_derivative_unusual` | `futu anomaly derivatives` | **已接** |
+
+moomoo-cli 同构（`moomoo anomaly *`）；Host 用各自 `api_base`。联调前需确认网关是否在 `webapi.*` 上暴露 `/api/v1/get_*_unusual`，否则配置 `api_base` 指向 `api.futunn.com` / `api.moomoo.com`。
 
 **契约要点：**
 
-- `language_id`：0/1/2/4/5（与现 anomaly Skill 一致）
-- `analysis_dimensions` / `indicator_filters` 枚举与各 anomaly SKILL.md 一致
-- 错误分态：无异常、无数据、不适用、权限不足、请求失败
-- OAuth scope：与行情读权限对齐或独立 `unusual_read`（待确认）
+- 与 OpenD 链路 **字段级等价**（T07 固定样本 diff）
+- OAuth scope：与行情读权限对齐或独立 `unusual_read`（待产品/API 确认）
 
-### P1 — 订阅（若产品保留推送）
+### P1 — 推送（Open API 已有 WS；**futu-cli 未接**）
 
-| 能力 | 建议 REST / 通道 |
-|------|------------------|
-| 订阅管理 | `POST/DELETE /api/v1.0/quote/subscriptions` |
-| 推送 | WebSocket/SSE `wss://.../quote/stream`（QUOTE、ORDER_BOOK、TICKER、KLINE、BROKER 等） |
+Open API 概览已含 [行情推送 WebSocket](https://open.futunn.com/zh-cn/api/overview)（Host：`wss://webapi-quote.futunn.com/ws` 等，以文档为准）。**待办：** CLI 订阅/鉴权/收包；经纪队列走 WS **`broker`** channel。Hub 未排期前不教 Agent 用 OpenD subscribe。
 
-### P2 — 交易/行情增强（见 §2.3）
+### P2 — Open API 已实现、CLI 缺口（见 `internal/client/endpoints.go`）
 
-| 业务 | 建议 REST（示意） |
-|------|-------------------|
-| 预估费用 | `GET /api/v1.0/accounts/{acc_id}/order_fee` |
-| 融资融券比例 | `GET /api/v1.0/accounts/{acc_id}/margin_ratio` |
-| 现金流水 | `GET /api/v1.0/accounts/{acc_id}/cash_flow` |
-| 加密流水 | `GET /api/v1.0/crypto/accounts/{acc_id}/cash_flow` |
-| 历史 K 线额度 | `GET /api/v1.0/quote/history_kl_quota` |
-| 经纪队列 | `GET /api/v1.0/quote/broker_queue` 或扩展 `futu broker --view queue` |
-| 单权证 | `GET /api/v1.0/quote/warrant` |
-| 期权代码解析 | `POST /api/v1.0/quote/option/resolve` |
-| 到价提醒 | `GET/POST /api/v1.0/quote/price_reminders` |
-| 自选分组 | 扩展 watchlist 相关 REST |
+| 业务 | Open API（已实现） | futu-cli / moomoo-cli |
+|------|-------------------|------------------------|
+| 订单费用 | `GET /api/v1.0/accounts/{acc_id}/orders/{order_id}/fees` | **`order fees`** |
+| 融资融券 | `GET /api/v1.0/margin_ratio` | **`margin-ratio`** |
+| 资金流水 | `GET /api/v1.0/accounts/{acc_id}/cash_logs` | **`account cash-logs`** |
+| 自选股分组 | `GET/POST` user-security / modify-user-security 等 | **部分已有**（`watchlist`、`quote.user_security*`） |
+
+**待产品/文档核对是否在 Open API 列出：** 加密账户流水、历史 K 线额度、单权证（非 warrant-screen）、期权代码解析。若文档无，则不算「文档已实现」，需另立项。
+
+**不做 / 非 REST：** 到价提醒；经纪队列（P1 WS）。
 
 ---
 
