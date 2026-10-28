@@ -1,9 +1,9 @@
 ---
 name: futu-trading
-description: Futu `futu` CLI securities-trading skill. Use for OAuth status, securities accounts, funds, positions, order placement, order modification, cancellation, order queries, fill queries, and max buy/sell quantity. Answer in the user's language by default.
+description: Futu `futu` CLI securities-trading skill. Use for OAuth status, securities accounts, funds, positions, cash logs, order fees, margin ratio, order placement, modification, cancellation, order queries, fill queries, and max buy/sell quantity. Answer in the user's language by default.
 allowed-tools: Bash Read
 metadata:
-  version: 0.0.2
+  version: 0.0.3
   author: Futu
   requires:
     bins:
@@ -62,6 +62,9 @@ To update an already installed `futu` CLI, use `futu update --check` and, after 
 - Do not assume a default account is configured. Omit `--account` only when this turn has already confirmed a default account through `futu auth status` or config. Otherwise, list accounts or ask the user to choose one, and pass `--account` explicitly.
 - Add `--format json` when the output must be parsed, when extracting account, order, or fill fields, or when a follow-up action depends on the result. Commands meant only for the user to copy and run can use the default table output.
 - Securities order and fill lists are paginated and merged by the CLI. Do not pass `page_flag` manually. Adjust `--page-size` only when needed.
+- `account cash-logs` returns one page per call. Use `--format json`, read `page_flag` and `completed`, and call again with `--page-flag` until `completed` is true or the user has enough rows.
+- `order fees` needs a concrete `order_id` (from `order list`, `order history`, or `order detail`). Open API does not support FX order fees yet.
+- `margin-ratio` requires `--security-firm` and `--codes` (up to 10 symbols). Prefer `security_firm` from `account list --format json` for the user's account.
 - Commands that change real assets require explicit user confirmation, including `order buy`, `order sell`, `order place`, `order modify`, and `order cancel`.
 - Do not guess a second confirmation on behalf of the CLI or the server. If the CLI reports broker confirmation because the API returned `need_order_confirm=true` or `confirm_id`, relay it as-is and wait for explicit user consent before entering `y`.
 

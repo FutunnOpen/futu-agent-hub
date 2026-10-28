@@ -8,7 +8,9 @@ When generating commands, use the smallest parameter set: include only required 
 futu
 ├── account
 │   ├── list
-│   └── funds
+│   ├── funds
+│   └── cash-logs
+├── margin-ratio
 ├── position
 ├── order
 │   ├── buy <symbol> <qty>
@@ -19,7 +21,8 @@ futu
 │   ├── list
 │   ├── history
 │   ├── detail <order-id> [order-id...]
-│   └── max-qty <symbol>
+│   ├── max-qty <symbol>
+│   └── fees <order-id>
 └── deal
     └── history
 ```
@@ -60,6 +63,8 @@ JSON output drops empty strings, empty arrays, empty objects, and numeric 0. Boo
 | --- | --- | --- | --- |
 | `futu account list` | none | none | none |
 | `futu account funds` | none if `default_account` is configured | `--currency USD` | `--account`, `--currency` |
+| `futu account cash-logs` | `--begin-time`, `--end-time` (microseconds); also `--account` when no default account is configured | `--page-size 10` | `--account`, `--direction` (`IN` / `OUT`), `--code`, `--page-flag`, `--page-size` (1–20) |
+| `futu margin-ratio` | `--security-firm`, `--codes` (comma-separated, max 10) | none | none |
 | `futu position` | none if `default_account` is configured | none | `--account`, `--symbol`, `--pl-ratio-min`, `--pl-ratio-max` |
 
 Field mapping:
@@ -77,6 +82,26 @@ Examples:
 - Funds for a specific account: `futu account funds --account <account-id>`
 - Funds in a specific currency: `futu account funds --account <account-id> --currency HKD`
 - A specific position: `futu position --symbol US.AAPL`
+
+Cash log rules:
+
+- `--begin-time` and `--end-time` are Unix timestamps in **microseconds** (same convention as `order history --start` / `--end`).
+- One CLI call returns one page. JSON fields: `cash_logs`, `page_flag`, `completed`. When the user needs more rows, repeat with `--page-flag <value>` from the prior response until `completed` is true.
+- Optional `--direction`: `IN` (inflow) or `OUT` (outflow). Optional `--code`: filter by `MARKET.CODE`.
+
+Cash log examples:
+
+- Last day of flows (times are illustrative; compute microsecond bounds for the user's range): `futu account cash-logs --account <account-id> --begin-time 1709251200000000 --end-time 1709337600000000 --format json`
+- Inflows only: `futu account cash-logs --begin-time <us> --end-time <us> --direction IN --format json`
+
+Margin ratio rules:
+
+- `--codes`: up to 10 symbols, comma-separated, e.g. `HK.00700,US.AAPL`.
+- `--security-firm`: broker entity for the account (see [dictionaries](dictionaries.md)). Example HK account: `FUTUSECURITIES`.
+
+Margin ratio example:
+
+- `futu margin-ratio --security-firm FUTUSECURITIES --codes HK.00700,US.AAPL --format json`
 
 ## Order placement
 
@@ -112,6 +137,7 @@ Order examples:
 | `futu order history` | none if `default_account` is configured | `--market HK`, `--page-size 50`, `--start 0`, `--end 0`, no `--symbol` filter | `--account`, `--market`, `--start`, `--end`, `--symbol`, `--page-size` |
 | `futu order detail <order-id> [order-id...]` | `order-id`, `--exchange`; also `--account` when no default account is configured | none | `--account`, `--exchange` |
 | `futu order max-qty <symbol>` | `symbol`; also `--account` when no default account is configured | `--type market`, empty `--price`, empty `--order-id` | `--account`, `--price`, `--type`, `--order-id` |
+| `futu order fees <order-id>` | `order-id`; also `--account` when no default account is configured | none | `--account` |
 | `futu deal` | none if `default_account` is configured | `--market HK`, `--page-size 50` | `--account`, `--market`, `--page-size` |
 | `futu deal history` | none if `default_account` is configured | `--market HK`, `--page-size 50`, `--start 0`, `--end 0`, no `--symbol` filter | `--account`, `--market`, `--start`, `--end`, `--symbol`, `--page-size` |
 
@@ -151,6 +177,7 @@ Response parsing:
 
 - Main order JSON fields: `order_id`, `symbol`, `side`, `type`, `price`, `qty`, `filled_qty`, `status`, `create_time`. Extra backend fields are preserved.
 - Main fill JSON fields: `deal_id`, `order_id`, `symbol`, `stock_name`, `side`, `price`, `qty`, `time`, `updated_time`, `status`, `counter_broker_id`, `counter_broker_name`. Extra backend fields are preserved.
+- Order fees JSON (`order fees`): `order_id`, `currency`, `total_fee`, `fees[]` with `type` and `amount` per line item. [Open API: get-order-fees](https://open.futunn.com/zh-cn/api/trading/order/get-order-fees). FX order fees are not supported by the API.
 
 Backend APIs:
 
@@ -158,6 +185,8 @@ Backend APIs:
 | --- | --- |
 | `futu account list` | `GET /api/v1.0/accounts/authorized_trd_accs` |
 | `futu account funds` | `GET /api/v1.0/accounts/{acc_id}/funds` |
+| `futu account cash-logs` | `GET /api/v1.0/accounts/{acc_id}/cash_logs` ([get-cash-logs](https://open.futunn.com/zh-cn/api/trading/account/get-cash-logs)) |
+| `futu margin-ratio` | `GET /api/v1.0/margin_ratio` ([get-margin-ratio](https://open.futunn.com/zh-cn/api/trading/trade/get-margin-ratio)) |
 | `futu position` | `GET /api/v1.0/accounts/{acc_id}/positions` |
 | `futu order buy/sell/place` | `POST /api/v1.0/accounts/{acc_id}/orders` |
 | `futu order modify` | `PUT /api/v1.0/accounts/{acc_id}/orders/{order_id}` |
@@ -166,6 +195,7 @@ Backend APIs:
 | `futu order history` | `GET /api/v1.0/accounts/{acc_id}/orders_history` |
 | `futu order detail` | `POST /api/v1.0/accounts/{acc_id}/orders/detail` |
 | `futu order max-qty` | `GET /api/v1.0/accounts/{acc_id}/acctradinginfo` |
+| `futu order fees` | `GET /api/v1.0/accounts/{acc_id}/orders/{order_id}/fees` ([get-order-fees](https://open.futunn.com/zh-cn/api/trading/order/get-order-fees)) |
 | Broker second confirmation | `POST /api/v1.0/accounts/{acc_id}/order_confirm` |
 | `futu deal` | `GET /api/v1.0/accounts/{acc_id}/order_fills` |
 | `futu deal history` | `GET /api/v1.0/accounts/{acc_id}/fills_history` |
@@ -178,3 +208,4 @@ Query examples:
 - Max market buy/sell for Apple on the current account: `futu order max-qty US.AAPL`
 - Max buy/sell for Apple at a 280 limit: `futu order max-qty US.AAPL --price 280 --type limit`
 - Max buy/sell at a 280 limit when the default account is not confirmed: `futu order max-qty US.AAPL --account <account-id> --price 280 --type limit`
+- Order fee breakdown: `futu order fees <order-id> --account <account-id> --format json`

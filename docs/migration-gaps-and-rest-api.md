@@ -41,15 +41,15 @@
 
 Skill Hub 的 **`futu-quote` 仍用 CLI 做 REST 查询**；持续推送需用户/集成方**自研 WSS 客户端**（`futu-cli` 暂未封装 subscribe 子命令）。
 
-### 2.3 原 futuapi 有、Open API 多已具备、**futu-cli / Skill 未接**（P2，可选）
+### 2.3 原 futuapi 有、Open API 多已具备（P2，可选）
 
-下列能力**不在**四个 quote/trade Skill 主承诺内。Open API 文档已有时 **只缺 CLI（+ 是否写进 Skill）**；文档未列出者单独标注。
+下列能力**不在** `futu-quote` 主路径内；订单费用 / 融资融券 / 资金流水已由 **`futu-trading`** + CLI 覆盖。文档未列出者单独标注。
 
 | 原脚本 | 说明 |
 |--------|------|
-| `get_order_fee.py` | 订单费用 → [get-order-fees](https://open.futunn.com/zh-cn/api/trading/order/get-order-fees)；CLI **`futu order fees`**（Skill 未写） |
-| `get_margin_ratio.py` | 融资融券 → [get-margin-ratio](https://open.futunn.com/zh-cn/api/trading/trade/get-margin-ratio)；CLI **`futu margin-ratio`**（Skill 未写） |
-| `get_acc_cash_flow.py` | 资金流水 → [get-cash-logs](https://open.futunn.com/zh-cn/api/trading/account/get-cash-logs)；CLI **`futu account cash-logs`**（Skill 未写） |
+| `get_order_fee.py` | 订单费用 → [get-order-fees](https://open.futunn.com/zh-cn/api/trading/order/get-order-fees)；CLI **`futu order fees`**（**`futu-trading`** Skill 已文档化） |
+| `get_margin_ratio.py` | 融资融券 → [get-margin-ratio](https://open.futunn.com/zh-cn/api/trading/trade/get-margin-ratio)；CLI **`futu margin-ratio`**（**`futu-trading`**） |
+| `get_acc_cash_flow.py` | 资金流水 → [get-cash-logs](https://open.futunn.com/zh-cn/api/trading/account/get-cash-logs)；CLI **`futu account cash-logs`**（**`futu-trading`**） |
 | `get_crypto_cash_flow.py` | 加密货币账户流水（与 `crypto deal history` 可能不等价） |
 | `get_history_kl_quota.py` | 历史 K 线额度 |
 | `get_broker_queue.py` | 实时经纪队列 → WebSocket 推送 **`BROKER_QUEUE`**（订阅 `order_book` 后由服务端附带；见 [websocket-quote-push.md](./websocket-quote-push.md)） |

@@ -9,6 +9,23 @@ Account types:
 | `cash` | Cash account |
 | `margin` | Margin account |
 
+`security_firm` on accounts (use for `futu margin-ratio --security-firm`):
+
+| Value | Typical region |
+| --- | --- |
+| `FUTUSECURITIES` | Futu Securities (Hong Kong) |
+| `FUTUINC` | moomoo (United States) |
+| `FUTUSG` | moomoo (Singapore) |
+| `FUTUCA` | moomoo (Canada) |
+| `FUTUMY` | moomoo (Malaysia) |
+| `FUTUAU` | moomoo (Australia) |
+
+Read `security_firm` from `futu account list --format json` when the user did not specify a firm.
+
+Margin ratio response fields (`margin-ratio --format json`): `code`, `is_long_permit`, `is_short_permit`, `short_pool_remain`, `short_fee_rate`, `alert_long_ratio`, `alert_short_ratio`, `im_long_ratio`, `im_short_ratio`, `mcm_long_ratio`, `mcm_short_ratio`, `mm_long_ratio`, `mm_short_ratio`.
+
+Cash log row fields (`account cash-logs`): `transaction_name`, `created_time`, `cash_change`, `balance`, `symbol`, `stock_name`.
+
 Numeric account `markets` values:
 
 | Value | Meaning |
