@@ -25,13 +25,13 @@
 
 ### 2.1 三类异动（P0）
 
-原 OpenD SDK 方法，由三个 anomaly Skill 通过 **`futu anomaly *` CLI** 调用。CLI 已实现；**发版、OAuth/`api_base` 网关、T07 验收**未闭环前，生产环境需确认 SkillWrap 路径可达。
+原 OpenD SDK 方法，由三个 Unusual Skill 通过 **`futu unusual *` CLI** 调用（`futu anomaly` 为别名）。CLI 已实现；**发版、OAuth/`api_base` 网关、T07 验收**未闭环前，生产环境需确认 SkillWrap 路径可达。
 
 | 原 SDK 方法 | Skill |
 |-------------|--------|
-| `get_technical_unusual` | `futu-technical-anomaly` |
-| `get_financial_unusual` | `futu-capital-anomaly` |
-| `get_derivative_unusual` | `futu-derivatives-anomaly` |
+| `get_technical_unusual` | `futu-unusual-technical-signal-alerts`（Technical Signal Alerts） |
+| `get_financial_unusual` | `futu-unusual-capital-flows`（Unusual Capital Flows） |
+| `get_derivative_unusual` | `futu-unusual-derivatives-activity`（Unusual Derivatives Activity） |
 
 ### 2.2 实时订阅与推送（P1）— Hub 已处理
 
@@ -76,7 +76,7 @@ WSS 流程摘要：连接 → **auth**（Bearer）→ **subscribe**（`quote` / 
 
 ### P0 — 异动（OpenD Skill HTTP；**通常不在 Open API 文档**）
 
-OpenD 走 **Pb 3801–3803 → POST** `https://api.futunn.com/api/v1/get_*_unusual`（见 FutuOpenD `NNBiz_Qot_SkillWrap.cpp`）。与 `webapi.futunn.com` 的 `/api/v1.0/...` 不是同套文档。**待办：** OAuth/CLI 暴露同等 JSON + `futu anomaly *`（验收 T07）。若产品要求只走 Open API 文档内接口，需单独在 Open API 立项，不在「文档已实现」范围内。
+OpenD 走 **Pb 3801–3803 → POST** `https://api.futunn.com/api/v1/get_*_unusual`（见 FutuOpenD `NNBiz_Qot_SkillWrap.cpp`）。与 `webapi.futunn.com` 的 `/api/v1.0/...` 不是同套文档。**待办：** OAuth/CLI 暴露同等 JSON + `futu unusual *`（验收 T07）。若产品要求只走 Open API 文档内接口，需单独在 Open API 立项，不在「文档已实现」范围内。
 
 #### 3.1 命令字对照（**NN_ProtoCmd** / OpenAPI Pb / HTTP / CLI）
 
@@ -84,9 +84,9 @@ OpenD 走 **Pb 3801–3803 → POST** `https://api.futunn.com/api/v1/get_*_unusu
 
 | 能力 | Python / Skill | **`NN_ProtoCmd`（行情 TCP）** | OpenAPI Pb `ProtoId` | Req / Rsp | Skill **HTTP** | futu-cli |
 |------|----------------|-------------------------------|----------------------|-----------|----------------|----------|
-| 技术面异动 | `get_technical_unusual` | **无** | **3801** `SkillWrap_TechnicalUnusual` | `TechnicalUnusualReq` / `Rsp` | `POST /api/v1/get_technical_unusual` | `futu anomaly technical` |
-| 资金面异动 | `get_financial_unusual` | **无** | **3802** `SkillWrap_FinancialUnusual` | `FinancialUnusualReq` / `Rsp` | `POST /api/v1/get_financial_unusual` | `futu anomaly capital` |
-| 衍生品异动 | `get_derivative_unusual` | **无** | **3803** `SkillWrap_DerivativeUnusual` | `DerivativeUnusualReq` / `Rsp` | `POST /api/v1/get_derivative_unusual` | `futu anomaly derivatives` |
+| 技术面异动 | `get_technical_unusual` | **无** | **3801** `SkillWrap_TechnicalUnusual` | `TechnicalUnusualReq` / `Rsp` | `POST /api/v1/get_technical_unusual` | `futu unusual technical-signals` |
+| 资金面异动 | `get_financial_unusual` | **无** | **3802** `SkillWrap_FinancialUnusual` | `FinancialUnusualReq` / `Rsp` | `POST /api/v1/get_financial_unusual` | `futu unusual capital-flows` |
+| 衍生品异动 | `get_derivative_unusual` | **无** | **3803** `SkillWrap_DerivativeUnusual` | `DerivativeUnusualReq` / `Rsp` | `POST /api/v1/get_derivative_unusual` | `futu unusual derivatives-activity` |
 
 **对照（有 ProtoCmd 的行情能力，便于对齐文档习惯）：**
 
@@ -167,11 +167,11 @@ OpenAPI 层还有 `retType`（成功/失败）。CLI `--format json` 建议同�
 
 | Endpoint ID | HTTP | CLI | 状态 |
 |-------------|------|-----|------|
-| `skillwrap.technical_unusual` | `POST /api/v1/get_technical_unusual` | `futu anomaly technical` | **已接**（本地 futu-cli / moomoo-cli） |
-| `skillwrap.financial_unusual` | `POST /api/v1/get_financial_unusual` | `futu anomaly capital` | **已接** |
-| `skillwrap.derivative_unusual` | `POST /api/v1/get_derivative_unusual` | `futu anomaly derivatives` | **已接** |
+| `skillwrap.technical_unusual` | `POST /api/v1/get_technical_unusual` | `futu unusual technical-signals` | **已接**（本地 futu-cli / moomoo-cli） |
+| `skillwrap.financial_unusual` | `POST /api/v1/get_financial_unusual` | `futu unusual capital-flows` | **已接** |
+| `skillwrap.derivative_unusual` | `POST /api/v1/get_derivative_unusual` | `futu unusual derivatives-activity` | **已接** |
 
-moomoo-cli 同构（`moomoo anomaly *`）；Host 用各自 `api_base`。联调前需确认网关是否在 `webapi.*` 上暴露 `/api/v1/get_*_unusual`，否则配置 `api_base` 指向 `api.futunn.com` / `api.moomoo.com`。
+moomoo-cli 同构（`moomoo unusual *`，`anomaly` 为别名）；Host 用各自 `api_base`。联调前需确认网关是否在 `webapi.*` 上暴露 `/api/v1/get_*_unusual`，否则配置 `api_base` 指向 `api.futunn.com` / `api.moomoo.com`。
 
 **契约要点：**
 

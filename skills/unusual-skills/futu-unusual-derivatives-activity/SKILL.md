@@ -1,15 +1,15 @@
 ---
-name: futu-derivatives-anomaly
+name: futu-unusual-derivatives-activity
 description: >-
-  Detects derivatives anomaly signals for a user-mentioned stock with
-  `get_derivative_unusual`, including 牛熊证街货比例、异动、anomaly, 牛熊证街货价格区间、期权大单、
-  隐含波动率、期权量价、期权情绪、期权综合信号 and their unusual changes. Use
-  when the user asks about 期权、衍生品、牛熊证、IV、隐含波动率、PCR、期权大单、
-  期权异常成交、聪明钱、smart money、unusual options activity、做多做空情绪、
-  波动率溢价、期权市场怎么看、有没有大单押注、大资金押注、适不适合卖期权，or gives a
-  broad stock-anomaly request such as “英伟达异动”、“NVDA 异动”、“腾讯有没有异动/异常”
-  without narrowing the dimension. For broad anomaly requests, this skill should
-  be used together with `technical-anomaly` and `capital-anomaly`. Before
+  Unusual Derivatives Activity (衍生品异动): detects derivatives unusual signals
+  for a user-mentioned stock with `get_derivative_unusual`, including 牛熊证街货比例、
+  牛熊证街货价格区间、期权大单、隐含波动率、期权量价、期权情绪、期权综合信号 and their
+  unusual changes. Use when the user asks about 期权、衍生品、牛熊证、IV、隐含波动率、PCR、
+  期权大单、期权异常成交、聪明钱、smart money、unusual options activity、做多做空情绪、
+  波动率溢价、期权市场怎么看、有没有大单押注、大资金押注、适不适合卖期权，or gives a broad
+  异动 request such as “英伟达异动”、“NVDA 异动”、“腾讯有没有异动/异常” without narrowing
+  the dimension. For broad 异动 requests, use together with
+  `futu-unusual-technical-signal-alerts` and `futu-unusual-capital-flows`. Before
   calling the CLI, you must first normalize the user-mentioned stock name,
   Chinese company name, English company name, or ticker into a standard symbol
   such as `US.NVDA` or `HK.00700`.
@@ -23,21 +23,21 @@ metadata:
 license: MIT
 ---
 
-# Derivatives Anomaly Skill
+# 衍生品异动 · Unusual Derivatives Activity
 
-Detects derivatives anomalies for a specific stock and formats the result as a structured derivatives anomaly summary.
+Detects unusual derivatives activity for a specific stock and formats the result as a structured Unusual Derivatives Activity summary.
 
-This skill is for **anomaly detection** rather than a regular derivatives overview. If the data has no qualifying anomaly, return `No anomaly` or `No anomaly (brief reason)`, and do not add extra market commentary.
+This skill is for **unusual-move detection** rather than a regular derivatives overview. If the data has no qualifying signal, return `No unusual activity` or `No unusual activity (brief reason)`, and do not add extra market commentary.
 
-If the user only says a broad request such as `英伟达异动`, `NVDA 异动`, `腾讯有没有异常` and does not specify a dimension, treat it as a bundled anomaly request. In that case, this skill should be used as one of the three default anomaly skills together with `technical-anomaly` and `capital-anomaly`.
+If the user only says a broad request such as `英伟达异动`, `NVDA 异动`, `腾讯有没有异常` and does not specify a dimension, treat it as a bundled 异动 request. In that case, use this skill together with `futu-unusual-technical-signal-alerts` and `futu-unusual-capital-flows`.
 
 ---
 
 ## Prerequisite: Futu CLI
 
-This skill calls **`futu anomaly derivatives`** (OAuth REST via the official CLI). Do **not** use OpenD, `futu-api`, or removed `futuapi` scripts.
+This skill calls **`futu unusual derivatives-activity`** (OAuth REST via the official CLI). Do **not** use OpenD, `futu-api`, or removed `futuapi` scripts.
 
-Before the workflow, follow [CLI runtime](../references/cli-runtime.md). If `futu anomaly` is not recognized, say anomaly needs a newer CLI — see repo `docs/migration-gaps-and-rest-api.md`.
+Before the workflow, follow [CLI runtime](../references/cli-runtime.md). If `futu unusual` is not recognized, say Unusual skills need a newer CLI — see repo `docs/migration-gaps-and-rest-api.md`.
 
 ---
 
@@ -130,15 +130,15 @@ Default strategy:
 ### 5. Call the CLI
 
 ```bash
-futu anomaly derivatives <STANDARD_SYMBOL> --time-range <DAYS> [--analysis-dimensions <DIM> ...] [--language-id <ID>] --format json --source skill
+futu unusual derivatives-activity <STANDARD_SYMBOL> --time-range <DAYS> [--analysis-dimensions <DIM> ...] [--language-id <ID>] --format json --source skill
 ```
 
 Examples:
 
 ```bash
-futu anomaly derivatives HK.00700 --time-range 7 --format json --source skill
-futu anomaly derivatives US.NVDA --time-range 7 --analysis-dimensions option_unusual option_volatility --format json --source skill
-futu anomaly derivatives US.AAPL --time-range 7 --analysis-dimensions option_sentiment option_comprehensive --format json --source skill
+futu unusual derivatives-activity HK.00700 --time-range 7 --format json --source skill
+futu unusual derivatives-activity US.NVDA --time-range 7 --analysis-dimensions option_unusual option_volatility --format json --source skill
+futu unusual derivatives-activity US.AAPL --time-range 7 --analysis-dimensions option_sentiment option_comprehensive --format json --source skill
 ```
 
 ### 6. Check the Result

@@ -1,15 +1,15 @@
 ---
-name: futu-technical-anomaly
+name: futu-unusual-technical-signal-alerts
 description: >-
-  Detects technical-analysis anomaly signals for a user-mentioned stock with
-  `get_technical_unusual`, including K线形态 and indicator events such as CCI,
-  KDJ, RSI, BIAS, ARBR, VR, PSY, OSC, WMSR, MACD, BOLL, and MA. Use when the
-  user asks about 技术面情况、最近有什么技术信号、K线形态、形态识别、形态突破、金叉/死叉、
-  超买超卖、MACD、RSI、KDJ、CCI、MA、BOLL、WMSR、VR、PSY、OSC、BIAS、ARBR，
-  or gives a broad stock-anomaly request such as “英伟达异动”、“NVDA 异动”、
-  “腾讯有没有异动/异常” without narrowing the dimension. For broad anomaly
-  requests, this skill should be used together with `capital-anomaly` and
-  `derivatives-anomaly`. Before calling the CLI, you must first normalize the
+  Technical Signal Alerts (技术面异动): detects technical unusual signals for a
+  user-mentioned stock with `get_technical_unusual`, including K线形态 and indicator
+  events such as CCI, KDJ, RSI, BIAS, ARBR, VR, PSY, OSC, WMSR, MACD, BOLL, and MA.
+  Use when the user asks about 技术面情况、最近有什么技术信号、K线形态、形态识别、形态突破、
+  金叉/死叉、超买超卖、MACD、RSI、KDJ、CCI、MA、BOLL、WMSR、VR、PSY、OSC、BIAS、ARBR，
+  or gives a broad 异动 request such as “英伟达异动”、“NVDA 异动”、“腾讯有没有异动/异常”
+  without narrowing the dimension. For broad 异动 requests, use together with
+  `futu-unusual-capital-flows` and `futu-unusual-derivatives-activity`. Before calling
+  the CLI, you must first normalize the
   user-mentioned stock name, Chinese company name, English company name, or
   ticker into a standard symbol such as `US.NVDA` or `HK.00700`.
 allowed-tools: Bash Read
@@ -22,21 +22,21 @@ metadata:
 license: MIT
 ---
 
-# Technical Anomaly Skill
+# 技术面异动 · Technical Signal Alerts
 
-Detects technical-analysis anomalies for a specific stock and formats the result as a structured technical anomaly summary.
+Detects technical signal alerts for a specific stock and formats the result as a structured Technical Signal Alerts summary.
 
-This skill is for **anomaly detection** rather than a regular technical overview. Focus on concrete abnormal events within the requested window. Do not add extra market commentary, fundamentals-based explanations, or investment advice.
+This skill is for **unusual-move detection** rather than a regular technical overview. Focus on concrete alert events within the requested window. Do not add extra market commentary, fundamentals-based explanations, or investment advice.
 
-If the user only says a broad request such as `英伟达异动`, `NVDA 异动`, `腾讯有没有异常` and does not specify a dimension, treat it as a bundled anomaly request. In that case, this skill should be used as one of the three default anomaly skills together with `capital-anomaly` and `derivatives-anomaly`.
+If the user only says a broad request such as `英伟达异动`, `NVDA 异动`, `腾讯有没有异常` and does not specify a dimension, treat it as a bundled 异动 request. In that case, use this skill together with `futu-unusual-capital-flows` and `futu-unusual-derivatives-activity`.
 
 ---
 
 ## Prerequisite: Futu CLI
 
-This skill calls **`futu anomaly technical`** (OAuth REST via the official CLI). Do **not** use OpenD, `futu-api`, or removed `futuapi` scripts.
+This skill calls **`futu unusual technical-signals`** (OAuth REST via the official CLI). Do **not** use OpenD, `futu-api`, or removed `futuapi` scripts.
 
-Before the workflow, follow [CLI runtime](../references/cli-runtime.md): probe `futu auth status --format json` silently. If the CLI is missing or the user is not logged in, stop and resolve before calling anomaly commands. If `futu anomaly` is not recognized, say anomaly needs a newer CLI — see repo `docs/migration-gaps-and-rest-api.md`.
+Before the workflow, follow [CLI runtime](../references/cli-runtime.md): probe `futu auth status --format json` silently. If the CLI is missing or the user is not logged in, stop and resolve before calling unusual commands. If `futu unusual` is not recognized, say Unusual skills need a newer CLI — see repo `docs/migration-gaps-and-rest-api.md`.
 
 ---
 
@@ -137,20 +137,20 @@ Default strategy:
 After extracting and normalizing the parameters, run (repeat `--indicator-filters` for each filter, or pass a comma-separated list if the CLI accepts it):
 
 ```bash
-futu anomaly technical <STANDARD_SYMBOL> --time-range <DAYS> [--indicator-filters <FILTER> ...] [--language-id <ID>] --format json --source skill
+futu unusual technical-signals <STANDARD_SYMBOL> --time-range <DAYS> [--indicator-filters <FILTER> ...] [--language-id <ID>] --format json --source skill
 ```
 
 Examples:
 
 ```bash
-futu anomaly technical US.NVDA --time-range 7 --format json --source skill
-futu anomaly technical HK.00700 --time-range 7 --indicator-filters MACD RSI6 RSI12 RSI24 --language-id 0 --format json --source skill
-futu anomaly technical SH.600519 --time-range 14 --indicator-filters BOLL MA --format json --source skill
+futu unusual technical-signals US.NVDA --time-range 7 --format json --source skill
+futu unusual technical-signals HK.00700 --time-range 7 --indicator-filters MACD RSI6 RSI12 RSI24 --language-id 0 --format json --source skill
+futu unusual technical-signals SH.600519 --time-range 14 --indicator-filters BOLL MA --format json --source skill
 ```
 
 ### 6. Check the Result
 
-- If the CLI exits successfully, use the JSON to build a structured technical-anomaly summary.
+- If the CLI exits successfully, use the JSON to build a structured Technical Signal Alerts summary.
 - If the CLI returns an error, surface the error message and do not fabricate results.
 - If a requested indicator has no anomaly in the window, explicitly say `No anomaly`.
 

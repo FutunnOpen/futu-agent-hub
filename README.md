@@ -27,7 +27,7 @@ Futu Agent Hub 是 **富途** 官方推出的 AI Agent 技能中心，把官方 
 
 ## Skills 概览
 
-Futu Agent Hub 提供 **10 个 Skills**（另含量化策略由交易团队单独交付），分为行情交易、异动检测、内容三类。
+Futu Agent Hub 提供 **10 个 Skills**（另含量化策略由交易团队单独交付），分为行情交易、异动（Unusual）、内容三类。
 
 | Skill | 类别 | 运行依赖 | 说明 |
 |-------|------|----------|------|
@@ -35,9 +35,9 @@ Futu Agent Hub 提供 **10 个 Skills**（另含量化策略由交易团队单�
 | 证券交易（`futu-trading`） | 行情交易 | `futu` CLI | 证券账户、资金、持仓、下单、改单、撤单、成交 |
 | 模拟交易（`futu-sim-trading`） | 行情交易 | `futu` CLI | 模拟账户的资金、持仓与纸面委托；不影响真实账户 |
 | 加密货币（`futu-crypto`） | 行情交易 | `futu` CLI | 加密货币账户、余额、下单、改单、撤单、成交 |
-| 资金异动（`futu-capital-anomaly`） | 异动检测 | `futu` CLI | `futu anomaly capital`；资金面异常信号 |
-| 衍生品异动（`futu-derivatives-anomaly`） | 异动检测 | `futu` CLI | `futu anomaly derivatives`；期权/牛熊证异动 |
-| 技术面异动（`futu-technical-anomaly`） | 异动检测 | `futu` CLI | `futu anomaly technical`；K 线与指标异动 |
+| 资金异动（`futu-unusual-capital-flows`） | 异动检测 | `futu` CLI | 资金面异常信号 |
+| 衍生品异动（`futu-unusual-derivatives-activity`） | 异动检测 | `futu` CLI | 期权/牛熊证异动 |
+| 技术面异动（`futu-unusual-technical-signal-alerts`） | 异动检测 | `futu` CLI | K 线与指标异动 |
 | 资讯搜索（`futu-news-search`） | 内容 | `curl` | 搜索富途平台上的新闻、公告、研报 |
 | 个股解读（`futu-stock-digest`） | 内容 | `curl` | 围绕标的整理最新事实并给出核心解读 |
 | 情绪温度计（`futu-comment-sentiment`） | 内容 | `curl` | 聚合社区情绪、大V观点，输出标准化情绪参考 |
@@ -135,13 +135,13 @@ Futu Agent Hub 提供 **10 个 Skills**（另含量化策略由交易团队单�
 
 ---
 
-## 异动检测 Skills
+## Unusual Skills（异动）
 
-围绕一只股票自动识别"市场上正在发生什么不寻常的事"。三个 Skill 分别覆盖资金面、衍生品和技术面三个维度；当用户给出宽泛的异动请求（如"英伟达异动"、"腾讯有没有异常"）时，会同时调用三者输出一份综合异动报告。
+围绕一只股票自动识别"市场上正在发生什么不寻常的事"。三个 Skill 分别对应 **Unusual Capital Flows**、**Unusual Derivatives Activity**、**Technical Signal Alerts**；当用户给出宽泛的异动请求（如"英伟达异动"、"腾讯有没有异常"）时，会同时调用三者输出一份综合报告。
 
-> 异动检测 Skill 通过 **`futu anomaly`** 子命令拉取数据（与行情/交易共用 `futu` CLI 与 OAuth）。`futu anomaly` 需 CLI/API 联调版本，见 [`docs/migration-gaps-and-rest-api.md`](docs/migration-gaps-and-rest-api.md)。
+> 异动 Skills 通过 **`futu unusual`** 拉取数据（`anomaly` 为兼容别名；子命令如 `capital-flows` / `derivatives-activity` / `technical-signals`）。与行情/交易共用 `futu` CLI 与 OAuth，见 [`docs/migration-gaps-and-rest-api.md`](docs/migration-gaps-and-rest-api.md)。
 
-### 资金异动（`futu-capital-anomaly`）
+### 资金异动 · Unusual Capital Flows（`futu-unusual-capital-flows`）
 
 围绕 `get_financial_unusual` 检测资金面异动信号。
 
@@ -161,7 +161,7 @@ Futu Agent Hub 提供 **10 个 Skills**（另含量化策略由交易团队单�
 
 ---
 
-### 衍生品异动（`futu-derivatives-anomaly`）
+### 衍生品异动 · Unusual Derivatives Activity（`futu-unusual-derivatives-activity`）
 
 围绕 `get_derivative_unusual` 检测期权与牛熊证异动信号。
 
@@ -181,7 +181,7 @@ NVDA 隐含波动率有异动吗？
 
 ---
 
-### 技术面异动（`futu-technical-anomaly`）
+### 技术面异动 · Technical Signal Alerts（`futu-unusual-technical-signal-alerts`）
 
 围绕 `get_technical_unusual` 检测 K 线形态和技术指标异动。
 
@@ -293,7 +293,7 @@ npx skills update -g
 > 看看社区对小米的情绪怎么样
 ```
 
-如果以前装过旧目录名（`news-search`、`stock-digest`、`comment-sentiment`、`install-opend`、`capital-anomaly`、`derivatives-anomaly`、`technical-anomaly`），`npx skills update` 不会删掉旧目录。先跑一次改名清理，再执行上面的安装命令：
+如果以前装过旧目录名（含 `futu-capital-anomaly` 等已废弃 slug，或 `news-search`、`capital-anomaly` 等短名），`npx skills update` 不会删掉旧目录。先跑一次改名清理，再执行上面的安装命令：
 
 ```bash
 bash scripts/migrate-renamed-skills.sh

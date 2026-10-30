@@ -11,6 +11,9 @@ OLD_SLUGS=(
   capital-anomaly
   derivatives-anomaly
   technical-anomaly
+  futu-capital-anomaly
+  futu-derivatives-anomaly
+  futu-technical-anomaly
   futuapi
   install-futu-opend
 )

@@ -36,7 +36,7 @@ futu check
 | 实盘下单、持仓、订单 | `futu-trading` |
 | 模拟盘 | `futu-sim-trading` |
 | 加密货币交易 | `futu-crypto` |
-| 技术面 / 资金 / 衍生品异动 | `futu-technical-anomaly`、`futu-capital-anomaly`、`futu-derivatives-anomaly`（需 CLI `futu anomaly`，见 [migration-gaps-and-rest-api.md](./migration-gaps-and-rest-api.md)） |
+| 技术面 / 资金 / 衍生品异动 | `futu-unusual-technical-signal-alerts`、`futu-unusual-capital-flows`、`futu-unusual-derivatives-activity`（CLI `futu unusual`，见 [migration-gaps-and-rest-api.md](./migration-gaps-and-rest-api.md)） |
 | 综合 OpenAPI 脚本包 | **已移除** — 按上表拆分到对应 Skill |
 
 ## 5. 原 OpenD 订阅 / 推送 / 经纪队列

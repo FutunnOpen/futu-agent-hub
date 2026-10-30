@@ -1,6 +1,6 @@
-# futu-cli：`futu anomaly` 子命令接口草案
+# futu-cli：`futu unusual` 子命令接口草案
 
-供 [futu-cli](https://github.com/FutunnOpen/futu-cli) 与 OAuth REST 实现对齐 [Futu Agent Hub](../README.md) 三个 anomaly Skill。OpenD SDK 等价方法：`get_technical_unusual`、`get_financial_unusual`、`get_derivative_unusual`。
+供 [futu-cli](https://github.com/FutunnOpen/futu-cli) 与 OAuth REST 实现对齐 [Futu Agent Hub](../README.md) 三个 Unusual Skill（`futu-unusual-*`）。OpenD SDK 等价方法：`get_technical_unusual`、`get_financial_unusual`、`get_derivative_unusual`。
 
 ## 1. 命令树（Cobra）
 
@@ -8,10 +8,10 @@
 
 ```text
 futu
-└── anomaly
-    ├── technical <symbol>   # get_technical_unusual
-    ├── capital <symbol>     # get_financial_unusual
-    └── derivatives <symbol> # get_derivative_unusual
+└── unusual          # 别名: anomaly
+    ├── technical-signals <symbol>   # get_technical_unusual（别名: technical）
+    ├── capital-flows <symbol>       # get_financial_unusual（别名: capital）
+    └── derivatives-activity <symbol> # get_derivative_unusual（别名: derivatives）
 ```
 
 全局标志（继承 root）：`--format json|table`、`--token-file`、内部 `--source skill`、`--agent`。
@@ -22,15 +22,15 @@ futu
 |------|------|------|------|
 | `--time-range` | int | `7` | 自然日窗口 |
 | `--language-id` | int | `0` | `0` zh-CN, `1` zh-TW, `2` en, `4` th, `5` ja |
-| `--analysis-dimensions` | string[] | 空=全量 | 仅 `capital` / `derivatives` |
-| `--indicator-filters` | string[] | 空=全量 | 仅 `technical` |
+| `--analysis-dimensions` | string[] | 空=全量 | 仅 `capital-flows` / `derivatives-activity` |
+| `--indicator-filters` | string[] | 空=全量 | 仅 `technical-signals` |
 
 示例（与 Skill 一致）：
 
 ```bash
-futu anomaly technical HK.00700 --time-range 7 --indicator-filters MACD,RSI6 --language-id 0 --format json
-futu anomaly capital US.NVDA --time-range 7 --analysis-dimensions funds_flow,funds_broker --format json
-futu anomaly derivatives US.NVDA --time-range 7 --analysis-dimensions option_unusual --format json
+futu unusual technical-signals HK.00700 --time-range 7 --indicator-filters MACD,RSI6 --language-id 0 --format json
+futu unusual capital-flows US.NVDA --time-range 7 --analysis-dimensions funds_flow,funds_broker --format json
+futu unusual derivatives-activity US.NVDA --time-range 7 --analysis-dimensions option_unusual --format json
 ```
 
 重复 flag 与逗号分隔：`--analysis-dimensions a b` 与 `--analysis-dimensions a,b` 均应支持（与现有 CLI 习惯对齐即可）。
@@ -49,9 +49,9 @@ OpenAPI **Pb Proto 协议号**（SDK `ProtoId.SkillWrap_*`，与 OpenD 头同值
 
 | Endpoint ID（建议） | Method | Path | CLI |
 |---------------------|--------|------|-----|
-| `skillwrap.technical_unusual` | POST | `/api/v1/get_technical_unusual` | `anomaly technical` |
-| `skillwrap.financial_unusual` | POST | `/api/v1/get_financial_unusual` | `anomaly capital` |
-| `skillwrap.derivative_unusual` | POST | `/api/v1/get_derivative_unusual` | `anomaly derivatives` |
+| `skillwrap.technical_unusual` | POST | `/api/v1/get_technical_unusual` | `unusual technical-signals` |
+| `skillwrap.financial_unusual` | POST | `/api/v1/get_financial_unusual` | `unusual capital-flows` |
+| `skillwrap.derivative_unusual` | POST | `/api/v1/get_derivative_unusual` | `unusual derivatives-activity` |
 
 POST body（proto 字段名，`SkillWrapAPI.proto`）：
 
@@ -71,10 +71,10 @@ HTTP 响应 JSON 字段（OpenD 映射）：`code` → errCode，`message`，`ti
 
 | 文件 | 改动 |
 |------|------|
-| [`cmd/anomaly.go`](https://github.com/FutunnOpen/futu-cli)（新建） | `anomalyCmd` + 三个子命令；解析 symbol、flags；调用 service |
-| `internal/service/anomaly.go`（新建） | 封装三次 HTTP 调用、错误码映射 |
+| [`cmd/unusual.go`](https://github.com/FutunnOpen/futu-cli) | `unusualCmd`（`anomaly` 别名）+ 三个子命令；解析 symbol、flags；调用 service |
+| `internal/service/skillwrap.go` | 封装三次 HTTP 调用、错误码映射 |
 | `internal/client/endpoints.go` | 注册三个 endpoint |
-| `cmd/root.go` | `rootCmd.AddCommand(anomalyCmd)`；**不要**加入 `noAuthCommands` |
+| `cmd/root.go` | `rootCmd.AddCommand(unusualCmd)`；**不要**加入 `noAuthCommands` |
 | `internal/output` | JSON 输出保留后端原始结构；table 模式可选简表 |
 
 不必走 `quoteRESTSpecs` / `registerQuoteRESTAggregateCommands` 动态注册，除非后端统一为 BFF 风格且响应可 `Wrap`。
@@ -96,9 +96,9 @@ CLI `--format json` 最小集应对齐 OpenD `*UnusualRsp` + HTTP 回包：
 
 `content` 与 OpenD SDK 返回的 `content` **字段级等价**（T07 golden）。可选附加请求镜像字段 `stock_symbol` / `time_range` / filters。Skill 展示逻辑见：
 
-- `skills/anomaly-skills/futu-technical-anomaly/SKILL.md`
-- `skills/anomaly-skills/futu-capital-anomaly/SKILL.md`
-- `skills/anomaly-skills/futu-derivatives-anomaly/SKILL.md`
+- `skills/unusual-skills/futu-unusual-technical-signal-alerts/SKILL.md`
+- `skills/unusual-skills/futu-unusual-capital-flows/SKILL.md`
+- `skills/unusual-skills/futu-unusual-derivatives-activity/SKILL.md`
 
 ### 4.1 `analysis_dimensions` 枚举（capital）
 
@@ -131,4 +131,4 @@ CLI `--format json` 最小集应对齐 OpenD `*UnusualRsp` + HTTP 回包：
 
 ## 7. moomoo-cli
 
-命令与路径同构：`moomoo anomaly ...`，仅 binary 名与 `api_base` 不同。
+命令与路径同构：`moomoo unusual ...`（`anomaly` 别名），仅 binary 名与 `api_base` 不同。
