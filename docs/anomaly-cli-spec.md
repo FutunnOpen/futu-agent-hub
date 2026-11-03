@@ -35,35 +35,46 @@ futu unusual derivatives-activity US.NVDA --time-range 7 --analysis-dimensions o
 
 重复 flag 与逗号分隔：`--analysis-dimensions a b` 与 `--analysis-dimensions a,b` 均应支持（与现有 CLI 习惯对齐即可）。
 
-## 2. REST 映射（对齐 FutuOpenD SkillWrap）
+## 2. REST 映射（Open API 行情异动摘要）
 
-OpenD 现网（`FutuOpenD/Src/NNProtoCenter/Quote/NNBiz_Qot_SkillWrap.cpp`）：
+CLI 在当前 `api_base` 上调用：
 
-- **POST** `{api_host}/api/v1/get_technical_unusual`
-- **POST** `{api_host}/api/v1/get_financial_unusual`
-- **POST** `{api_host}/api/v1/get_derivative_unusual`
+- **POST** `/api/v1.0/quote/{symbol}/unusual/technical`
+- **POST** `/api/v1.0/quote/{symbol}/unusual/capital`
+- **POST** `/api/v1.0/quote/{symbol}/unusual/derivatives`
 
-`api_host`：Futu `https://api.futunn.com`，Moomoo `https://api.moomoo.com`。OAuth CLI 应在用户 `api_base` 上提供**同 path、同 JSON body** 的三条接口（或网关等价转发）。
+`{symbol}` 是路径参数，格式为 `市场.代码`，例如 `HK.00700`。请求体不再带 `stock_symbol`。
 
-OpenAPI **Pb Proto 协议号**（SDK `ProtoId.SkillWrap_*`，与 OpenD 头同值）：**3801 / 3802 / 3803**（`SkillWrapAPI.proto` + `constant.py`）。不是 `NN_ProtoCmd`。
+| Endpoint ID | Method | Path | CLI |
+|-------------|--------|------|-----|
+| `skillwrap.technical_unusual` | POST | `/api/v1.0/quote/{symbol}/unusual/technical` | `unusual technical-signals` |
+| `skillwrap.financial_unusual` | POST | `/api/v1.0/quote/{symbol}/unusual/capital` | `unusual capital-flows` |
+| `skillwrap.derivative_unusual` | POST | `/api/v1.0/quote/{symbol}/unusual/derivatives` | `unusual derivatives-activity` |
 
-| Endpoint ID（建议） | Method | Path | CLI |
-|---------------------|--------|------|-----|
-| `skillwrap.technical_unusual` | POST | `/api/v1/get_technical_unusual` | `unusual technical-signals` |
-| `skillwrap.financial_unusual` | POST | `/api/v1/get_financial_unusual` | `unusual capital-flows` |
-| `skillwrap.derivative_unusual` | POST | `/api/v1/get_derivative_unusual` | `unusual derivatives-activity` |
+POST body：
 
-POST body（proto 字段名，`SkillWrapAPI.proto`）：
+| 字段 | 位置 | 适用 |
+|------|------|------|
+| `symbol` | 路径 | 全部，必填 |
+| `time_range` | 请求体 | 全部；不传或 ≤0 时按 7，最大 365 |
+| `language_id` | 请求体 | 全部，默认 0 |
+| `indicator_filters` | 请求体 | technical；不传或空数组表示全量 |
+| `analysis_dimensions` | 请求体 | capital、derivatives；不传或空数组表示全量 |
 
-| 字段 | 适用 |
-|------|------|
-| `stock_symbol` | 全部（CLI  positional `<symbol>` 写入此字段） |
-| `time_range` | 全部，默认 7 |
-| `language_id` | 全部，默认 0 |
-| `indicator_filters` | technical |
-| `analysis_dimensions` | capital, derivatives |
+成功响应是 Open API 信封。`ret_code` 为 0 表示网关成功。`data.code` 为 0 表示窗口内有异动，为 1 表示无异动且 `data.content` 为空；无异动仍是成功，CLI 退出码为 0。
 
-HTTP 响应 JSON 字段（OpenD 映射）：`code` → errCode，`message`，`time_range`，`content`（主内容）。详见 [migration-gaps-and-rest-api.md](./migration-gaps-and-rest-api.md) §3.4。
+```json
+{
+  "ret_code": 0,
+  "ret_msg": "success",
+  "data": {
+    "code": 0,
+    "message": "",
+    "time_range": "2026.4.2-2026.4.9",
+    "content": "..."
+  }
+}
+```
 
 `internal/reporting/routes.go` 同步注册三条路由供 telemetry。
 

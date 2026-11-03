@@ -41,11 +41,11 @@ OpenD **没有** 对应的 `NN_ProtoCmd` 行情 TCP 拉数；链路为：
 
 ### 2.1 总览
 
-| 能力 | HTTP Method | Path（Skill 现网 path，**建议 OAuth 网关保持一致**） | OpenAPI Pb `ProtoId` | CLI（已实现） |
-|------|-------------|------------------------------------------------------|----------------------|---------------|
-| 技术面异动 | POST | `/api/v1/get_technical_unusual` | 3801 `SkillWrap_TechnicalUnusual` | `futu unusual technical-signals <symbol>` |
-| 资金面异动 | POST | `/api/v1/get_financial_unusual` | 3802 `SkillWrap_FinancialUnusual` | `futu unusual capital-flows <symbol>` |
-| 衍生品异动 | POST | `/api/v1/get_derivative_unusual` | 3803 `SkillWrap_DerivativeUnusual` | `futu unusual derivatives-activity <symbol>` |
+| 能力 | HTTP Method | Path | CLI |
+|------|-------------|------|-----|
+| 技术面异动 | POST | `/api/v1.0/quote/{symbol}/unusual/technical` | `futu unusual technical-signals <symbol>` |
+| 资金面异动 | POST | `/api/v1.0/quote/{symbol}/unusual/capital` | `futu unusual capital-flows <symbol>` |
+| 衍生品异动 | POST | `/api/v1.0/quote/{symbol}/unusual/derivatives` | `futu unusual derivatives-activity <symbol>` |
 
 **Host（Skill 业务源站，OpenD 使用）**
 
@@ -59,19 +59,19 @@ OpenD **没有** 对应的 `NN_ProtoCmd` 行情 TCP 拉数；链路为：
 
 ---
 
-### 2.2 请求体（三条共用字段 + 各自扩展）
+### 2.2 请求（路径参数 + JSON body）
 
-JSON 字段名与 **`SkillWrapAPI.proto`** 一致（`preserve_proto_field_names=true`），**snake_case**。
+`symbol` 在路径中，格式为 `市场.代码`（`HK` / `US` / `SH` / `SZ` / `SG` / `JP`）。请求体不包含 `stock_symbol`。
 
 #### 公共字段
 
-| 字段 | 类型 | 必填 | 默认（OpenD 行为） | 说明 |
-|------|------|------|-------------------|------|
-| `stock_symbol` | string | 是 | — | 标准标的，如 `HK.00700`、`US.NVDA`、`SH.600519`。OpenD 支持前缀：`HK` / `US` / `SH` / `SZ` / `SG` / `JP`。不做别名解析时由上游（Agent/CLI）规范化。 |
-| `time_range` | int32 | 否 | **7** | 回溯 **自然日** 天数；缺省或 ≤0 时按 7 处理。 |
-| `language_id` | int32 | 否 | **0** | 结果语种：`0` 简中，`1` 繁中，`2` 英文，`4` 泰语，`5` 日语。 |
+| 字段 | 类型 | 位置 | 必填 | 说明 |
+|------|------|------|------|------|
+| `symbol` | string | 路径 | 是 | 例如 `HK.00700`、`US.NVDA`、`SH.600519`。 |
+| `time_range` | integer | 请求体 | 否 | 回溯自然日；不传或 ≤0 时按 **7**，最大 **365**。 |
+| `language_id` | integer | 请求体 | 否 | `0` 简中（默认），`1` 繁中，`2` 英文，`4` 泰语，`5` 日语。 |
 
-#### 技术面：`POST /api/v1/get_technical_unusual`
+#### 技术面：`POST /api/v1.0/quote/{symbol}/unusual/technical`
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
@@ -81,7 +81,7 @@ JSON 字段名与 **`SkillWrapAPI.proto`** 一致（`preserve_proto_field_names=
 
 `CCI`, `KDJ`, `BIAS`, `AR`, `BR`, `VR`, `PSY`, `OSC`, `WMSR`, `MACD`, `BOLL`, `MA`, `RSI6`, `RSI12`, `RSI24`
 
-#### 资金面：`POST /api/v1/get_financial_unusual`
+#### 资金面：`POST /api/v1.0/quote/{symbol}/unusual/capital`
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
@@ -98,7 +98,7 @@ JSON 字段名与 **`SkillWrapAPI.proto`** 一致（`preserve_proto_field_names=
 | `short_sell_ratio` | 卖空比例 |
 | `short_sell_number_and_ratio` | 卖空数量与比例同时异常 |
 
-#### 衍生品：`POST /api/v1/get_derivative_unusual`
+#### 衍生品：`POST /api/v1.0/quote/{symbol}/unusual/derivatives`
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
@@ -123,35 +123,32 @@ JSON 字段名与 **`SkillWrapAPI.proto`** 一致（`preserve_proto_field_names=
 **技术面**
 
 ```http
-POST /api/v1/get_technical_unusual HTTP/1.1
-Host: api.futunn.com
+POST /api/v1.0/quote/US.NVDA/unusual/technical HTTP/1.1
+Host: webapi.futunn.com
 Authorization: Bearer <token>
 Content-Type: application/json
 
 {
-  "stock_symbol": "US.NVDA",
   "time_range": 7,
   "language_id": 0,
   "indicator_filters": ["MACD", "RSI6"]
 }
 ```
 
-**资金面**
+**资金面** `POST /api/v1.0/quote/HK.00700/unusual/capital`
 
 ```json
 {
-  "stock_symbol": "HK.00700",
   "time_range": 7,
   "language_id": 0,
   "analysis_dimensions": ["funds_flow", "funds_broker"]
 }
 ```
 
-**衍生品**
+**衍生品** `POST /api/v1.0/quote/US.AAPL/unusual/derivatives`
 
 ```json
 {
-  "stock_symbol": "US.AAPL",
   "time_range": 7,
   "language_id": 0,
   "analysis_dimensions": ["option_unusual", "option_volatility"]
@@ -160,18 +157,20 @@ Content-Type: application/json
 
 ---
 
-### 2.4 响应体（Skill HTTP → OpenD / CLI 映射）
+### 2.4 响应体
 
-Skill 服务 HTTP 成功时返回 JSON 对象（字段名以现网为准，OpenD 映射如下）：
+网关成功时 HTTP 200，正文为 Open API 信封：
 
-| HTTP 字段 | OpenAPI Pb / SDK 字段 | 说明 |
-|-----------|------------------------|------|
-| `code` | `errCode` | 业务码；**0 表示成功** |
-| `message` | `retMsg` | 错误或提示文案 |
-| `time_range` | `time_range` | 展示用区间，如 `"2026.4.2-2026.4.9"` |
-| `content` | `content` | **主载荷**：异动正文（常为结构化文本或内嵌 JSON 字符串，由 Agent Skill 解析展示） |
+| 字段 | 说明 |
+|------|------|
+| `ret_code` | 网关状态码，**0 表示成功** |
+| `ret_msg` | 网关提示 |
+| `data.code` | 下游业务状态：**0 有异动，1 无异动** |
+| `data.message` | 下游提示 |
+| `data.time_range` | 展示用区间，如 `"2026.4.2-2026.4.9"` |
+| `data.content` | 异动正文；无异动时为空字符串 |
 
-OpenAPI Pb 层还有 `retType`（成功一般为 0）。**官方 futu-cli** 在 `--format json` 时输出与 OpenD/SDK 对齐的形状，并附加 `method` 便于 Agent 路由：
+`ret_code != 0` 为失败。`data.code = 1` 仍是成功调用。CLI `--format json` 把 `ret_code` 写入 `retType`，把 `data.code` 写入 `errCode`，并附加 `method` 便于 Agent 路由：
 
 ```json
 {
@@ -185,24 +184,6 @@ OpenAPI Pb 层还有 `retType`（成功一般为 0）。**官方 futu-cli** 在 
 }
 ```
 
-**响应包装（可选）**
-
-部分网关可能对 Skill 回包再包一层，例如：
-
-```json
-{
-  "s": "ok",
-  "d": {
-    "code": 0,
-    "message": "",
-    "time_range": "...",
-    "content": "..."
-  }
-}
-```
-
-CLI 实现已兼容 **flat** 与 **`s`/`d`** 两种形态；restfut 若统一 Open API 信封，请在文档中固定一种并保证 `d` 内字段与上表一致。
-
 **HTTP 状态码建议**
 
 | 场景 | 建议 |
@@ -210,8 +191,8 @@ CLI 实现已兼容 **flat** 与 **`s`/`d`** 两种形态；restfut 若统一 Op
 | 鉴权失败 | 401 |
 | 无行情/异动权限 | 403 |
 | 参数错误（缺 symbol、非法 market 等） | 400 |
-| 业务失败（Skill `code != 0`） | **200 + body.code** 或 4xx/422（需与现有 Open API 错误规范统一） |
-| 窗口内无异动 | 200，`code=0`，`content` 为空或 Skill 约定文案 |
+| 网关失败 | HTTP 200 且 `ret_code != 0`，或 4xx |
+| 窗口内无异动 | 200，`ret_code=0`，`data.code=1`，`data.content` 为空 |
 | 上游 Skill 超时/5xx | 502/504 |
 
 ---
@@ -223,15 +204,14 @@ CLI 实现已兼容 **flat** 与 **`s`/`d`** 两种形态；restfut 若统一 Op
 ```text
 Client (futu CLI / 第三方)
     → Authorization: Bearer (OAuth)
-    → POST https://webapi.futunn.com/...  [restfut 新增路由，可选]
+    → POST https://webapi.futunn.com/api/v1.0/quote/{symbol}/unusual/{technical|capital|derivatives}
     → 校验 token + scope + 标的权限
-    → 转发 POST JSON 至 Skill 源站（或内网等价服务）
-        Path: /api/v1/get_technical_unusual | get_financial_unusual | get_derivative_unusual
+    → 转发至 Skill 源站（或内网等价服务）
     ← Skill JSON (code/message/time_range/content)
     ← 可选：映射为 Open API 统一 envelope
 ```
 
-**最小可行**：不在 `webapi` 增路由，CLI `api_base` 配置为 Skill Host + OAuth 适配；**产品通常希望** 与其它 Open API 一样走 `webapi` + Bearer，则需 **透明转发 body/path** 或 **内网调用同一 Skill 逻辑**。
+CLI 与第三方在当前 `api_base` 上用 Bearer 调用上述 path。正式环境 host 为 `https://webapi.futunn.com`。标的放在路径里，请求体不带 `stock_symbol`。
 
 ### 3.2 与 OpenD 鉴权差异（勿混用）
 
@@ -260,11 +240,11 @@ restfut 建议在 OAuth 层做 **等价校验**，避免无权限用户打穿 Sk
 
 | Endpoint ID | Method | Path |
 |-------------|--------|------|
-| `skillwrap.technical_unusual` | POST | `/api/v1/get_technical_unusual` |
-| `skillwrap.financial_unusual` | POST | `/api/v1/get_financial_unusual` |
-| `skillwrap.derivative_unusual` | POST | `/api/v1/get_derivative_unusual` |
+| `skillwrap.technical_unusual` | POST | `/api/v1.0/quote/{symbol}/unusual/technical` |
+| `skillwrap.financial_unusual` | POST | `/api/v1.0/quote/{symbol}/unusual/capital` |
+| `skillwrap.derivative_unusual` | POST | `/api/v1.0/quote/{symbol}/unusual/derivatives` |
 
-POST body 构造逻辑：见 `internal/service/skillwrap.go`（`time_range`/`language_id` 默认值与 OpenD 一致）。
+`symbol` 走路径参数。请求体只含 `time_range`、`language_id`，以及技术面的 `indicator_filters` 或资金面/衍生品的 `analysis_dimensions`。见 `internal/service/skillwrap.go`。
 
 **联调命令示例**
 
@@ -315,7 +295,7 @@ Python SDK：`ProtoId.SkillWrap_TechnicalUnusual = 3801`（3802/3803 同理）�
 
 | # | 问题 |
 |---|------|
-| 1 | 公网 Host：仅 Skill 域，还是在 `webapi.futunn.com` 增加转发 path？若转发，对外 path 是否仍为 `/api/v1/get_*_unusual` 还是 `/api/v1.0/...` 新路径？ |
+| 1 | 对外 path 已定为 `POST /api/v1.0/quote/{symbol}/unusual/technical|capital|derivatives`。 |
 | 2 | OAuth scope 名称与错误码是否与现有 quote 读接口共用。 |
 | 3 | 业务失败时 HTTP 200 + `code` 还是统一 4xx（与全局 Open API 规范一致）。 |
 | 4 | 响应是否强制 Open API `{s,d}` 信封；若强制，CLI 已兼容 `d` 内 Skill 字段。 |
