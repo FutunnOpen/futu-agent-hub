@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="#快速开始">快速开始</a> · <a href="#skills-概览">Skills 概览</a> · <a href="#行情交易-skills">行情交易 Skills</a> · <a href="#异动检测-skills">异动检测 Skills</a> · <a href="#内容-skills">内容 Skills</a> · <a href="#使用示例">使用示例</a>
+  <a href="#快速开始">快速开始</a> · <a href="#skills-概览">Skills 概览</a> · <a href="#行情与交易-skills">行情与交易 Skills</a> · <a href="#技术分析-skills">技术分析 Skills</a> · <a href="#内容分析-skills">内容分析 Skills</a> · <a href="#量化策略">量化策略</a> · <a href="#使用示例">使用示例</a>
 </p>
 
 
@@ -27,37 +27,40 @@ Futu Agent Hub 是 **富途** 官方推出的 AI Agent 技能中心，把官方 
 
 ## Skills 概览
 
-Futu Agent Hub 提供 **10 个 Skills**（另含量化策略由交易团队单独交付），分为行情交易、异动（Unusual）、内容三类。
+Futu Agent Hub 提供 **11 个 Skills**，分为四类：行情与交易、内容分析、技术分析、量化策略。量化策略目前是仓库内的网格策略 `futu-grid-strategy`。
 
 | Skill | 类别 | 运行依赖 | 说明 |
 |-------|------|----------|------|
-| 行情（`futu-quote`） | 行情交易 | `futu` CLI | 报价、K 线、买卖盘、资金流向、公司资料、自选股等；不下单 |
-| 证券交易（`futu-trading`） | 行情交易 | `futu` CLI | 证券账户、资金、持仓、下单、改单、撤单、成交 |
-| 模拟交易（`futu-sim-trading`） | 行情交易 | `futu` CLI | 模拟账户的资金、持仓与纸面委托；不影响真实账户 |
-| 加密货币（`futu-crypto`） | 行情交易 | `futu` CLI | 加密货币账户、余额、下单、改单、撤单、成交 |
-| 资金异动（`futu-unusual-capital-flows`） | 异动检测 | `futu` CLI | 资金面异常信号 |
-| 衍生品异动（`futu-unusual-derivatives-activity`） | 异动检测 | `futu` CLI | 期权/牛熊证异动 |
-| 技术面异动（`futu-unusual-technical-signal-alerts`） | 异动检测 | `futu` CLI | K 线与指标异动 |
-| 资讯搜索（`futu-news-search`） | 内容 | `curl` | 搜索富途平台上的新闻、公告、研报 |
-| 个股解读（`futu-stock-digest`） | 内容 | `curl` | 围绕标的整理最新事实并给出核心解读 |
-| 情绪温度计（`futu-comment-sentiment`） | 内容 | `curl` | 聚合社区情绪、大V观点，输出标准化情绪参考 |
+| 行情（`futu-quote`） | 行情与交易 | `futu` CLI | 股票、期权、期货及加密货币行情；不下单 |
+| 股票实盘交易（`futu-trading`） | 行情与交易 | `futu` CLI | 用户选定的实盘账户、资金、持仓、委托与成交 |
+| 股票模拟交易（`futu-sim-trading`） | 行情与交易 | `futu` CLI | 用户选定的模拟账户；调用 `futu sim` |
+| 加密货币交易（`futu-crypto`） | 行情与交易 | `futu` CLI | 加密货币账户、余额、委托与成交；行情走 `futu-quote` |
+| 技术面异动（`futu-unusual-technical-signal-alerts`） | 技术分析 | `futu` CLI | K 线与指标异动 |
+| 资金面异动（`futu-unusual-capital-flows`） | 技术分析 | `futu` CLI | 资金分布、流向、经纪商与卖空 |
+| 衍生品异动（`futu-unusual-derivatives-activity`） | 技术分析 | `futu` CLI | 期权与牛熊证异动 |
+| 资讯搜索（`futu-news-search`） | 内容分析 | `curl` | 新闻、公告、研报 |
+| 个股解读（`futu-stock-digest`） | 内容分析 | `curl` | 基于资讯时间与原文的标的解读 |
+| 情绪温度计（`futu-comment-sentiment`） | 内容分析 | `curl` | 社区情绪，带统计窗口与样本量 |
+| 网格策略（`futu-grid-strategy`） | 量化策略 | OpenAPI | 单标的基准价网格；默认在模拟账户验收 |
 
-原 **`futuapi` / `install-futu-opend`** 已移除。升级见 [`docs/upgrade-from-opend.md`](docs/upgrade-from-opend.md)；能力缺口与待补 REST API 见 [`docs/migration-gaps-and-rest-api.md`](docs/migration-gaps-and-rest-api.md)。**实时订阅与经纪队列**改用 Open API WebSocket，见 [`docs/websocket-quote-push.md`](docs/websocket-quote-push.md)。
+原 **`futuapi` / `install-futu-opend`** 已移除。升级见 [`docs/upgrade-from-opend.md`](docs/upgrade-from-opend.md)；能力缺口见 [`docs/migration-gaps-and-rest-api.md`](docs/migration-gaps-and-rest-api.md)。Skill 默认用 CLI 拉取 REST。持续推送和经纪队列没有 `futu subscribe` 命令，调用方自行连接 Open API WebSocket，见 [`docs/websocket-quote-push.md`](docs/websocket-quote-push.md)。
 
 ---
 
-## 行情交易 Skills
+## 行情与交易 Skills
 
-通过官方 [`futu` 命令行](https://github.com/FutunnOpen/futu-cli) 查行情和下单，不经过 OpenD。macOS / Linux 安装到 `$HOME/.futu/bin/futu`，Windows 安装到 `%LOCALAPPDATA%\FutuCLI\bin\futu.exe`。使用前需要 `futu auth login`。更新命令行本身用 `futu update`。
+通过官方 [`futu` 命令行](https://github.com/FutunnOpen/futu-cli) 查行情和下单，不经过 OpenD。macOS / Linux 安装到 `$HOME/.futu/bin/futu`，Windows 安装到 `%LOCALAPPDATA%\FutuCLI\bin\futu.exe`。使用前需要 `futu auth login`。更新命令行本身用 `futu update`。CLI 只安装一次，各 Skill 可以分开安装。
 
-四个 skill 分工明确：行情查询不下单；证券实盘、模拟盘、加密货币各自独立。
+四个 Skill 分工明确：行情覆盖各交易品种，包括加密货币行情，并且不下单。股票实盘、股票模拟、加密货币交易各自使用用户选定的账户，不互相串命令。
 
 ### 行情（`futu-quote`）
 
+报价结果包含标的、价格、涨跌、币种、数据时间和来源。延迟、权限不足、无数据和请求失败分开提示。自选股的添加和删除是写操作。
+
 | 功能 | 说明 |
 |------|------|
-| 报价与快照 | 实时报价、市场快照、标的基本信息 |
-| K 线 / 逐笔 / 分时 | 最新与历史 K 线、逐笔成交、盘中分时 |
+| 报价与快照 | 股票、期权、期货及加密货币的实时报价、市场快照、标的基本信息 |
+| K 线 / 逐笔 / 分时 | 最新与历史 K 线、逐笔成交、盘中分时；历史 K 线处理日期、时区、周期、复权和分页 |
 | 买卖盘与排行 | 多档买卖盘、成交量 / 成交额 / 涨跌幅排行 |
 | 期权 | 期权链、组合期权报价、期权筛选 |
 | 资金与公司 | 资金流向、公司资料、财务、股东、估值 |
@@ -73,13 +76,15 @@ Futu Agent Hub 提供 **10 个 Skills**（另含量化策略由交易团队单�
 
 ---
 
-### 证券交易（`futu-trading`）
+### 股票实盘交易（`futu-trading`）
 
-真实证券账户。下单、改单、撤单会改动资产，执行前需要用户明确确认。
+只使用用户明确选定的股票实盘账户。第一次先列出可用实盘账户让用户选择，之后沿用该账户。账户或交易环境不清楚时先确认，不自动切换到模拟盘或加密货币账户。
+
+下单、改单、撤单会改动资产。执行前确认账户、环境、标的、方向、数量、订单类型和价格。Agent 不代替用户确认。返回订单编号和实际状态；提交成功不等于成交。超时或状态未知时先查询，避免重复下单。
 
 | 功能 | 说明 |
 |------|------|
-| 账户与资金 | 账户列表、可用资金 |
+| 账户与资金 | 实盘账户列表、可用资金 |
 | 持仓 | 当前持仓 |
 | 委托 | 买入、卖出、下单、改单、撤单 |
 | 查询 | 当日与历史订单、订单详情、当日与历史成交 |
@@ -95,9 +100,9 @@ Futu Agent Hub 提供 **10 个 Skills**（另含量化策略由交易团队单�
 
 ---
 
-### 模拟交易（`futu-sim-trading`）
+### 股票模拟交易（`futu-sim-trading`）
 
-只操作模拟账户，不改动真实持仓和资金。账户、标的、方向、数量或价格不明确时先查询再下单。
+只操作股票模拟账户，调用 `futu sim`，并显式传入用户选定的模拟账户。不自动使用第一个模拟账户，不调用实盘或加密货币交易命令。委托前的确认规则与股票实盘交易相同。模拟结果使用虚拟资金，可能与实盘不同。
 
 | 功能 | 说明 |
 |------|------|
@@ -115,9 +120,9 @@ Futu Agent Hub 提供 **10 个 Skills**（另含量化策略由交易团队单�
 
 ---
 
-### 加密货币（`futu-crypto`）
+### 加密货币交易（`futu-crypto`）
 
-加密货币账户的余额和真实委托。下单前确认账户、币对、方向和数量。证券账户的资金、持仓和委托走 `futu-trading`。
+加密货币账户的余额和真实委托，调用 `futu crypto`。币对使用 CLI 格式，例如 `BTCUSD`。只使用用户选定的加密货币账户。行情查询走 `futu-quote`。股票账户的资金、持仓和委托走 `futu-trading`。下单前确认账户、币对、方向、数量或金额、价格。
 
 | 功能 | 说明 |
 |------|------|
@@ -127,21 +132,41 @@ Futu Agent Hub 提供 **10 个 Skills**（另含量化策略由交易团队单�
 
 **示例提问：**
 ```
-看看我的加密货币账户余额
-买入 0.01 个 BTC
-这笔加密货币订单成交了没有？
-撤销刚才的 BTC 挂单
+看看我选定的加密货币账户余额
+查询 BTCUSD 的可买数量
+在已选账户提交一笔 BTCUSD 限价委托，确认后再执行
+这笔加密货币订单现在是什么状态？
 ```
 
 ---
 
-## Unusual Skills（异动）
+## 技术分析 Skills
 
-围绕一只股票自动识别"市场上正在发生什么不寻常的事"。三个 Skill 分别对应 **Unusual Capital Flows**、**Unusual Derivatives Activity**、**Technical Signal Alerts**；当用户给出宽泛的异动请求（如"英伟达异动"、"腾讯有没有异常"）时，会同时调用三者输出一份综合报告。
+围绕一只股票识别不寻常的变化。三个 Skill 的顺序是 **技术面异动**、**资金面异动**、**衍生品异动**。用户只说「英伟达异动」或「腾讯有没有异常」时，三个一起调用。
 
-> 异动 Skills 通过 **`futu unusual`** 拉取数据（`anomaly` 为兼容别名；子命令如 `capital-flows` / `derivatives-activity` / `technical-signals`）。与行情/交易共用 `futu` CLI 与 OAuth，见 [`docs/migration-gaps-and-rest-api.md`](docs/migration-gaps-and-rest-api.md)。
+结果要区分无异常、无数据、不适用、权限不足和请求失败。信号来自 `futu unusual`（`anomaly` 为兼容别名），不用普通行情指标代替异动接口。子命令是 `technical-signals`、`capital-flows`、`derivatives-activity`。
 
-### 资金异动 · Unusual Capital Flows（`futu-unusual-capital-flows`）
+### 技术面异动 · Technical Signal Alerts（`futu-unusual-technical-signal-alerts`）
+
+围绕 `get_technical_unusual` 检测 K 线形态和技术指标异动。
+
+| 维度 | 涵盖内容 |
+|------|----------|
+| K 线形态 | 形态识别、形态突破 |
+| 趋势指标 | MACD、MA、BOLL |
+| 摆动指标 | RSI、KDJ、CCI、WMSR |
+| 强弱指标 | BIAS、ARBR、VR、PSY、OSC |
+
+**示例提问：**
+```
+腾讯最近有什么技术信号？
+英伟达有没有金叉 / 死叉？
+苹果的 MACD 出现异动了吗？
+```
+
+---
+
+### 资金面异动 · Unusual Capital Flows（`futu-unusual-capital-flows`）
 
 围绕 `get_financial_unusual` 检测资金面异动信号。
 
@@ -181,27 +206,7 @@ NVDA 隐含波动率有异动吗？
 
 ---
 
-### 技术面异动 · Technical Signal Alerts（`futu-unusual-technical-signal-alerts`）
-
-围绕 `get_technical_unusual` 检测 K 线形态和技术指标异动。
-
-| 维度 | 涵盖内容 |
-|------|----------|
-| K 线形态 | 形态识别、形态突破 |
-| 趋势指标 | MACD、MA、BOLL |
-| 摆动指标 | RSI、KDJ、CCI、WMSR |
-| 强弱指标 | BIAS、ARBR、VR、PSY、OSC |
-
-**示例提问：**
-```
-腾讯最近有什么技术信号？
-英伟达有没有金叉 / 死叉？
-苹果的 MACD 出现异动了吗？
-```
-
----
-
-## 内容 Skills
+## 内容分析 Skills
 
 ### 资讯搜索
 
@@ -227,7 +232,7 @@ NVDA 隐含波动率有异动吗？
 
 ### 个股解读
 
-围绕用户选择的标的，持续推送最新事实信息与核心解读。帮助用户在一个入口里快速了解标的发生了什么、为什么值得关注。
+围绕用户选择的标的，整理资讯摘要、方向判断和来源。输出写明结论依据的资讯时间，并给出原文链接。静态示例标明「示例」，不写成今天的实时结果。
 
 **示例提问：**
 ```
@@ -240,13 +245,32 @@ NVDA 隐含波动率有异动吗？
 
 ### 情绪温度计
 
-聚合社区情绪、热议风向、大V观点，输出一个标准化的情绪参考 — 帮助你在做决策前快速感知市场情绪。
+聚合社区讨论和大 V 观点，输出多空比例和代表观点，并写明统计窗口、样本量和来源。样本不足时单独说明。内容分析不要求 CLI 行情或交易授权。
 
 **示例提问：**
 ```
 看看社区对小米的情绪怎么样
 美团现在的市场情绪如何？
 大家怎么看特斯拉？
+```
+
+---
+
+## 量化策略
+
+仓库内的量化策略是网格策略 `futu-grid-strategy`。它指导 Agent 按 OpenAPI 文档编写单标的基准价网格程序：先做参数检查，再写可重启的限价单对账循环。
+
+| 项 | 说明 |
+|----|------|
+| 范围 | 一只股票或 ETF：`HK.00700`、`US.AAPL`、`SH.600519`、`SZ.000001` |
+| 订单 | 按百分比间距的当日限价单；跨日通过对账循环重新挂单 |
+| 环境 | 默认连接模拟账户。用户当次明确说使用实盘后，才切到实盘页面 |
+| 不含 | 期权、期货、加密货币、多标的、市价单 |
+
+接口字段以 [OpenAPI llms.md](https://open.futunn.com/zh-cn/llm/llms.md) 为准，调用 `webapi.futunn.com`。这个 Skill 不复制请求体，也不读取 token。
+
+```bash
+npx skills add -y -g FutunnOpen/futu-agent-hub --skill futu-grid-strategy
 ```
 
 ---
@@ -271,11 +295,13 @@ NVDA 隐含波动率有异动吗？
 
 通过 `npx skills add` 将本仓库的 Skills 安装到 AI 客户端的 skills 目录。各 skill 的触发条件写在自己的 `description` 里，客户端扫描目录即可发现，不需要单独的发现工具。
 
+按需安装当前 Skill。CLI 只安装一次，已安装的 CLI 不重复安装。安装 Skill 不等于已经拥有账户或行情权限。
+
 ```bash
-npx skills add -y -g FutunnOpen/futu-agent-hub
+npx skills add -y -g FutunnOpen/futu-agent-hub --skill futu-quote
 ```
 
-> `-y` 跳过交互式选择；`-g` 安装到全局（所有项目共享）。去掉 `-y` 可交互选择部分 Skill；去掉 `-g` 仅安装到当前项目。
+> `-y` 跳过交互式选择；`-g` 安装到全局（所有项目共享）。把 `futu-quote` 换成上表中的 slug 即可安装其他 Skill。去掉 `--skill` 会安装仓库内全部 Skill。去掉 `-g` 仅安装到当前项目。
 
 升级已安装的 skill：
 
@@ -306,6 +332,7 @@ bash scripts/migrate-renamed-skills.sh
 行情、交易、异动 Skill 需要官方 **`futu` CLI**（OAuth）。**不需要 OpenD**。详见 [`docs/futu-install.md`](docs/futu-install.md)。
 
 ```bash
+futu version
 futu auth login
 futu auth status --format json
 futu check
@@ -376,9 +403,9 @@ futu check
 │                            Futu Agent Hub                                 │
 │                                                                           │
 │  ┌──────────────────────────────┐  ┌────────────┐  ┌───────────┐ │
-│  │ 行情交易                      │  │ 异动检测    │  │ 内容       │ │
-│  │ futu-quote / futu-trading    │  │ 资金/衍生品 │  │ 资讯搜索   │ │
-│  │ futu-sim-trading / futu-crypto│  │ / 技术面    │  │ 个股解读   │ │
+│  │ 行情与交易                    │  │ 技术分析    │  │ 内容分析   │ │
+│  │ futu-quote / futu-trading    │  │ 技术/资金   │  │ 资讯搜索   │ │
+│  │ futu-sim-trading / futu-crypto│  │ / 衍生品    │  │ 个股解读   │ │
 │  └──────────────┬───────────────┘  └──────┬─────┘  │ 情绪温度计 │ │
 └─────────────────┼─────────────────────────┼────────┴─────┬─────┘ │
                   │                         │              │
@@ -398,9 +425,9 @@ futu check
 
 ## 安全
 
-- **凭证仅通过环境变量传递** — 不会硬编码到配置或源码中
-- **交易二次确认** — 下单、改单、撤单等写操作需用户明确确认
-- **CLI OAuth** — Token 存于本机，由 CLI 附加 Bearer；勿在对话或仓库中粘贴 token
+- **不在仓库或对话中保存凭证** — CLI 的 OAuth token 存在本机，由 CLI 附加 Bearer；网格策略按 OpenAPI 文档调用，不把 token 写进代码
+- **交易二次确认** — 下单、改单、撤单由用户确认账户、标的、方向、数量和价格；Agent 不代为确认
+- **提交不等于成交** — 返回订单编号和实际状态；状态未知时先查询
 - **职责拆分** — 行情 Skill 不下单；实盘 / 模拟 / 加密交易分 Skill 路由
 - **频率限制** — 遵循 Futu API 内置的频率限制和权限控制
 - **内容 Skills** — 调用公开接口，不传输用户凭证；返回数据仅供参考
