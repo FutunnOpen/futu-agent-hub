@@ -76,7 +76,7 @@ WSS 流程摘要：连接 → **auth**（Bearer）→ **subscribe**（`quote` / 
 
 ### P0 — 异动（OpenD Skill HTTP；**通常不在 Open API 文档**）
 
-OpenD 仍走 **Pb 3801–3803 → POST** `https://api.futunn.com/api/v1/get_*_unusual`（见 FutuOpenD `NNBiz_Qot_SkillWrap.cpp`）。OAuth CLI 调用已发布的行情异动接口：`POST /api/v1.0/quote/{symbol}/unusual/technical|capital|derivatives`，见 §3.5。
+OpenD 仍走 **Pb 3801–3803 → POST** `https://api.futunn.com/api/v1/get_*_unusual`（见 FutuOpenD `NNBiz_Qot_SkillWrap.cpp`）。OAuth CLI 调用已发布的行情异动接口：`GET /api/v1.0/quote/{symbol}/unusual/technical|capital|derivatives`，见 §3.5。
 
 #### 3.1 命令字对照（**NN_ProtoCmd** / OpenAPI Pb / HTTP / CLI）
 
@@ -113,7 +113,7 @@ OpenD **不**走 `/api/v1.0/quote/...` BFF，而是 CommonPost JSON body：
 
 实现：`Src/NNProtoCenter/Quote/NNBiz_Qot_SkillWrap.cpp`（`Pull*Unusual` → `PostSkillWrapUnusualWithJsonBody`）。
 
-**futu-cli：** 在当前 `api_base` 上按 Open API 调用 `POST /api/v1.0/quote/{symbol}/unusual/technical|capital|derivatives`，Bearer OAuth + 对应市场实时行情权限。
+**futu-cli：** 在当前 `api_base` 上按 Open API 调用 `GET /api/v1.0/quote/{symbol}/unusual/technical|capital|derivatives`，参数在 query，Bearer OAuth + 对应市场实时行情权限。
 
 #### 3.3 请求 JSON body（POST）
 
@@ -167,11 +167,11 @@ OpenAPI 层还有 `retType`（成功/失败）。CLI `--format json` 建议同�
 
 | Endpoint ID | HTTP | CLI | 状态 |
 |-------------|------|-----|------|
-| `skillwrap.technical_unusual` | `POST /api/v1.0/quote/{symbol}/unusual/technical` | `futu unusual technical-signals` | **已接**（futu-cli / moomoo-cli） |
-| `skillwrap.financial_unusual` | `POST /api/v1.0/quote/{symbol}/unusual/capital` | `futu unusual capital-flows` | **已接** |
-| `skillwrap.derivative_unusual` | `POST /api/v1.0/quote/{symbol}/unusual/derivatives` | `futu unusual derivatives-activity` | **已接** |
+| `skillwrap.technical_unusual` | `GET /api/v1.0/quote/{symbol}/unusual/technical` | `futu unusual technical-signals` | **已接**（futu-cli / moomoo-cli） |
+| `skillwrap.financial_unusual` | `GET /api/v1.0/quote/{symbol}/unusual/capital` | `futu unusual capital-flows` | **已接** |
+| `skillwrap.derivative_unusual` | `GET /api/v1.0/quote/{symbol}/unusual/derivatives` | `futu unusual derivatives-activity` | **已接** |
 
-moomoo-cli 同构（`moomoo unusual *`，`anomaly` 为别名）。标的在路径中，请求体不含 `stock_symbol`。`ret_code = 0` 且 `data.code = 1` 表示窗口内无异动，CLI 仍成功退出。
+moomoo-cli 同构（`moomoo unusual *`，`anomaly` 为别名）。标的在路径中，query 不含 `stock_symbol`。`ret_code = 0` 且 `data.code = 1` 表示窗口内无异动，CLI 仍成功退出。
 
 **契约要点：**
 

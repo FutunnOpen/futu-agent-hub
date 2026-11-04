@@ -43,9 +43,9 @@ OpenD **没有** 对应的 `NN_ProtoCmd` 行情 TCP 拉数；链路为：
 
 | 能力 | HTTP Method | Path | CLI |
 |------|-------------|------|-----|
-| 技术面异动 | POST | `/api/v1.0/quote/{symbol}/unusual/technical` | `futu unusual technical-signals <symbol>` |
-| 资金面异动 | POST | `/api/v1.0/quote/{symbol}/unusual/capital` | `futu unusual capital-flows <symbol>` |
-| 衍生品异动 | POST | `/api/v1.0/quote/{symbol}/unusual/derivatives` | `futu unusual derivatives-activity <symbol>` |
+| 技术面异动 | GET | `/api/v1.0/quote/{symbol}/unusual/technical` | `futu unusual technical-signals <symbol>` |
+| 资金面异动 | GET | `/api/v1.0/quote/{symbol}/unusual/capital` | `futu unusual capital-flows <symbol>` |
+| 衍生品异动 | GET | `/api/v1.0/quote/{symbol}/unusual/derivatives` | `futu unusual derivatives-activity <symbol>` |
 
 **Host（Skill 业务源站，OpenD 使用）**
 
@@ -54,24 +54,24 @@ OpenD **没有** 对应的 `NN_ProtoCmd` 行情 TCP 拉数；链路为：
 | Futu | `https://api.futunn.com` |
 | Moomoo | `https://api.moomoo.com` |
 
-**Content-Type**：`application/json`  
+**请求参数**：query string，无 JSON body。  
 **鉴权（OAuth 公网，待 restfut 定稿）**：建议 `Authorization: Bearer <access_token>`，scope 与 **行情读** 对齐或单独 `unusual_read`（需产品确认）。
 
 ---
 
-### 2.2 请求（路径参数 + JSON body）
+### 2.2 请求（路径参数 + query）
 
-`symbol` 在路径中，格式为 `市场.代码`（`HK` / `US` / `SH` / `SZ` / `SG` / `JP`）。请求体不包含 `stock_symbol`。
+`symbol` 在路径中，格式为 `市场.代码`（`HK` / `US` / `SH` / `SZ` / `SG` / `JP`）。query 不包含 `stock_symbol`。数组字段重复同名 query，例如 `indicator_filters=MACD&indicator_filters=RSI6`。
 
 #### 公共字段
 
 | 字段 | 类型 | 位置 | 必填 | 说明 |
 |------|------|------|------|------|
 | `symbol` | string | 路径 | 是 | 例如 `HK.00700`、`US.NVDA`、`SH.600519`。 |
-| `time_range` | integer | 请求体 | 否 | 回溯自然日；不传或 ≤0 时按 **7**，最大 **365**。 |
-| `language_id` | integer | 请求体 | 否 | `0` 简中（默认），`1` 繁中，`2` 英文，`4` 泰语，`5` 日语。 |
+| `time_range` | integer | query | 否 | 回溯自然日；不传或 ≤0 时按 **7**，最大 **365**。 |
+| `language_id` | integer | query | 否 | `0` 简中（默认），`1` 繁中，`2` 英文，`4` 泰语，`5` 日语。 |
 
-#### 技术面：`POST /api/v1.0/quote/{symbol}/unusual/technical`
+#### 技术面：`GET /api/v1.0/quote/{symbol}/unusual/technical`
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
@@ -81,7 +81,7 @@ OpenD **没有** 对应的 `NN_ProtoCmd` 行情 TCP 拉数；链路为：
 
 `CCI`, `KDJ`, `BIAS`, `AR`, `BR`, `VR`, `PSY`, `OSC`, `WMSR`, `MACD`, `BOLL`, `MA`, `RSI6`, `RSI12`, `RSI24`
 
-#### 资金面：`POST /api/v1.0/quote/{symbol}/unusual/capital`
+#### 资金面：`GET /api/v1.0/quote/{symbol}/unusual/capital`
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
@@ -98,7 +98,7 @@ OpenD **没有** 对应的 `NN_ProtoCmd` 行情 TCP 拉数；链路为：
 | `short_sell_ratio` | 卖空比例 |
 | `short_sell_number_and_ratio` | 卖空数量与比例同时异常 |
 
-#### 衍生品：`POST /api/v1.0/quote/{symbol}/unusual/derivatives`
+#### 衍生品：`GET /api/v1.0/quote/{symbol}/unusual/derivatives`
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
@@ -123,37 +123,14 @@ OpenD **没有** 对应的 `NN_ProtoCmd` 行情 TCP 拉数；链路为：
 **技术面**
 
 ```http
-POST /api/v1.0/quote/US.NVDA/unusual/technical HTTP/1.1
+GET /api/v1.0/quote/US.NVDA/unusual/technical?time_range=7&language_id=0&indicator_filters=MACD&indicator_filters=RSI6 HTTP/1.1
 Host: webapi.futunn.com
 Authorization: Bearer <token>
-Content-Type: application/json
-
-{
-  "time_range": 7,
-  "language_id": 0,
-  "indicator_filters": ["MACD", "RSI6"]
-}
 ```
 
-**资金面** `POST /api/v1.0/quote/HK.00700/unusual/capital`
+**资金面** `GET /api/v1.0/quote/HK.00700/unusual/capital?time_range=7&language_id=0&analysis_dimensions=funds_flow&analysis_dimensions=funds_broker`
 
-```json
-{
-  "time_range": 7,
-  "language_id": 0,
-  "analysis_dimensions": ["funds_flow", "funds_broker"]
-}
-```
-
-**衍生品** `POST /api/v1.0/quote/US.AAPL/unusual/derivatives`
-
-```json
-{
-  "time_range": 7,
-  "language_id": 0,
-  "analysis_dimensions": ["option_unusual", "option_volatility"]
-}
-```
+**衍生品** `GET /api/v1.0/quote/US.AAPL/unusual/derivatives?time_range=7&language_id=0&analysis_dimensions=option_unusual&analysis_dimensions=option_volatility`
 
 ---
 
@@ -204,14 +181,14 @@ Content-Type: application/json
 ```text
 Client (futu CLI / 第三方)
     → Authorization: Bearer (OAuth)
-    → POST https://webapi.futunn.com/api/v1.0/quote/{symbol}/unusual/{technical|capital|derivatives}
+    → GET https://webapi.futunn.com/api/v1.0/quote/{symbol}/unusual/{technical|capital|derivatives}
     → 校验 token + scope + 标的权限
     → 转发至 Skill 源站（或内网等价服务）
     ← Skill JSON (code/message/time_range/content)
     ← 可选：映射为 Open API 统一 envelope
 ```
 
-CLI 与第三方在当前 `api_base` 上用 Bearer 调用上述 path。正式环境 host 为 `https://webapi.futunn.com`。标的放在路径里，请求体不带 `stock_symbol`。
+CLI 与第三方在当前 `api_base` 上用 Bearer 调用上述 path。正式环境 host 为 `https://webapi.futunn.com`。标的放在路径里，query 不带 `stock_symbol`。
 
 ### 3.2 与 OpenD 鉴权差异（勿混用）
 
@@ -240,11 +217,11 @@ restfut 建议在 OAuth 层做 **等价校验**，避免无权限用户打穿 Sk
 
 | Endpoint ID | Method | Path |
 |-------------|--------|------|
-| `skillwrap.technical_unusual` | POST | `/api/v1.0/quote/{symbol}/unusual/technical` |
-| `skillwrap.financial_unusual` | POST | `/api/v1.0/quote/{symbol}/unusual/capital` |
-| `skillwrap.derivative_unusual` | POST | `/api/v1.0/quote/{symbol}/unusual/derivatives` |
+| `skillwrap.technical_unusual` | GET | `/api/v1.0/quote/{symbol}/unusual/technical` |
+| `skillwrap.financial_unusual` | GET | `/api/v1.0/quote/{symbol}/unusual/capital` |
+| `skillwrap.derivative_unusual` | GET | `/api/v1.0/quote/{symbol}/unusual/derivatives` |
 
-`symbol` 走路径参数。请求体只含 `time_range`、`language_id`，以及技术面的 `indicator_filters` 或资金面/衍生品的 `analysis_dimensions`。见 `internal/service/skillwrap.go`。
+`symbol` 走路径参数。query 只含 `time_range`、`language_id`，以及技术面的 `indicator_filters` 或资金面/衍生品的 `analysis_dimensions`。见 `internal/service/skillwrap.go`。
 
 **联调命令示例**
 
@@ -287,7 +264,7 @@ Python SDK：`ProtoId.SkillWrap_TechnicalUnusual = 3801`（3802/3803 同理）�
 
 1. 固定 symbol + `time_range` + filters/dimensions，**响应 `content` / `time_range` / 错误码** 与 OpenD SDK 同参调用 **字段级一致**（golden diff）。
 2. OAuth 用户无 OpenD 亦可完成三条 Skill 工作流。
-3. 文档：在 Open API 站点列出 path、body、响应、scope、限流（若对外发布）。
+3. 文档：在 Open API 站点列出 path、query、响应、scope、限流（若对外发布）。
 
 ---
 
@@ -295,7 +272,7 @@ Python SDK：`ProtoId.SkillWrap_TechnicalUnusual = 3801`（3802/3803 同理）�
 
 | # | 问题 |
 |---|------|
-| 1 | 对外 path 已定为 `POST /api/v1.0/quote/{symbol}/unusual/technical|capital|derivatives`。 |
+| 1 | 对外 path 已定为 `GET /api/v1.0/quote/{symbol}/unusual/technical|capital|derivatives`。 |
 | 2 | OAuth scope 名称与错误码是否与现有 quote 读接口共用。 |
 | 3 | 业务失败时 HTTP 200 + `code` 还是统一 4xx（与全局 Open API 规范一致）。 |
 | 4 | 响应是否强制 Open API `{s,d}` 信封；若强制，CLI 已兼容 `d` 内 Skill 字段。 |
@@ -321,3 +298,4 @@ Python SDK：`ProtoId.SkillWrap_TechnicalUnusual = 3801`（3802/3803 同理）�
 | 日期 | 说明 |
 |------|------|
 | 2026-10-28 | 初版：restfut 对齐 OpenD SkillWrap 三接口 |
+| 2026-11-04 | Open API 三条异动改为 GET，参数放在 query |

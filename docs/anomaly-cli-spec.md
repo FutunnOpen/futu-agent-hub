@@ -39,27 +39,27 @@ futu unusual derivatives-activity US.NVDA --time-range 7 --analysis-dimensions o
 
 CLI 在当前 `api_base` 上调用：
 
-- **POST** `/api/v1.0/quote/{symbol}/unusual/technical`
-- **POST** `/api/v1.0/quote/{symbol}/unusual/capital`
-- **POST** `/api/v1.0/quote/{symbol}/unusual/derivatives`
+- **GET** `/api/v1.0/quote/{symbol}/unusual/technical`
+- **GET** `/api/v1.0/quote/{symbol}/unusual/capital`
+- **GET** `/api/v1.0/quote/{symbol}/unusual/derivatives`
 
-`{symbol}` 是路径参数，格式为 `市场.代码`，例如 `HK.00700`。请求体不再带 `stock_symbol`。
+`{symbol}` 是路径参数，格式为 `市场.代码`，例如 `HK.00700`。query 不带 `stock_symbol`。数组字段重复同名参数，例如 `indicator_filters=MACD&indicator_filters=RSI6`。
 
 | Endpoint ID | Method | Path | CLI |
 |-------------|--------|------|-----|
-| `skillwrap.technical_unusual` | POST | `/api/v1.0/quote/{symbol}/unusual/technical` | `unusual technical-signals` |
-| `skillwrap.financial_unusual` | POST | `/api/v1.0/quote/{symbol}/unusual/capital` | `unusual capital-flows` |
-| `skillwrap.derivative_unusual` | POST | `/api/v1.0/quote/{symbol}/unusual/derivatives` | `unusual derivatives-activity` |
+| `skillwrap.technical_unusual` | GET | `/api/v1.0/quote/{symbol}/unusual/technical` | `unusual technical-signals` |
+| `skillwrap.financial_unusual` | GET | `/api/v1.0/quote/{symbol}/unusual/capital` | `unusual capital-flows` |
+| `skillwrap.derivative_unusual` | GET | `/api/v1.0/quote/{symbol}/unusual/derivatives` | `unusual derivatives-activity` |
 
-POST body：
+Query：
 
 | 字段 | 位置 | 适用 |
 |------|------|------|
 | `symbol` | 路径 | 全部，必填 |
-| `time_range` | 请求体 | 全部；不传或 ≤0 时按 7，最大 365 |
-| `language_id` | 请求体 | 全部，默认 0 |
-| `indicator_filters` | 请求体 | technical；不传或空数组表示全量 |
-| `analysis_dimensions` | 请求体 | capital、derivatives；不传或空数组表示全量 |
+| `time_range` | query | 全部；不传或 ≤0 时按 7，最大 365 |
+| `language_id` | query | 全部，默认 0 |
+| `indicator_filters` | query | technical；不传或空数组表示全量 |
+| `analysis_dimensions` | query | capital、derivatives；不传或空数组表示全量 |
 
 成功响应是 Open API 信封。`ret_code` 为 0 表示网关成功。`data.code` 为 0 表示窗口内有异动，为 1 表示无异动且 `data.content` 为空；无异动仍是成功，CLI 退出码为 0。
 
