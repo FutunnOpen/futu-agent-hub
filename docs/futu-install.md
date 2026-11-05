@@ -19,7 +19,7 @@ Install Futu Skills into your AI client with `npx`. Each skill's `description` i
 ## Step 1 — Install Skill Files
 
 ```bash
-npx skills add -y -g FutunnOpen/futu-agent-hub
+npx skills add -y -g FutunnOpen/futu-agent-hub#main
 ```
 
 > `-y` skips interactive selection; `-g` installs globally (all projects). Drop `-y` to pick skills interactively, or `-g` to install only into the current project.
@@ -38,7 +38,7 @@ npx skills update -g
 
 ```bash
 bash scripts/migrate-renamed-skills.sh
-npx skills add -y -g FutunnOpen/futu-agent-hub
+npx skills add -y -g FutunnOpen/futu-agent-hub#main
 ```
 
 ### Per-Client Targets
@@ -92,7 +92,7 @@ Some clients require a restart or a new chat session to pick up newly installed 
 - Confirm Node.js 22.20+: `node -v`
 - `command not found: skills` -> upgrade npm: `npm install -g npm@latest`
 - Private-repo clone failure -> ensure an SSH key or HTTPS credential helper is configured for `github.com`; verify with a manual `git clone`
-- Restricted network -> use HTTPS with a token: `npx skills add -y -g https://<token>@github.com/FutunnOpen/futu-agent-hub.git`
+- Restricted network -> use HTTPS with a token: `npx skills add -y -g https://<token>@github.com/FutunnOpen/futu-agent-hub.git#main`
 
 </details>
 
