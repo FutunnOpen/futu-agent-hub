@@ -18,6 +18,8 @@ license: MIT
 
 # Futu Comment Sentiment Skill
 
+Answer in the user's language by default.
+
 HTTP **single-symbol or multi-symbol real-time community sentiment aggregation** for discussions on the Futu platform.
 
 This skill is designed for user requests such as:

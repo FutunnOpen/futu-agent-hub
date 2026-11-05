@@ -19,6 +19,8 @@ license: MIT
 
 # Futu Stock Digest Skill
 
+Answer in the user's language by default.
+
 Structured **single-stock news interpretation workflow** on the Futu platform.
 
 This skill accepts **one target only**, such as a stock name, company name, or ticker-like symbol string. It does not decide the target on its own. The caller must supply the stock to interpret.

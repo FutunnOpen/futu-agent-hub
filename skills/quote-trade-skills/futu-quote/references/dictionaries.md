@@ -31,7 +31,7 @@ This file maps a user's natural-language intent to the markets, security types, 
 ### Ticks, intraday data, and trading sessions
 
 - `futu ticker --period` can be repeated with `NORMAL`, `BEFORE`, `AFTER`, and `OVERNIGHT`.
-- `futu rt-data --section` uses `NORMAL`, `FULL`, `PREMARKET`, `AFTERHOURS`, `HK_DARK`, and `OVERNIGHT`.
+- `futu rt-data --section` uses `NORMAL`, `FULL`, `PREMARKET`, `AFTERHOURS`, `HK_DARK`, and `OVERNIGHT`. `HK_DARK` is the Hong Kong grey market (pre-listing session), not a US dark pool.
 - Map "pre-market" to `PREMARKET` or `BEFORE`, depending on the command. Map "after-hours" to `AFTERHOURS` or `AFTER`. Map "overnight" to `OVERNIGHT`.
 - `capital --view intraday --section` supports `NORMAL/FULL/PREMARKET/AFTERHOURS`.
 
