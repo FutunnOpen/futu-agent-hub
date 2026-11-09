@@ -24,7 +24,7 @@ Common paper-trading `--market` values:
 | `US_OPTION` | US option paper trading | US option symbols |
 | `HKCC` | China Connect paper trading | China Connect symbols |
 
-The CLI converts these strings to paper-trading BFF numeric enums internally: `HK -> 1`, `US -> 2`, `US_OPTION -> 3`, `HKCC -> 4`. `OPTION` is an alias of `US_OPTION`. `CN` is an alias of `HKCC`. Do not pass numeric market values unless the CLI parameter table explicitly requires them.
+The CLI converts these strings to paper-trading BFF numeric enums internally: `HK -> 1`, `US -> 100`, `US_OPTION -> 3`, `HKCC -> 4`. `OPTION` is an alias of `US_OPTION`. `CN` is an alias of `HKCC`. Do not pass numeric market values unless the CLI parameter table explicitly requires them.
 
 ## Symbols
 
