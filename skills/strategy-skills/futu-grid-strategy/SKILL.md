@@ -14,7 +14,7 @@ description: >-
 
 The user can already place, modify, and cancel orders and query quotes with the Futu OpenAPI `llms.md`. This skill adds how those actions become one grid program: whether the parameters can run, how level prices are calculated, how the base price and orders line up after a restart, and when the program must stop.
 
-Open the user's OpenAPI `llms.md` for paths, field names, and enum values (public index: <https://open.futunn.com/zh-cn/llm/llms.md>), open the matching page, then send the request. This file does not copy request bodies. Calls go to the `webapi.futunn.com` product line.
+Open the user's OpenAPI `llms.md` for paths, field names, and enum values (public index: <https://open.futunn.com/llms.txt>), open the matching page, then send the request. This file does not copy request bodies. Calls go to the `webapi.futunn.com` product line.
 
 ## 1. First version scope
 

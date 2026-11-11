@@ -267,7 +267,7 @@ NVDA 隐含波动率有异动吗？
 | 环境 | 默认连接模拟账户。用户当次明确说使用实盘后，才切到实盘页面 |
 | 不含 | 期权、期货、加密货币、多标的、市价单 |
 
-接口字段以 [OpenAPI llms.md](https://open.futunn.com/zh-cn/llm/llms.md) 为准，调用 `webapi.futunn.com`。这个 Skill 不复制请求体，也不读取 token。
+接口字段以 [OpenAPI llms.md](https://open.futunn.com/llms.txt) 为准，调用 `webapi.futunn.com`。这个 Skill 不复制请求体，也不读取 token。
 
 ```bash
 npx skills add -y -g FutunnOpen/futu-agent-hub --skill futu-grid-strategy
