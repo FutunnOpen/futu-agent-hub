@@ -1,22 +1,22 @@
-# Real-time quote push (WebSocket)
+# Real-time quote push
 
-The `futu` CLI covers **REST** market-data queries. It does **not** replace OpenD TCP subscribe or the removed `futuapi/scripts/subscribe/*` scripts.
+Use `futu quote subscribe` for continuous quote, order book, ticker, K-line, and broker-queue data. The CLI opens the WebSocket, authenticates with the stored OAuth token, and prints each server message as one compact JSON line. Do not read the token file and do not open `wss://webapi-quote.futunn.com/ws` from the skill.
 
-For **continuous** quote, order book, ticker, K-line, and **broker queue** streams, use **FUTUNN Open API Quote Push WebSocket**:
+```bash
+futu quote subscribe --symbols HK.00700 --types quote,order_book --format json --source skill
+```
 
-- Endpoint: `wss://webapi-quote.futunn.com/ws`
-- Flow: connect → **auth** (OAuth Bearer recommended, same family as `futu auth login`) → **subscribe** → handle pushes by `type`
-- Subscribe fields map to push `type` values: `quote` → `QUOTE`, `order_book` → `ORDER_BOOK`, `ticker` → `TICKER`, `kline` → `KLINE`
-- Broker queue: message type **`BROKER_QUEUE`** (usually after `order_book` subscribe on eligible HK symbols; not a separate subscribe key)
+When calling the CLI from Bash, append `--source skill` as with other commands. Omit `--duration` and `--max-messages` unless the user asks for a different window. The defaults are 20 seconds and 50 push messages. The maximum duration is 30 minutes.
 
-Hub user guide (Chinese, full examples): repo [`docs/websocket-quote-push.md`](../../../../docs/websocket-quote-push.md).
+| Flag | Default | Meaning |
+| --- | --- | --- |
+| `--symbols` | required | Comma-separated `MARKET.CODE` symbols |
+| `--types` | `quote` | `quote`, `order_book`, `ticker`, `kline` |
+| `--duration` | `20s` | Stop when this time elapses |
+| `--max-messages` | `50` | Stop after this many subscribed pushes (`QUOTE`, `ORDER_BOOK`, `TICKER`, `KLINE`, and `BROKER_QUEUE` when `order_book` is subscribed). `MARKET_STATE` is printed and does not count. `0` removes the cap |
+| `--kline-period` | `1m` | Used only when `types` includes `kline` |
+| `--kline-adjust` | `none` | Used only when `types` includes `kline` |
 
-Official API:
+Stdout lines are JSON. A line with `type` is a push: `QUOTE`, `ORDER_BOOK`, `TICKER`, `KLINE`, or `BROKER_QUEUE`. `BROKER_QUEUE` arrives after `order_book` is subscribed for an eligible symbol. It is not a `--types` value. An empty stdout means the window ended without a push.
 
-- [Overview](https://open.futunn.com/api/quote/push/overview)
-- [Auth](https://open.futunn.com/api/quote/push/auth)
-- [Subscribe](https://open.futunn.com/api/quote/push/subscribe)
-- [Data format](https://open.futunn.com/api/quote/push/data-format)
-- [Keep-alive](https://open.futunn.com/api/quote/push/heartbeat)
-
-When the user asks for live push, streaming quotes, or real-time broker queue, **do not** fall back to OpenD or Python SDK. Point them to WebSocket integration above; use CLI only for one-off REST reads unless they already run a WS client.
+Pass `--format json` when the output will be parsed. The token is not included in stdout or stderr.

@@ -43,7 +43,7 @@ futu check
 
 | 原 futuapi | 现做法 |
 |------------|--------|
-| `subscribe/*`、`push_*` | **Open API WebSocket** 行情推送：鉴权 → `subscribe`（`quote` / `order_book` / `ticker` / `kline`）→ 收 `QUOTE` 等推送 |
+| `subscribe/*`、`push_*` | **`futu quote subscribe`**。CLI 完成鉴权并订阅 `quote` / `order_book` / `ticker` / `kline`，再输出 `QUOTE` 等推送 |
 | `get_broker_queue.py`、`push_broker` | 同一 WebSocket 上收 **`BROKER_QUEUE`**（通常在你已订阅 `order_book` 的港股等标的上附带推送） |
 
 逐步说明与示例：[websocket-quote-push.md](./websocket-quote-push.md)。  

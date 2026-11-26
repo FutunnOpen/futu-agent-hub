@@ -43,8 +43,8 @@
 | 端点 | `wss://webapi-quote.futunn.com/ws` |
 | Hub 用户文档 | [websocket-quote-push.md](./websocket-quote-push.md)（鉴权 → subscribe → 收包；**`BROKER_QUEUE`** 经纪队列） |
 | 升级指引 | [upgrade-from-opend.md](./upgrade-from-opend.md) §5 |
-| Agent | **`futu-quote`**：REST 用 CLI；实时流/经纪队列 **指引 WSS**，禁止回退 OpenD（见 `references/websocket-push.md`） |
-| futu-cli | **不计划**封装 `futu subscribe`；推送由用户/集成方 **自建 WSS 客户端**（OAuth 与 `futu auth login` 同源 token） |
+| Agent | **`futu-quote`**：REST 用 CLI；实时流/经纪队列运行 **`futu quote subscribe`**，禁止回退 OpenD，也不读取 token 文件 |
+| futu-cli | **`futu quote subscribe`** 在进程内解密并刷新 token，连接 `wss://webapi-quote.futunn.com/ws`，默认监听 20 秒或 50 条推送 |
 
 WSS 流程摘要：连接 → **auth**（Bearer）→ **subscribe**（`quote` / `order_book` / `ticker` / `kline`）→ 按 `type` 分发；断线须 **重新鉴权并重新订阅**。
 
@@ -180,9 +180,7 @@ moomoo-cli 同构（`moomoo unusual *`，`anomaly` 为别名）。标的在路�
 
 ### P1 — 推送（WSS）
 
-**Hub 侧已闭环**（文档 + Skill 路由），详见 **§2.2**。Moomoo 端点：`wss://webapi-quote.moomoo.com/ws`，文档 [open.moomoo.com 行情推送](https://open.moomoo.com/api/quote/push/overview)。
-
-后续可选（非 Hub 阻塞）：`futu-cli` 封装 WSS 订阅子命令。
+**Hub 侧已闭环**（文档 + `futu quote subscribe` / `moomoo quote subscribe`），详见 **§2.2**。Moomoo 端点：`wss://webapi-quote.moomoo.com/ws`，文档 [open.moomoo.com 行情推送](https://open.moomoo.com/api/quote/push/overview)。
 
 ### P2 — Open API 已实现；CLI / Skill 见 §2.3
 

@@ -21,7 +21,7 @@ Moomoo 用户见 [MOOMOO Open API 行情推送](https://open.moomoo.com/api/quot
 | Futu | `wss://webapi-quote.futunn.com/ws` |
 | Moomoo | `wss://webapi-quote.moomoo.com/ws` |
 
-Skill Hub 的 **`futu-quote` / Agent 默认走 `futu` CLI 拉取 REST 快照**，不负责维持长连接。需要**持续推送**时，请在你的应用、脚本或服务里**自行实现 WebSocket 客户端**（或用任意支持 WSS 的语言/库）。
+Skill Hub 的 **`futu-quote`** 拉取 REST 快照时走 `futu quote`。需要一段实时推送时走 **`futu quote subscribe`**：CLI 使用已登录的 OAuth token 建立 WebSocket，在 `--duration`（默认 20 秒）或 `--max-messages`（默认 50 条）到达后退出，并把每条服务端消息打成一行 JSON。token 不会出现在输出里。要长期盯盘，在应用里自行维持连接，或按同样参数再次运行该命令。
 
 ---
 
@@ -125,7 +125,7 @@ Skill Hub 的 **`futu-quote` / Agent 默认走 `futu` CLI 拉取 REST 快照**�
 | 场景 | 建议 |
 |------|------|
 | Agent 偶发查价、K 线、摆盘快照 | 使用 **`futu-quote`** + `futu quote ...` |
-| 仪表盘、策略、持续 tick / 摆盘 / 经纪队列 | **自研 WebSocket 客户端** + 本文与 Open API 文档 |
-| 原 OpenD `subscribe.py` 一键订阅 | **无 CLI 替代**；按 §2–§4 实现 |
+| Agent 订阅并收取一段推送 | **`futu quote subscribe`**（CLI 持有连接和 token） |
+| 仪表盘、策略、长期盯盘 | 自建 WebSocket 客户端，或重复运行有界的 `futu quote subscribe` |
 
 升级总览：[upgrade-from-opend.md](./upgrade-from-opend.md)。仍缺能力清单：[migration-gaps-and-rest-api.md](./migration-gaps-and-rest-api.md)。

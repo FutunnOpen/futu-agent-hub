@@ -27,6 +27,7 @@ Internal invocation convention: when this skill actually calls the CLI from Bash
 | Command | Purpose | Required | Default / omit | Optional parameters |
 | --- | --- | --- | --- | --- |
 | `futu quote <symbol...>` | Real-time quote | `symbol...` | none | none |
+| `futu quote subscribe` | Bounded realtime push | `--symbols` | `--types quote`, `--duration 20s`, `--max-messages 50` | `--types`, `--duration`, `--max-messages`, `--kline-period`, `--kline-adjust` |
 | `futu basicinfo <symbol...>` | Static instrument info | `symbol...` | none | none |
 | `futu snapshot <symbol...>` | Market snapshot | `symbol...` | none | none |
 | `futu kline <symbol>` | Latest K-line | `symbol` | `--num 100`, `--ktype 2`, `--autype 1`, `--extended-time 0`, `--pred-side 0` | `--num`, `--ktype`, `--autype`, `--extended-time`, `--pred-side` |
@@ -41,6 +42,7 @@ Internal invocation convention: when this skill actually calls the CLI from Bash
 Common examples:
 
 - Quote: `futu quote HK.00700 US.AAPL`
+- Live push: `futu quote subscribe --symbols HK.00700 --types quote,order_book`
 - Snapshot: `futu snapshot HK.00700 US.AAPL`
 - US overnight K-line: `futu kline US.AAPL --ktype 1 --extended-time 2`
 - Historical K-line: `futu history-kline HK.00700 --start 2026-01-01 --end 2026-03-01`
