@@ -46,3 +46,6 @@ logs/
 # Local-only authoring
 skill-self-upgrade.md
 docs/templates/
+
+# Local-only notes
+.local/

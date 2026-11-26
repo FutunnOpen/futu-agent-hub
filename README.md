@@ -43,7 +43,7 @@ Futu Agent Hub 提供 **11 个 Skills**，分为四类：行情与交易、内�
 | 情绪温度计（`futu-comment-sentiment`） | 内容分析 | `curl` | 社区情绪，带统计窗口与样本量 |
 | 网格策略（`futu-grid-strategy`） | 量化策略 | OpenAPI | 单标的基准价网格；默认在模拟账户验收 |
 
-原 **`futuapi` / `install-futu-opend`** 已移除。升级见 [`docs/upgrade-from-opend.md`](docs/upgrade-from-opend.md)；能力缺口见 [`docs/migration-gaps-and-rest-api.md`](docs/migration-gaps-and-rest-api.md)。Skill 默认用 CLI 拉取 REST。持续推送和经纪队列用 `futu quote subscribe`，由 CLI 持有 WebSocket 和登录 token，见 [`docs/websocket-quote-push.md`](docs/websocket-quote-push.md)。
+原 **`futuapi` / `install-futu-opend`** 已移除。行情、交易和异动都通过 `futu` CLI。实时行情用 `futu quote subscribe`，参数和输出见该命令的 `--help`。安装见 [`docs/install.md`](docs/install.md)。
 
 ---
 
@@ -309,7 +309,7 @@ npx skills add -y -g FutunnOpen/futu-agent-hub --skill futu-quote
 npx skills update -g
 ```
 
-更详细的客户端适配（Cursor / JetBrains / Claude Desktop 等）见 [`docs/futu-install.md`](docs/futu-install.md)。
+更详细的客户端适配（Cursor / JetBrains / Claude Desktop 等）见 [`docs/install.md`](docs/install.md)。
 
 仅使用 **内容 Skills**（资讯搜索 / 个股解读 / 情绪温度计）的话，到此即可结束 — 直接对话：
 
@@ -329,7 +329,7 @@ bash scripts/migrate-renamed-skills.sh
 
 ### Step 2 — 安装并授权 Futu CLI
 
-行情、交易、异动 Skill 需要官方 **`futu` CLI**（OAuth）。**不需要 OpenD**。详见 [`docs/futu-install.md`](docs/futu-install.md)。
+行情、交易、异动 Skill 需要官方 **`futu` CLI**（OAuth）。**不需要 OpenD**。详见 [`docs/install.md`](docs/install.md)。
 
 ```bash
 futu version
@@ -438,7 +438,7 @@ futu check
 ## 常见问题
 
 **Q: 所有 Skills 都需要 OpenD 吗？**
-A: 不需要。行情、交易、异动均通过 **`futu` CLI**（OAuth）。内容类 Skills 走公开 HTTP。原 `futuapi` / OpenD 已移除，见 [`docs/upgrade-from-opend.md`](docs/upgrade-from-opend.md)。
+A: 不需要。行情、交易、异动均通过 **`futu` CLI**（OAuth）。内容类 Skills 走公开 HTTP。原 `futuapi` / OpenD 已移除。
 
 **Q: 使用 Futu Agent Hub 有额外费用吗？**
 A: 没有。通过 Futu API 交易不收取额外费用，仅按正常佣金标准收费。

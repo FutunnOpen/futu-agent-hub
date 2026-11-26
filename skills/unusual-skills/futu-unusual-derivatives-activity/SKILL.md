@@ -37,7 +37,7 @@ If the user only says a broad request such as `英伟达异动`, `NVDA 异动`, 
 
 This skill calls **`futu unusual derivatives-activity`** (OAuth REST via the official CLI). Do **not** use OpenD, `futu-api`, or removed `futuapi` scripts.
 
-Before the workflow, follow [CLI runtime](../references/cli-runtime.md). If `futu unusual` is not recognized, say Unusual skills need a newer CLI — see repo `docs/migration-gaps-and-rest-api.md`.
+Before the workflow, follow [CLI runtime](references/cli-runtime.md). If `futu unusual` is not recognized, say Unusual skills need a newer CLI.
 
 ---
 

@@ -1,6 +1,6 @@
 # Futu CLI runtime（Unusual skills）
 
-Unusual skills（`futu-unusual-*`）与 `futu-quote` 共用 CLI 探测与 OAuth。子命令：**`futu unusual`**（`anomaly` 为兼容别名）。最低 CLI 版本见仓库 `docs/migration-gaps-and-rest-api.md`。
+Unusual skills（`futu-unusual-*`）与 `futu-quote` 共用 CLI 探测与 OAuth。子命令：**`futu unusual`**（`anomaly` 为兼容别名）。若子命令不存在，升级 `futu` CLI。
 
 | Skill | 推荐命令 |
 |-------|----------|
@@ -30,4 +30,4 @@ if (Get-Command futu -ErrorAction SilentlyContinue) { futu auth status --format 
 
 - 解析输出时追加 `--format json`。
 - Bash 调用时在末尾追加隐藏参数 `--source skill`（用户可见示例可省略）。
-- 若 `futu unusual` 不存在，提示需升级 CLI（见 migration gaps）；勿回退 OpenD / Python SDK。
+- 若 `futu unusual` 不存在，提示需升级 CLI；勿回退 OpenD / Python SDK。

@@ -12,7 +12,7 @@ Install Futu Skills into your AI client with `npx`. Each skill's `description` i
 | `curl` | Content skills call public HTTP APIs | `curl --version` |
 | `futu` CLI | Quote, trading, and Unusual skills | `futu version` |
 
-> macOS ships `curl`. Quote, trading, and Unusual skills need the official `futu` CLI (`install.sh` on macOS / Linux, `install.ps1` on Windows). See [futu-cli](https://github.com/FutunnOpen/futu-cli). Upgrading from OpenD: [upgrade-from-opend.md](./upgrade-from-opend.md).
+> macOS ships `curl`. Quote, trading, and Unusual skills need the official `futu` CLI (`install.sh` on macOS / Linux, `install.ps1` on Windows). See [futu-cli](https://github.com/FutunnOpen/futu-cli).
 
 ---
 
@@ -73,7 +73,7 @@ futu check
 futu quote HK.00700 --format json
 ```
 
-Unusual skills call `futu unusual ...`（`futu anomaly` 仍可用作别名）；若子命令不存在，请升级 CLI — see [migration-gaps-and-rest-api.md](./migration-gaps-and-rest-api.md).
+Unusual skills call `futu unusual ...`（`futu anomaly` 仍可用作别名）。若子命令不存在，请升级 `futu` CLI。
 
 ---
 
@@ -102,6 +102,6 @@ Some clients require a restart or a new chat session to pick up newly installed 
 - Run `futu auth status` — if not logged in, run `futu auth login`
 - Run `futu check` for connectivity
 - `PERMISSION_DENIED` usually means missing quote/trade permission in the app, not a missing local token
-- 异动：若 `futu unusual` 不存在，见 [migration-gaps-and-rest-api.md](./migration-gaps-and-rest-api.md)
+- 异动：若 `futu unusual` 不存在，升级 `futu` CLI
 
 </details>
