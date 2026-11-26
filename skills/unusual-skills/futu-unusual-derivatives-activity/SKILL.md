@@ -1,18 +1,10 @@
 ---
 name: futu-unusual-derivatives-activity
 description: >-
-  Unusual Derivatives Activity (衍生品异动): detects derivatives unusual signals
-  for a user-mentioned stock with `get_derivative_unusual`, including 牛熊证街货比例、
-  牛熊证街货价格区间、期权大单、隐含波动率、期权量价、期权情绪、期权综合信号 and their
-  unusual changes. Use when the user asks about 期权、衍生品、牛熊证、IV、隐含波动率、PCR、
-  期权大单、期权异常成交、聪明钱、smart money、unusual options activity、做多做空情绪、
-  波动率溢价、期权市场怎么看、有没有大单押注、大资金押注、适不适合卖期权，or gives a broad
-  异动 request such as “英伟达异动”、“NVDA 异动”、“腾讯有没有异动/异常” without narrowing
-  the dimension. For broad 异动 requests, use together with
-  `futu-unusual-technical-signal-alerts` and `futu-unusual-capital-flows`. Before
-  calling the CLI, you must first normalize the user-mentioned stock name,
-  Chinese company name, English company name, or ticker into a standard symbol
-  such as `US.NVDA` or `HK.00700`.
+  Detect unusual options and warrant activity for a stock via
+  `futu unusual derivatives-activity`, including large trades, volatility, and
+  sentiment. Use for derivatives anomalies or broad stock anomaly requests;
+  combine with the technical and capital-flow unusual skills for broad requests.
 allowed-tools: Bash Read
 metadata:
   version: 0.0.2
@@ -23,13 +15,13 @@ metadata:
 license: MIT
 ---
 
-# 衍生品异动 · Unusual Derivatives Activity
+# Unusual Derivatives Activity
 
 Detects unusual derivatives activity for a specific stock and formats the result as a structured Unusual Derivatives Activity summary.
 
 This skill is for **unusual-move detection** rather than a regular derivatives overview. If the data has no qualifying signal, return `No unusual activity` or `No unusual activity (brief reason)`, and do not add extra market commentary.
 
-If the user only says a broad request such as `英伟达异动`, `NVDA 异动`, `腾讯有没有异常` and does not specify a dimension, treat it as a bundled 异动 request. In that case, use this skill together with `futu-unusual-technical-signal-alerts` and `futu-unusual-capital-flows`.
+If the user asks broadly about unusual activity in a stock without specifying a dimension, treat it as a bundled anomaly request. In that case, use this skill together with `futu-unusual-technical-signal-alerts` and `futu-unusual-capital-flows`.
 
 ---
 
@@ -37,7 +29,37 @@ If the user only says a broad request such as `英伟达异动`, `NVDA 异动`, 
 
 This skill calls **`futu unusual derivatives-activity`** (OAuth REST via the official CLI). Do **not** use OpenD, `futu-api`, or removed `futuapi` scripts.
 
-Before the workflow, follow [CLI runtime](../references/cli-runtime.md). If `futu unusual` is not recognized, say Unusual skills need a newer CLI — see repo `docs/migration-gaps-and-rest-api.md`.
+This skill requires the official `futu` CLI. Probe it before any unusual command. Use the executable found on `PATH` or at the default install location for all subsequent commands.
+
+macOS / Linux:
+
+```bash
+if command -v futu >/dev/null 2>&1; then futu auth status --format json; elif [ -x "$HOME/.futu/bin/futu" ]; then "$HOME/.futu/bin/futu" auth status --format json; else echo '__FUTU_CLI_MISSING__'; fi
+```
+
+Windows (including Git Bash): use PowerShell, not the Bash probe or `install.sh`.
+
+```powershell
+$exe = Join-Path $env:LOCALAPPDATA 'FutuCLI\bin\futu.exe'
+if (Get-Command futu -ErrorAction SilentlyContinue) { futu auth status --format json } elseif (Test-Path $exe) { & $exe auth status --format json } else { Write-Output '__FUTU_CLI_MISSING__' }
+```
+
+If the probe prints `__FUTU_CLI_MISSING__`, stop and ask the user before installing the CLI. After they agree, use the official installer:
+
+macOS / Linux:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/FutunnOpen/futu-cli/main/scripts/install.sh | sh
+```
+
+Windows PowerShell (amd64):
+
+```powershell
+iwr -UseBasicParsing https://raw.githubusercontent.com/FutunnOpen/futu-cli/main/scripts/install.ps1 -OutFile install.ps1
+powershell -ExecutionPolicy Bypass -File .\install.ps1
+```
+
+If the Windows installer reports an unsupported architecture, stop and relay the error. After installation, run `futu version` using the installed executable. If auth status says the user is not logged in, tell them to run `futu auth login` and continue only after login. If `futu unusual` is not recognized, check for an update with `futu update --check`; update after the user agrees (see repo `docs/migration-gaps-and-rest-api.md`).
 
 ---
 
@@ -48,67 +70,19 @@ Before the workflow, follow [CLI runtime](../references/cli-runtime.md). If `fut
 Extract the following from the user's request:
 
 - `stock_target`: stock code, Chinese stock name, English company name, or ticker explicitly mentioned by the user
-- `time_range`: default `7`; if the user says `最近 3 天` / `过去两周` / `last 5 days`, convert it to a natural-day integer
+- `time_range`: default `7`; if the user says `last 3 days` / `past two weeks` / `last 5 days`, convert it to a natural-day integer
 - `analysis_dimensions`: optional; only extract when the user clearly asks about one or more specific derivatives dimensions
 - `language_id`: infer from the user's language
 
 If the target stock is missing, ask a follow-up question instead of guessing.
 
-### 2. Normalize the Stock Target into a Standard Symbol
+### 2. Normalize the Stock Target
 
-Before calling the CLI, convert the user-mentioned stock target into a standard symbol such as `US.NVDA`, `HK.00700`, `SH.600519`, or `SZ.000001`.
+Convert the stock name or ticker to a market-prefixed symbol such as `US.NVDA` or `HK.00700`. Ask if the market or listing is ambiguous. Use the [analysis guide](references/analysis-guide.md) for mappings.
 
-Normalization rules:
+### 3. Select `analysis_dimensions`
 
-- If the user already gives a fully qualified symbol like `US.NVDA` or `HK.00700`, use it directly.
-- If the user gives a Chinese company name, English company name, or common ticker, map it to the matching market-prefixed symbol.
-- If the symbol is ambiguous, ask a follow-up question instead of guessing.
-
-Common mappings:
-
-| User mention | Standard symbol |
-|--------------|-----------------|
-| 腾讯 | `HK.00700` |
-| 阿里巴巴、阿里 | `HK.09988` |
-| 苹果、Apple | `US.AAPL` |
-| 特斯拉、Tesla | `US.TSLA` |
-| 英伟达、NVIDIA | `US.NVDA` |
-| 微软、Microsoft | `US.MSFT` |
-| 谷歌、Google、Alphabet | `US.GOOG` |
-| 亚马逊、Amazon | `US.AMZN` |
-| Meta、脸书、Facebook | `US.META` |
-| 台积电、TSM | `US.TSM` |
-| 贵州茅台、茅台 | `SH.600519` |
-| 宁德时代 | `SZ.300750` |
-
-Ticker inference guidance:
-
-- `NVDA`, `AAPL`, `TSLA`, `MSFT`, `GOOG`, `META` usually mean US stocks, so normalize to `US.NVDA`, `US.AAPL`, `US.TSLA`, `US.MSFT`, `US.GOOG`, `US.META`.
-- `00700` by itself is ambiguous in plain text; when the context clearly refers to Tencent, normalize to `HK.00700`.
-- If the same company has both HK and US listings and the user does not specify the market, ask a clarifying question.
-
-### 3. Map Derivatives Intent to `analysis_dimensions`
-
-Prefer these canonical `analysis_dimensions` values:
-
-- `warrant_ratio`: Warrant open interest ratio anomaly, HK stocks only
-- `warrant_price_distribution`: Warrant open interest price distribution anomaly, HK stocks only
-- `option_unusual`: Unusual option trades (large orders)
-- `option_volatility`: Option volatility anomaly
-- `option_volume_price`: Option volume-price anomaly
-- `option_sentiment`: Option sentiment anomaly
-- `option_comprehensive`: Option comprehensive signal anomaly
-
-Selection guidance:
-
-- If the user asks about `牛熊证街货比例/牛熊街货比例`, include `warrant_ratio`.
-- If the user asks about `重货区/街货价格区间/支撑压力`, include `warrant_price_distribution`.
-- If the user asks about `期权大单/大额成交/V/OI/聪明钱押注`, include `option_unusual`.
-- If the user asks about `IV/IV percentile/IV rank/HV/波动率溢价`, include `option_volatility`.
-- If the user asks about `成交量/持仓量/OI/正股联动`, include `option_volume_price`.
-- If the user asks about `PCR/Put Call Ratio/做多做空情绪`, include `option_sentiment`.
-- If the user asks about `综合信号/多维背离`, include `option_comprehensive`.
-- If the user asks a broad derivatives question and does not narrow scope, omit `analysis_dimensions` and use the full interface.
+Use the full derivatives scan unless the user asks for specific dimensions. For targeted requests, use the [analysis guide](references/analysis-guide.md) to choose backend values.
 
 ### 4. Infer `language_id`
 
@@ -151,186 +125,6 @@ futu unusual derivatives-activity US.AAPL --time-range 7 --analysis-dimensions o
 
 ---
 
-## Parameters
+## Reporting
 
-### Required
-
-- `stock_symbol`: standard market-prefixed symbol, such as `US.NVDA`, `HK.00700`, `SH.600519`, `SZ.000001`
-
-### Optional
-
-- `time_range`: natural day window, default `7`
-- `analysis_dimensions`: list of specific derivatives anomaly dimensions to inspect; omit for full scan
-- `language_id`: output language, default `0`
-
----
-
-## Output Rules
-
-Present the output by anomaly class. The seven classes are:
-
-- `Warrant Open Interest Ratio Anomalies (HK)`
-- `Warrant Open Interest Price Distribution Anomalies (HK)`
-- `Unusual Option Trades`
-- `Option Volatility Anomalies`
-- `Option Volume-Price Anomalies`
-- `Option Sentiment Anomalies`
-- `Option Comprehensive Signal Anomalies`
-
-Formatting rules:
-
-- Always display `Time Range` as an absolute date range in the format `YYYY.M.D - YYYY.M.D`. Calculate the start date from the current date minus `time_range` days (e.g., if today is 2026.4.24 and time_range is 7, write `Time Range: 2026.4.18 - 2026.4.24`).
-- Always preserve the class order above.
-- **Full scan** (no `analysis_dimensions` specified): always show all 7 class names. Write `No anomaly` for classes with no anomaly. Never omit a class name.
-- **Subset request** (user specifies one or more dimensions): show only the classes that correspond to the requested dimensions. Write `No anomaly` for requested classes that have no anomaly. Do not show unrelated classes.
-- If multiple abnormal dates or timestamps appear within one class, list them all.
-- For `Unusual Option Trades`, when multiple unusual option trades exist in the window, show all of them. Do not collapse them to only the highest-premium trade.
-- Keep dates, timestamps, direction, volume, open interest, `V/OI`, premium amount, strike, expiry, percentile, price zone, and interpretation from the tool output.
-- Do not merge different anomaly classes into one sentence.
-- Warrant-related classes (`Warrant Open Interest Ratio Anomalies (HK)` and `Warrant Open Interest Price Distribution Anomalies (HK)`) apply to Hong Kong stocks only. If the stock is not Hong Kong listed, **omit these two classes entirely** from the output. Do not show them with `N/A`.
-- Do not invent thresholds, rankings, or causal explanations beyond the returned content.
-
----
-
-## Preferred Response Template
-
-```markdown
-Time Range: {YYYY.M.D - YYYY.M.D}
-
-Warrant Open Interest Ratio Anomalies (HK):
-{anomaly description or "No anomaly"}
-
-Warrant Open Interest Price Distribution Anomalies (HK):
-{anomaly description or "No anomaly"}
-
-Unusual Option Trades:
-{list every anomaly item by item, or "No anomaly"}
-
-Option Volatility Anomalies:
-{anomaly description or "No anomaly"}
-
-Option Volume-Price Anomalies:
-{anomaly description or "No anomaly"}
-
-Option Sentiment Anomalies:
-{anomaly description or "No anomaly"}
-
-Option Comprehensive Signal Anomalies:
-{anomaly description or "No anomaly"}
-```
-
-When the user only asks for a subset, keep only the relevant classes.
-
----
-
-## Behavior Rules
-
-1. Always normalize the user-mentioned stock target into a standard symbol before calling the CLI.
-2. If the target stock is missing, ask a follow-up question.
-3. If the market is ambiguous, ask a follow-up question instead of guessing.
-4. If the user asks a broad derivatives question, omit `analysis_dimensions` and use the full interface.
-5. Do not output raw JSON by default when talking to the user, even if the CLI returns JSON.
-6. Do not interpret the result as investment advice or trading guidance.
-7. If the downstream service reports a permission issue, state that clearly and do not fabricate analysis.
-8. For non-HK stocks, do not force warrant-specific conclusions; use `N/A` or `No anomaly`.
-
----
-
-## Example User Requests
-
-### Broad derivatives anomaly check
-
-- "腾讯最近 7 天有没有衍生品异动？"
-- "看看 NVDA 最近期权市场有没有异常"
-- "帮我查一下 Apple 最近衍生品有没有异动"
-
-Mapped request:
-
-```json
-{
-  "stock_symbol": "HK.00700",
-  "time_range": 7,
-  "language_id": 0
-}
-```
-
-### IV and sentiment only
-
-- "AAPL 最近 IV 和期权情绪有没有异常？"
-- "苹果最近期权波动率和 PCR 怎么样？"
-
-Mapped request:
-
-```json
-{
-  "stock_symbol": "US.AAPL",
-  "time_range": 7,
-  "analysis_dimensions": ["option_volatility", "option_sentiment"],
-  "language_id": 0
-}
-```
-
-### Unusual option trades only
-
-- "NVDA 最近有没有期权大单押注？"
-- "英伟达最近有没有异常期权成交？"
-
-Mapped request:
-
-```json
-{
-  "stock_symbol": "US.NVDA",
-  "time_range": 7,
-  "analysis_dimensions": ["option_unusual"],
-  "language_id": 0
-}
-```
-
-### Warrant-related only
-
-- "腾讯最近牛熊证街货比例有没有异常？"
-- "00700 最近重货区在哪里？"
-
-Mapped request:
-
-```json
-{
-  "stock_symbol": "HK.00700",
-  "time_range": 7,
-  "analysis_dimensions": ["warrant_ratio", "warrant_price_distribution"],
-  "language_id": 0
-}
-```
-
----
-
-## Example Interpretation Style
-
-```markdown
-Time Range: 2026.4.2 - 2026.4.9
-
-Warrant Open Interest Ratio Anomalies (HK):
-On 4.3, bull warrant open interest reached 82.2%, higher than 90% of trading days in the past year, indicating more investors are holding bull warrants overnight, reflecting bullish sentiment.
-On 4.7, bear warrant open interest reached 17.8%, higher than 90% of trading days in the past year, indicating more investors are holding bear warrants overnight, reflecting bearish sentiment.
-
-Warrant Open Interest Price Distribution Anomalies (HK):
-On 4.3, the bull warrant concentration zone sits in the 95.0-100.0 recall-price range, close to the day's close, indicating many investors hold bull warrants in this range and regard this price level as a support.
-On 4.7, the largest new additions and the concentration zone for bull warrants are both in the 95.0-100.0 recall-price range, indicating many investors added bull warrants in this range and regard this price level as a support.
-
-Unusual Option Trades:
-On 4.4 15:31, a large call option trade occurred with a volume of 1000 contracts, far exceeding the open interest of 130, with a V/OI ratio as high as 15.2, which typically suggests a trader is opening an unusually large new position. The trade involved US$75,000, a strike price of US$10, and an expiry of 2025/09/08.
-On 4.6 10:15, a large put option trade occurred with a volume of 800 contracts, far exceeding the open interest of 50, with a V/OI ratio as high as 16.0. The trade involved US$52,000, a strike price of US$165, and an expiry of 2025/05/02.
-
-Option Volatility Anomalies:
-On 4.5, implied volatility (IV) is at a historical high and significantly above realized historical volatility (HV), creating a large IV-HV premium. This environment favors option sellers, who can sell options to bet on mean reversion of volatility.
-On 4.7, the implied volatility (IV) percentile reached 95, meaning IV is above most days in the past year; time value is high, and option-selling strategies can be used.
-
-Option Volume-Price Anomalies:
-On 4.5, option volume rose 52% over the prior period, open interest rose 48%, and the underlying rose 3.5%, which may indicate long capital entering in size and suggests the uptrend may continue. The option market shows significant volume and open-interest concentration near 260, which may become an important support or resistance level.
-
-Option Sentiment Anomalies:
-On 4.3, the option Put/Call Ratio percentile reached 89, higher than 89% of trading days in the past year, and rose for 2 consecutive days, with a significant increase in put option activity.
-
-Option Comprehensive Signal Anomalies:
-On 4.8, the underlying recently declined sharply, but option implied volatility percentile barely changed; the market has not priced in panic, and historically similar setups have often given rise to rebound opportunities.
-```
+Read the [analysis guide](references/analysis-guide.md) for parameter details and output rules. Consult [examples](references/examples.md) only when needed. Do not present raw JSON, invent explanations, or give investment advice.
