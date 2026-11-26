@@ -3,7 +3,7 @@ name: futu-trading
 description: Futu `futu` CLI securities-trading skill. Use for OAuth status, securities accounts, funds, positions, cash logs, order fees, margin ratio, order placement, modification, cancellation, order queries, fill queries, and max buy/sell quantity. Answer in the user's language by default.
 allowed-tools: Bash Read
 metadata:
-  version: 0.0.3
+  version: 0.0.4
   author: Futu
   requires:
     bins:

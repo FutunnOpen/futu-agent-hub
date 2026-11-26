@@ -1,230 +1,237 @@
-# Quote CLI parameters
+# futu Quote CLI Parameters
 
-When generating commands, use the smallest parameter set: include only required parameters, parameters the user explicitly specified, or parameters required to change CLI default behavior. Do not unconditionally write CLI defaults into the command.
+Use `futu`. Append `--source skill` when invoking the CLI from Bash; omit this internal marker from commands displayed to users. Use `--format json` when parsing results. List more commands with `futu --help` and check any command’s current flags with `futu <command> --help`.
 
-Do not rely on this file alone for pagination details. When the user asks to page through results, read `references/pagination.md`.
+## General
 
-## Global parameters
+- Symbols use `MARKET.CODE`, for example `US.AAPL`, `HK.00700`, `JP.7203` or `CC.BTC`. Numeric HK codes are padded to five digits. Search keywords are plain text.
+- The default output is `table`; `--format json` produces machine-readable output. `--token-file` is optional.
+- Quote commands query once; they do not provide a subscription. For multiple pages, use the response cursor as described in [pagination](pagination.md).
 
-| Parameter | Default | When to pass |
-| --- | --- | --- |
-| `--format`, `-f` | `table` | Pass `--format json` only when the agent needs to parse the output. Usually omit it for commands the user will copy and run. |
-| `--token-file` | config item `token_file` | Pass only when the user asks to use a non-default token file. |
+## Quotes and charts
 
-Internal invocation convention: when this skill actually calls the CLI from Bash, always append the hidden internal marker `--source skill` at the end of the command. Do not include these internal markers in commands shown to the user.
-
-## Symbol, JSON, and pagination entry points
-
-- Symbols use `MARKET.CODE`, for example `HK.00700`, `US.AAPL`, and `CC.BTCUSD`. Do not pass bare `AAPL`, `700`, or `700.HK`.
-- Left-pad numeric Hong Kong codes to 5 digits. Generally uppercase the market prefix and the stock code.
-- For multi-symbol commands, append multiple `<symbol>` arguments directly.
-- `json` flags must be valid JSON strings, for example `--strategy '{"market_category_list":[3]}'`.
-- Defaults such as `TODAY` and `TODAY+30` are resolved by the CLI at runtime.
-- Paginated APIs usually use `--next-key` or `--next-time`. The next page takes `pagination.next_key` or `extra.next_time` from the previous response. The current quote CLI does not paginate automatically. See `references/pagination.md` for the full rules.
-
-## Static quote commands
-
-| Command | Purpose | Required | Default / omit | Optional parameters |
-| --- | --- | --- | --- | --- |
-| `futu quote <symbol...>` | Real-time quote | `symbol...` | none | none |
-| `futu basicinfo <symbol...>` | Static instrument info | `symbol...` | none | none |
-| `futu snapshot <symbol...>` | Market snapshot | `symbol...` | none | none |
-| `futu kline <symbol>` | Latest K-line | `symbol` | `--num 100`, `--ktype 2`, `--autype 1`, `--extended-time 0`, `--pred-side 0` | `--num`, `--ktype`, `--autype`, `--extended-time`, `--pred-side` |
-| `futu history-kline <symbol>` | Historical K-line | `symbol` | `--end today`, `--num 100`, `--ktype 2`, `--autype 1`, `--next-time 0` | `--start`, `--end`, `--next-time`, `--num`, `--ktype`, `--autype`, `--extended-time`, `--pred-side` |
-| `futu ticker <symbol>` | Tick trades | `symbol` | `--num 20` | `--num`, `--count`, repeatable `--period NORMAL/BEFORE/AFTER/OVERNIGHT` |
-| `futu rt-data <symbol>` | Intraday data | `symbol` | `--section NORMAL` | `--section NORMAL/FULL/PREMARKET/AFTERHOURS/HK_DARK/OVERNIGHT` |
-| `futu order-book <symbol>` | Order-book depth | `symbol` | `--num 0`, meaning the maximum depth allowed by permissions | `--num` 1-60 |
-| `futu depth <symbol>` | Alias of `order-book` | `symbol` | same as `order-book` | same as `order-book` |
-| `futu rank [type]` | Market ranking | none | `type=volume`, `--market HK`, `--count 20` | `type volume/turnover/gainers/losers/amplitude`, `--market HK/US/CN`, `--count` |
-| `futu option chain <symbol>` | Option chain | `symbol` | automatically selects a 30-day forward window when no date is passed | `--start`, `--end`, `--index-option-type`, `--filter-standard ALL/STANDARD/NON_STANDARD` |
-
-Common examples:
-
-- Quote: `futu quote HK.00700 US.AAPL`
-- Snapshot: `futu snapshot HK.00700 US.AAPL`
-- US overnight K-line: `futu kline US.AAPL --ktype 1 --extended-time 2`
-- Historical K-line: `futu history-kline HK.00700 --start 2026-01-01 --end 2026-03-01`
-- Tick trades: `futu ticker US.AAPL --num 50 --period OVERNIGHT`
-- Intraday: `futu rt-data US.AAPL --section PREMARKET`
-- Order book: `futu order-book HK.00700 --num 10`
-- Ranking: `futu rank gainers --market US --count 30`
-- Option chain: `futu option chain HK.00700 --start 2026-05-01 --end 2026-05-31`
-
-## Aggregate REST quote commands
-
-These commands use a selector flag to map multiple underlying endpoints. Selector values are case-insensitive. Pass only the parameters required by the current selector. When the user mentions a legacy endpoint name, do not call the old root command directly. Map it to the aggregate command and selector.
-
-### Broker
-
-| Command | selector | Purpose | Extra parameters |
-| --- | --- | --- | --- |
-| `futu broker <symbol>` | `--view current` default | Current holdings of the top 10 brokers | `--date` |
-| `futu broker <symbol>` | `--view history` | Historical top-10 broker holdings | `--days-before`, default `1` |
-
-Example: `futu broker HK.00700 --view history --days-before 5`
-
-### Capital
-
-| Command | selector | Purpose | Extra parameters |
-| --- | --- | --- | --- |
-| `futu capital <symbol>` | `--view intraday` default | Intraday capital flow | `--section NORMAL/FULL/PREMARKET/AFTERHOURS` |
-| `futu capital <symbol>` | `--view history` | Historical capital flow | `--period-type DAY/WEEK/MONTH`, `--start`, `--end`, `--count`, `--next-time` |
-| `futu capital <symbol>` | `--view distribution` | Capital distribution | none |
-
-Example: `futu capital HK.00700 --view history --period-type WEEK --count 52`
-
-### Company
-
-| Command | selector | Purpose | Extra parameters |
-| --- | --- | --- | --- |
-| `futu company <symbol>` | `--view profile` default | Company profile | none |
-| `futu company <symbol>` | `--view executives` | Executive list | none |
-| `futu company <symbol> [leader]` | `--view background` | Executive background | `[leader]` or `--leader`; if omitted, the CLI automatically uses the first executive |
-| `futu company <symbol>` | `--view efficiency` | Operating efficiency | `--limit`, `--next-key`, `--currency-code`, `--financial-type 7/102` |
-
-Example: `futu company US.AAPL "Tim Cook" --view background`
-
-### Corporate Actions
-
-| Command | selector | Purpose | Extra parameters |
-| --- | --- | --- | --- |
-| `futu corporate-actions <symbol>` | `--type dividends` default | Dividends | none |
-| `futu corporate-actions <symbol>` | `--type splits` | Stock splits | none |
-| `futu corporate-actions <symbol>` | `--type buybacks` | Buybacks | `--next-key`, `--limit` |
-| `futu corporate-actions <symbol>` | `--type rehab` | Adjustment factors | `--divi-mode compat/exclude_divi/include_divi` |
-
-### Economic Calendar
-
-| Command | selector | Purpose | Extra parameters |
-| --- | --- | --- | --- |
-| `futu economic-calendar [keyword]` | `--view hot` default | Hot economic calendar | `--limit`, `--next-key`, `--date`, `--timezone` |
-| `futu economic-calendar [keyword]` | `--view search` | Search economic calendar | `[keyword]`, `--search-type 1/2/3/4`, `--limit`, `--next-key`, `--time-order-type 0/1` |
-
-### Financials
-
-| Command | selector | Purpose | Extra parameters |
-| --- | --- | --- | --- |
-| `futu financials <symbol>` | `--view statements` default | Financial statements | `--statement-type`, `--financial-type`, `--currency-code`, `--next-key`, `--limit` |
-| `futu financials <symbol>` | `--view revenue` | Revenue breakdown | `--date`, `--financial-type`, `--currency-code` |
-| `futu financials <symbol>` | `--view earnings-history` | Post-earnings price history | none |
-| `futu financials <symbol>` | `--view earnings-move` | Post-earnings price move | `--count`, `--overview-count` |
-
-### IPO List
-
-| Command | selector | Purpose | Extra parameters |
-| --- | --- | --- | --- |
-| `futu ipo-list` | `--market HK/US/SG/MY` | IPO list | `--request-type 9/10/11` |
-| `futu ipo-list` | `--market CN` | China A-share IPO list | `--request-type 1/2/3/4/5` |
-
-### Option Data
-
-| Command | selector | Purpose | Extra parameters |
-| --- | --- | --- | --- |
-| `futu option-data <symbol>` | `--view expiration` default | Expiration dates | `--index-option-type`, `--filter-standard`, `--filter-expiration-cycles` |
-| `futu option-data <symbol>` | `--view strategy` | Strategy filter | `--strategy`, `--expire-time`, `--far-expire-time`, `--spread`, `--index-option-type`, `--filter-standard` |
-| `futu option-data <symbol>` | `--view spread` | Strategy spread | `--strategy`, `--expire-time`, `--far-expire-time`, `--index-option-type`, `--filter-standard` |
-| `futu option-data <symbol>` | `--view probability` | Exercise probability | `--limit` |
-| `futu option-data <symbol>` | `--view volatility` | Volatility | `--query-time-period`, `--hv-time-period` |
-
-### Plate
-
-| Command | selector | Purpose | Extra parameters |
-| --- | --- | --- | --- |
-| `futu plate [symbol]` | `--view list` default | Plate list | `--market HK/US/SH/SZ/SG/JP/AU/CA/MY/KR`, `--plate-class ALL/INDUSTRY/REGION/CONCEPT/OTHER` |
-| `futu plate [symbol]` | `--view stocks` | Plate constituents | `[symbol]` defaults to `HK.LIST1045`, `--sort-field`, `--ascend`, `--price-type`, `--next-key`, `--limit` |
-| `futu plate <symbol>` | `--view owner` | Plates that own a stock | `<symbol>` required |
-
-### Research
-
-| Command | selector | Purpose | Extra parameters |
-| --- | --- | --- | --- |
-| `futu research <symbol>` | `--type consensus` default | Analyst consensus | none |
-| `futu research <symbol>` | `--type morningstar` | Morningstar report | none |
-| `futu research <symbol>` | `--type rating` | Rating summary | `--rating-dimension-type`, `--next-key`, `--limit` |
-
-### Search
-
-| Command | selector | Purpose | Extra parameters |
-| --- | --- | --- | --- |
-| `futu search [keyword]` | `--type news` default | News search | `[keyword]` should be a full symbol, `--size`, `--news-type`, `--sort-type`, `--lang` |
-| `futu search [keyword]` | `--type community` | Community search | `[keyword]` should be a full symbol, `--size`, `--community-type`, `--sort-type`, `--lang` |
-| `futu search [keyword]` | `--type feed` | Stock feed | `[keyword]` should be a full symbol, `--size` |
-
-### Shareholders
-
-| Command | selector | Purpose | Extra parameters |
-| --- | --- | --- | --- |
-| `futu shareholders <symbol>` | `--view overview` default | Shareholder overview | `--period-id` |
-| `futu shareholders <symbol>` | `--view institutional` | Institutional holdings | `--limit`, `--next-key` |
-| `futu shareholders <symbol>` | `--view changes` | Holding changes | `--limit`, `--next-key`, `--sort-column`, `--sort-type`, `--filter-type`, `--holder-category` |
-| `futu shareholders <symbol>` | `--view holder-detail` | Holder detail | `--request-type`, `--next-key`, `--limit`, `--sort-column`, `--sort-type`, `--period-id`, `--holder-id` |
-| `futu shareholders <symbol>` | `--view insider-holders` | Insider holders | `--next-key`, `--limit` |
-| `futu shareholders <symbol>` | `--view insider-trades` | Insider trades | `--next-key`, `--limit`, `--holder-id` |
-
-### Short
-
-| Command | selector | Purpose | Extra parameters |
-| --- | --- | --- | --- |
-| `futu short <symbol>` | `--type volume` default | Short volume | `--count` |
-| `futu short <symbol>` | `--type interest` | Short interest | `--count` |
-
-### Watchlist
-
-| Command | selector | Purpose | Extra parameters |
-| --- | --- | --- | --- |
-| `futu watchlist [symbol...]` | `--action list` default | Watchlist | `--group-name` |
-| `futu watchlist` | `--action groups` | Watchlist groups | `--group-type ALL/CUSTOM/SYSTEM` |
-| `futu watchlist <symbol...>` | `--action add` | Add to watchlist | `--group-name`, may override `--op` |
-| `futu watchlist <symbol...>` | `--action delete` | Delete from watchlist | `--group-name`, may override `--op` |
-| `futu watchlist <symbol...>` | `--action move-out` | Move out of watchlist | `--group-name`, may override `--op` |
-
-### Valuation
-
-| Command | selector | Purpose | Extra parameters |
-| --- | --- | --- | --- |
-| `futu valuation <symbol>` | `--view detail` default | Valuation detail | `--valuation-type`, `--interval-type` |
-| `futu valuation [symbol]` | `--view plate-stocks` | Plate valuation constituents | `[symbol]` defaults to `HK.LIST1003`, `--valuation-type`, `--next-key`, `--limit`, `--sort-type asc/desc`, `--sort-id` |
-| `futu valuation [symbol]` | `--view index-stocks` | Index valuation constituents | `[symbol]` defaults to `HK.800000`, `--valuation-type`, `--next-key`, `--limit`, `--sort-type 1/2`, `--sort-id 51/52/53/54`, `--filter-symbol` |
-| `futu valuation [symbol]` | `--view index-plates` | Index-related plates | `[symbol]` defaults to `HK.800000` |
-
-## Standalone REST quote commands
-
-| Command | Purpose | Required | Default / omit | Optional parameters |
-| --- | --- | --- | --- | --- |
-| `futu future-info <symbol...>` | Futures info | `symbol...` | none | none |
-| `futu market-state <symbol...>` | Market state | `symbol...` | `--is-contain-ba false`, `--is-contain-overnight false`, `--is-need-crypto-multi-broker false` | corresponding boolean flags |
-| `futu combo-option-quote` | Combo option quote | `--combo-list` | default `[]` is not a valid business request | `--combo-list '<json-array>'`. Each element must contain a `legs` array. Each leg contains `code` (an option contract such as `US.AAPL261012C335000`), `side` (`BUY`/`SELL`), and `quantity` (a positive integer). At most 20 combos, and at most one underlying stock per combo. |
-| `futu referencefuture-list <symbol>` | Related futures | `symbol` | none | none |
-| `futu stock-screen` | Stock screen | none; usually pass screen conditions | `--limit 20` | `--screen-queries`, `--retrieve-queries`, `--sort`, `--sorts`, `--next-key`, `--limit`, `--watchlist-stock-ids`, `--holding-stock-ids`, `--user-stock-list-mode` |
-| `futu warrant-screen` | Warrant screen | none; usually pass `--symbol` | `--market-type 1`, `--limit 20`; for the default HK market the CLI may fill in `HK.00700` automatically | `--market-type`, `--is-delay`, `--only-count`, `--symbol`, `--screen-groups`, `--sorts`, `--next-key`, `--limit` |
-| `futu option-screen` | Option screen | `--strategy` | `--limit 20`, `--request-exact-data 1` | `--strategy`, `--strategy-param`, `--field-filter`, `--sort-obj`, `--next-key`, `--limit`, `--request-exact-data` |
-| `futu trading-days` | Trading calendar | none | `--market HK`, `--start TODAY`, `--end TODAY+30` | `--market`, `--start`, `--end` |
-
-Examples:
-
-- `futu future-info HK.HSImain`
-- `futu market-state HK.00700 US.AAPL --is-contain-overnight true`
-- `futu combo-option-quote --combo-list '[{"legs":[{"code":"US.AAPL261012C335000","side":"BUY","quantity":1},{"code":"US.AAPL261012P335000","side":"BUY","quantity":1}]}]'`
-- `futu option-screen --strategy '{"market_category_list":[3]}' --limit 20`
-- `futu trading-days --market US --start 2026-10-01 --end 2026-10-31`
-
-## Command selection cheat sheet
-
-| User intent | Preferred command |
+| Command | Arguments and options |
 | --- | --- |
-| Real-time quote, last price, change | `futu quote <symbol> --format json` |
-| Basic info, security type, lot size, exchange | `futu basicinfo <symbol> --format json` |
-| Full market snapshot | `futu snapshot <symbol> --format json` |
-| Latest K-line | `futu kline <symbol>` |
-| K-line for a time range | `futu history-kline <symbol> --start <yyyy-mm-dd> --end <yyyy-mm-dd>` |
-| Tick trades | `futu ticker <symbol>` |
-| Intraday data | `futu rt-data <symbol>` |
-| Bid/ask, order book, depth | `futu order-book <symbol>` |
-| Gainers, losers, volume ranking | `futu rank <type> --market <market>` |
-| Capital flow | `futu capital <symbol> --view intraday/history/distribution` |
-| Company profile, executives, operating efficiency | `futu company <symbol> --view profile/executives/background/efficiency` |
-| Financials, revenue breakdown, post-earnings price | `futu financials <symbol> --view statements/revenue/earnings-history/earnings-move` |
-| Shareholders, institutional holdings, insider trades | `futu shareholders <symbol> --view ...` |
-| Valuation | `futu valuation <symbol> --view detail/plate-stocks/index-stocks/index-plates` |
-| Plate list, constituents, owning plates | `futu plate [symbol] --view list/stocks/owner` |
-| Watchlist | `futu watchlist --action list/groups/add/delete/move-out` |
+| `futu quote <symbol...>` | One or more symbols. |
+| `futu basicinfo <symbol...>` | One or more symbols. |
+| `futu snapshot <symbol...>` | One or more symbols. |
+| `futu kline <symbol>` | `--num` (default 100), `--ktype` (default 2, daily), `--autype` (default 1), `--extended-time`, `--pred-side`. |
+| `futu history-kline <symbol>` | `--start`, `--end` (`yyyy-MM-dd`), `--num`, `--ktype`, `--autype`, `--extended-time`, `--pred-side`, `--next-time`. |
+| `futu ticker <symbol>` | `--num` (default 20; 1–750); `--count` is an alias. `--period` can be repeated: `NORMAL`, `BEFORE`, `AFTER`, `OVERNIGHT`. |
+| `futu rt-data <symbol>` | `--section NORMAL/FULL/PREMARKET/AFTERHOURS/HK_DARK/OVERNIGHT` (default `NORMAL`). |
+| `futu order-book <symbol>` | `--num` caps depth; default 0 means the maximum allowed by permissions. `depth` is an alias. |
+| `futu rank [type]` | `type` is `volume/turnover/gainers/losers/amplitude`; `--market HK/US/CN`, `--count`. |
+| `futu option chain <symbol>` | `--start`, `--end`, `--filter-standard ALL/STANDARD/NON_STANDARD`, `--index-option-type`. If dates are omitted, the CLI chooses available expirations. |
+| `futu future-info <symbol...>` | One or more futures symbols. |
+| `futu market-state <symbol...>` | One or more symbols; optional `--is-contain-ba`, `--is-contain-overnight`, `--is-need-crypto-multi-broker`. |
+
+`kline --autype` accepts 0–4; `history-kline --autype` accepts 0–2. See the command’s `--help` for K-line interval values and [dictionary](dictionaries.md) for terminology.
+
+## Company, financials and market data
+
+Select a view or type with the flag shown; other flags depend on the selection. Use `--help` for their complete list.
+
+| Command | Selector and common options |
+| --- | --- |
+| `futu broker <symbol>` | `--view current/history`; `--date`, `--days-before`. |
+| `futu capital <symbol>` | `--view intraday/history/distribution`; `--section`, `--period-type DAY/WEEK/MONTH`, `--start`, `--end`, `--count`, `--next-time`. |
+| `futu company <symbol>` | `--view profile/executives/background/efficiency`; `--leader`, `--financial-type`, `--currency-code`, `--limit`, `--next-key`. For `background`, use the exact `leader_name` from executives. |
+| `futu corporate-actions <symbol>` | `--type splits/buybacks/dividends/rehab`; `--divi-mode`, `--limit`, `--next-key`. |
+| `futu economic-calendar [keyword]` | `--view hot/search`; `--search-type`, `--date`, `--timezone`, `--limit`, `--next-key`. |
+| `futu financials <symbol>` | `--view statements/revenue/earnings-history/earnings-move`; `--statement-type`, `--financial-type`, `--date`, `--currency-code`, `--limit`, `--next-key`, `--count`, `--overview-count`. |
+| `futu financials-earnings-card <symbol>` | Optional `--currency-code`. |
+| `futu ipo-list` | `--market HK/US/SG/MY/CN` (default `HK`), `--request-type`. |
+| `futu plate [symbol]` | `--view list/stocks/owner`; `--market`, `--plate-class`, `--plate-code`, `--sort-field`, `--price-type`, `--limit`, `--next-key`. |
+| `futu research <symbol>` | `--type morningstar/consensus/rating`; `--rating-dimension-type`, `--limit`, `--next-key`. |
+| `futu shareholders <symbol>` | `--view overview/institutional/changes/holder-detail/insider-holders/insider-trades`; `--holder-id`, `--holder-category`, `--period-id`, `--limit`, `--next-key`. |
+| `futu short <symbol>` | `--type volume/interest`; `--count`. |
+| `futu valuation [symbol]` | `--view detail/plate-stocks/index-stocks/index-plates`; `--valuation-type`, `--interval-type`, `--sort-id`, `--sort-type`, `--filter-symbol`, `--limit`, `--next-key`. |
+| `futu trading-days` | `--market`, `--start`, `--end`; dates use `yyyy-MM-dd`. |
+
+## Options, screening and unusual activity
+
+| Command | Arguments and options |
+| --- | --- |
+| `futu option-data <symbol>` | `--view expiration/strategy/spread/probability/volatility`; `--expire-time`, `--far-expire-time`, `--strategy`, `--spread`, `--index-option-type`, `--filter-standard`. |
+| `futu combo-option-quote` | `--combo-list` as a JSON array containing leg information. |
+| `futu option-screen` | `--strategy`, `--strategy-param`, `--field-filter`, `--sort-obj` as JSON; `--limit`, `--next-key`, `--request-exact-data`. |
+| `futu stock-screen` | `--screen-queries`, `--retrieve-queries`, `--sort`, `--sorts` as JSON; `--limit`, `--next-key`. |
+| `futu warrant-screen` | `--symbol`, `--market-type`, `--screen-groups`, `--sorts`, `--limit`, `--next-key`, `--is-delay`, `--only-count`. |
+| `futu unusual technical-signals <symbol>` | `--indicator-filters`, `--time-range`, `--language-id`. |
+| `futu unusual capital-flows <symbol>` / `futu unusual derivatives-activity <symbol>` | `--analysis-dimensions`, `--time-range`, `--language-id`. |
+
+## News, institutional data and watchlists
+
+| Command | Arguments and options |
+| --- | --- |
+| `futu search [keyword]` | `--type news/community/feed` (default `community`). For news, keyword is required; `--news-type ALL/POST/NOTICE/REPORT`, `--sort-type TIME/PV`, `--source-ids`, `--sources`, `--lang`, `--page-size` (default 10; 1–50). |
+| `futu crypto-institution-holding-list` | `--symbol` required; `--institution-type`, `--page-size`, `--page-flag`. |
+| `futu crypto-institution-holding-overview` | `--symbol` required; optional `--institution-type`. |
+| `futu institution-transaction-record` | `--institution-id` and `--symbol` required. |
+| `futu watchlist [symbol...]` | `--action groups/list/add/delete/move-out`; `--group-name`, `--group-type`. Adding, deleting and moving symbols change the real watchlist and require the user’s explicit request. |
+
+## Examples
+
+```bash
+futu quote US.AAPL
+futu kline HK.00700 --ktype 2
+futu history-kline US.AAPL --start 2026-01-01 --end 2026-01-31
+futu search AAPL --type news --page-size 1
+futu company US.AAPL --view executives
+futu crypto-institution-holding-list --symbol CC.BTC
+```
+
+## Additional quote commands
+
+For the commands below, the required flags are listed when applicable. Use `<command> --help` for optional flags, subcommands, defaults and enum values.
+
+| Command | Required flags |
+| --- | --- |
+| `futu ark-active-transaction [flags]` | — |
+| `futu ark-active-transaction-query [flags]` | — |
+| `futu ark-fund-holding [flags]` | — |
+| `futu ark-fund-holding-industry [flags]` | — |
+| `futu ark-fund-return-rate [flags]` | — |
+| `futu ark-net-turnover-rank [flags]` | — |
+| `futu ark-stock-detail-daily <symbol> [flags]` | — |
+| `futu ark-stock-detail-table <symbol> [flags]` | — |
+| `futu ark-stock-dynamic <symbol> [flags]` | — |
+| `futu broker-hold-detail <symbol> [flags]` | `--broker-code` |
+| `futu broker-hold-ratio <symbol> [flags]` | — |
+| `futu cbbc-basic-info <symbol> [flags]` | — |
+| `futu cbbc-distribution <symbol> [flags]` | — |
+| `futu chip-distribution <symbol> [flags]` | — |
+| `futu combo-quotes [flags]` | `--mvc`, `--combo-legs` |
+| `futu crypto-fear-greed-history [flags]` | — |
+| `futu crypto-fear-greed-latest [flags]` | — |
+| `futu crypto-market-data-card [flags]` | `--scene` |
+| `futu crypto-market-overview [flags]` | — |
+| `futu crypto-related-equity <symbol> [flags]` | — |
+| `futu crypto-related-etf <symbol> [flags]` | — |
+| `futu crypto-related-future <symbol> [flags]` | — |
+| `futu depth <symbol> [flags]` | — |
+| `futu dividend-calendar [flags]` | `--market`, `--date` |
+| `futu earnings-calendar [flags]` | `--market` |
+| `futu economic-calendar-list [flags]` | `--begin-date` |
+| `futu etf-indicator-analysis <symbol> [flags]` | — |
+| `futu etf-investment-distribution <symbol> [flags]` | — |
+| `futu etf-net-assets <symbol> [flags]` | — |
+| `futu etf-related-equity <symbol> [flags]` | — |
+| `futu etf-screen [flags]` | `--market` |
+| `futu etf-screen-options [flags]` | `--market` |
+| `futu etf-style-box <symbol> [flags]` | — |
+| `futu etf-top-holdings <symbol> [flags]` | — |
+| `futu event-contract-category [flags]` | — |
+| `futu event-contract-contracts [flags]` | `--event` |
+| `futu event-contract-events [flags]` | `--series` |
+| `futu event-contract-filter-competition [flags]` | `--category-id` |
+| `futu event-contract-milestone [flags]` | `--milestone` |
+| `futu event-contract-milestones [flags]` | — |
+| `futu event-contract-series [flags]` | — |
+| `futu financials-estimate <symbol> [flags]` | — |
+| `futu financials-jp-performance-progress <symbol> [flags]` | — |
+| `futu financials-jp-performance-revised <symbol> [flags]` | — |
+| `futu future-correlation <symbol> [flags]` | `--related-codes` |
+| `futu future-position-analysis <symbol> [flags]` | — |
+| `futu future-seasonal <symbol> [flags]` | — |
+| `futu heatmap [flags]` | `--market` |
+| `futu heatmap-rise-fall-distribution [flags]` | — |
+| `futu historical-info <symbol> [flags]` | `--date` |
+| `futu index-related-etf <symbol> [flags]` | — |
+| `futu indicator-backtest <symbol> [flags]` | `--indicator-id` |
+| `futu indicator-polarity <symbol> [flags]` | — |
+| `futu industrial-chain-by-plate [flags]` | — |
+| `futu industrial-chain-detail [flags]` | `--chain-id` |
+| `futu industrial-chain-list [flags]` | `--market` |
+| `futu industrial-plate-info [flags]` | — |
+| `futu industrial-plate-stock [flags]` | — |
+| `futu influencer-holding-change [flags]` | `--influencer` |
+| `futu influencer-holdings [flags]` | `--influencer` |
+| `futu institution-distribution [flags]` | `--market`, `--institution-id` |
+| `futu institution-holding-change [flags]` | `--market`, `--institution-id` |
+| `futu institution-holdings [flags]` | `--market`, `--institution-id` |
+| `futu institution-list [flags]` | `--market` |
+| `futu institution-popular [flags]` | — |
+| `futu institution-profile [flags]` | `--market`, `--institution-id` |
+| `futu institution-return-rate [flags]` | `--institution-id` |
+| `futu ipo-greenshoe <symbol> [flags]` | — |
+| `futu ipo-hk-filings [flags]` | — |
+| `futu ipo-institutions <symbol> [flags]` | — |
+| `futu ipo-list-jp [flags]` | — |
+| `futu ipo-placing-result <symbol> [flags]` | — |
+| `futu kline-shape <symbol> [flags]` | — |
+| `futu kline-shape-list [flags]` | — |
+| `futu kline-shape-stocks [flags]` | `--shape-type` |
+| `futu macro-fed-watch-dot-plot [flags]` | — |
+| `futu macro-fed-watch-target-rate [flags]` | — |
+| `futu macro-focus [flags]` | `--region` |
+| `futu macro-indicator-chart [flags]` | `--indicator-id` |
+| `futu macro-indicator-history [flags]` | `--indicator-id` |
+| `futu macro-indicator-overview [flags]` | `--indicator-id` |
+| `futu macro-indicator-related [flags]` | `--indicator-id` |
+| `futu macro-indicator-summary [flags]` | `--indicator-id` |
+| `futu macro-indicator-trend [flags]` | `--indicator-ids` |
+| `futu macro-indicators [flags]` | `--region` |
+| `futu macro-market-tab [flags]` | `--region` |
+| `futu news-by-security [flags]` | — |
+| `futu news-by-source [flags]` | — |
+| `futu option-chain-statistic <symbol> [flags]` | — |
+| `futu option-earnings-report-cycle <symbol> [flags]` | — |
+| `futu option-earnings-screener [flags]` | `--option-market` |
+| `futu option-event [flags]` | `--option-market` |
+| `futu option-gamma-exposure <symbol> [flags]` | — |
+| `futu option-iv-smile <symbol> [flags]` | — |
+| `futu option-market-statistic [flags]` | `--option-market`, `--data-type`, `--begin-time`, `--end-time` |
+| `futu option-max-pain <symbol> [flags]` | — |
+| `futu option-rank [flags]` | `--option-market` |
+| `futu option-seller-screener [flags]` | `--option-market`, `--seller-type` |
+| `futu option-strategy-analysis [flags]` | `--combo-list` |
+| `futu option-trade-interest-distribution <symbol> [flags]` | — |
+| `futu option-underlying-his-statistic <symbol> [flags]` | `--begin-time`, `--end-time` |
+| `futu option-underlying-his-volatility <symbol> [flags]` | — |
+| `futu option-underlying-overview [flags]` | `--codes` |
+| `futu option-underlying-rank [flags]` | `--option-market` |
+| `futu option-zero-dte-contract [flags]` | `--code`, `--strike-date-timestamp` |
+| `futu option-zero-dte-screener [flags]` | `--option-market` |
+| `futu quote-research-analyst-ratings <symbol> [flags]` | `--analyst-uid` |
+| `futu quote-research-institution-ratings <symbol> [flags]` | `--institution-uid` |
+| `futu rank-dividend [flags]` | `--market`, `--rank-type` |
+| `futu rank-earnings-beat [flags]` | `--market`, `--beat-type` |
+| `futu rank-high-dividend-soe [flags]` | — |
+| `futu rank-hot-list [flags]` | `--market` |
+| `futu rank-period-change [flags]` | `--market` |
+| `futu rank-short-selling [flags]` | `--market` |
+| `futu rank-top-movers [flags]` | `--market` |
+| `futu rank-us-after-hours [flags]` | — |
+| `futu rank-us-overnight [flags]` | — |
+| `futu rank-us-pre-market [flags]` | — |
+| `futu referencefuture-list <symbol> [flags]` | — |
+| `futu related-etf <symbol> [flags]` | — |
+| `futu research-analyst-info [flags]` | `--uids` |
+| `futu research-analyst-ratings [flags]` | `--analyst-uid` |
+| `futu research-dimension-summary [flags]` | `--uid` |
+| `futu research-dimension-summary-v2 [flags]` | `--uid` |
+| `futu research-institution-info [flags]` | `--uids` |
+| `futu research-institution-rating-summary <symbol> [flags]` | `--institution-uid` |
+| `futu research-institution-ratings [flags]` | `--institution-uid` |
+| `futu research-latest-ratings [flags]` | — |
+| `futu research-rating-change [flags]` | — |
+| `futu research-rating-plot <symbol> [flags]` | `--uid` |
+| `futu research-rating-search [flags]` | `--keyword` |
+| `futu research-stock-ratings <symbol> [flags]` | — |
+| `futu research-target-plot <symbol> [flags]` | — |
+| `futu research-target-price <symbol> [flags]` | — |
+| `futu research-top-analysts [flags]` | — |
+| `futu search-hot-stocks [flags]` | — |
+| `futu search-hot-topics [flags]` | — |
+| `futu short-jp-credit <symbol> [flags]` | — |
+| `futu short-jp-deposit <symbol> [flags]` | — |
+| `futu similar-kline <symbol> [flags]` | — |
+| `futu stock-connect-cumulative [flags]` | `--channel` |
+| `futu stock-connect-flow <symbol> [flags]` | — |
+| `futu stock-connect-history [flags]` | `--channel` |
+| `futu stock-connect-hold-ratio <symbol> [flags]` | — |
+| `futu stock-connect-intraday [flags]` | `--channel` |
+| `futu stock-connect-rank [flags]` | `--market` |
+| `futu stock-connect-trade-top10 [flags]` | `--channel` |
+| `futu valid-combos [flags]` | — |

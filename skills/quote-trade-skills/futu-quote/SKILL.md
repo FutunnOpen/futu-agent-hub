@@ -3,7 +3,7 @@ name: futu-quote
 description: Futu `futu` CLI market-data skill. Use for stock, option, and futures quotes, K-lines, snapshots, tickers, intraday data, order books, rankings, capital flow, company profiles, financials, shareholders, valuation, plates, IPOs, calendars, watchlists, and paginated queries. Do not use it to place orders.
 allowed-tools: Bash Read
 metadata:
-  version: 0.0.2
+  version: 0.0.3
   author: Futu
   requires:
     bins:
