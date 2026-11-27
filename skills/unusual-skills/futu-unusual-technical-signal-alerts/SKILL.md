@@ -59,7 +59,7 @@ iwr -UseBasicParsing https://raw.githubusercontent.com/FutunnOpen/futu-cli/main/
 powershell -ExecutionPolicy Bypass -File .\install.ps1
 ```
 
-If the Windows installer reports an unsupported architecture, stop and relay the error. After installation, run `futu version` using the installed executable. If auth status says the user is not logged in, tell them to run `futu auth login` and continue only after login. If `futu unusual` is not recognized, check for an update with `futu update --check`; update after the user agrees (see repo `docs/migration-gaps-and-rest-api.md`).
+If the Windows installer reports an unsupported architecture, stop and relay the error. After installation, run `futu version` using the installed executable. If auth status says the user is not logged in, tell them to run `futu auth login` and continue only after login. If `futu unusual` is not recognized, check for an update with `futu update --check`; update after the user agrees.
 
 ---
 

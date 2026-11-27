@@ -43,7 +43,7 @@ Futu Agent Hub 提供 **11 个 Skills**，分为四类：行情与交易、内�
 | 情绪温度计（`futu-comment-sentiment`） | 内容分析 | `curl` | 社区情绪，带统计窗口与样本量 |
 | 网格策略（`futu-grid-strategy`） | 量化策略 | OpenAPI | 单标的基准价网格；默认在模拟账户验收 |
 
-原 **`futuapi` / `install-futu-opend`** 已移除。升级见 [`docs/upgrade-from-opend.md`](docs/upgrade-from-opend.md)；能力缺口见 [`docs/migration-gaps-and-rest-api.md`](docs/migration-gaps-and-rest-api.md)。Skill 默认用 CLI 拉取 REST。持续推送和经纪队列没有 `futu subscribe` 命令，调用方自行连接 Open API WebSocket，见 [`docs/websocket-quote-push.md`](docs/websocket-quote-push.md)。
+原 **`futuapi` / `install-futu-opend`** 已移除，升级安装见 [安装指南](docs/futu-install.md)。Skill 默认用 CLI 拉取 REST。持续推送和经纪队列没有 `futu subscribe` 命令，调用方自行连接 Open API WebSocket，见 [行情推送参考](skills/quote-trade-skills/futu-quote/references/websocket-push.md)。
 
 ---
 
@@ -438,7 +438,7 @@ futu check
 ## 常见问题
 
 **Q: 所有 Skills 都需要 OpenD 吗？**
-A: 不需要。行情、交易、异动均通过 **`futu` CLI**（OAuth）。内容类 Skills 走公开 HTTP。原 `futuapi` / OpenD 已移除，见 [`docs/upgrade-from-opend.md`](docs/upgrade-from-opend.md)。
+A: 不需要。行情、交易、异动均通过 **`futu` CLI**（OAuth）。内容类 Skills 走公开 HTTP。原 `futuapi` / OpenD 已移除，安装方式见 [安装指南](docs/futu-install.md)。
 
 **Q: 使用 Futu Agent Hub 有额外费用吗？**
 A: 没有。通过 Futu API 交易不收取额外费用，仅按正常佣金标准收费。

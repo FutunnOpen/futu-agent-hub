@@ -9,8 +9,6 @@ For **continuous** quote, order book, ticker, K-line, and **broker queue** strea
 - Subscribe fields map to push `type` values: `quote` → `QUOTE`, `order_book` → `ORDER_BOOK`, `ticker` → `TICKER`, `kline` → `KLINE`
 - Broker queue: message type **`BROKER_QUEUE`** (usually after `order_book` subscribe on eligible HK symbols; not a separate subscribe key)
 
-Hub user guide (Chinese, full examples): repo [`docs/websocket-quote-push.md`](../../../../docs/websocket-quote-push.md).
-
 Official API:
 
 - [Overview](https://open.futunn.com/api/quote/push/overview)
