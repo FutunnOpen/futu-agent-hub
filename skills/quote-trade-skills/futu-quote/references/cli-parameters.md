@@ -148,9 +148,9 @@ Example: `futu company US.AAPL "Tim Cook" --view background`
 
 | Command | selector | Purpose | Extra parameters |
 | --- | --- | --- | --- |
-| `futu search [keyword]` | `--type news` default | News search | `[keyword]` should be a full symbol, `--size`, `--news-type`, `--sort-type`, `--lang` |
-| `futu search [keyword]` | `--type community` | Community search | `[keyword]` should be a full symbol, `--size`, `--community-type`, `--sort-type`, `--lang` |
-| `futu search [keyword]` | `--type feed` | Stock feed | `[keyword]` should be a full symbol, `--size` |
+| `futu search [keyword]` | `--type community` default | Community search | `[keyword]` or `--keyword`, `--size`, `--community-type`, `--sort-type`, `--lang` |
+| `futu search [keyword]` | `--type news` | News search | `[keyword]` or `--keyword`, `--size` (1–50), `--news-type`, `--sort-type`, `--lang` |
+| `futu search [keyword]` | `--type feed` | Stock feed | `[keyword]` or `--keyword`, `--size` |
 
 ### Shareholders
 

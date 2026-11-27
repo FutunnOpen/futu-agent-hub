@@ -107,11 +107,13 @@ Margin ratio example:
 
 | Command | Required | Default / omit | Optional parameters |
 | --- | --- | --- | --- |
-| `futu order buy <symbol> <qty>` | `symbol`, `qty`; also `--account` when no default account is configured | `--type market`, `--time-in-force DAY` | `--account`, `--price`, `--type`, `--time-in-force`, `--lot-type`, `--remark`, `--session`, `--aux-price`, `--order-class`, `--multi-leg-info` |
-| `futu order sell <symbol> <qty>` | `symbol`, `qty`; also `--account` when no default account is configured | `--type market`, `--time-in-force DAY` | same as above |
-| `futu order place <qty>` | `qty`, `--side`; a regular order also needs `--symbol`; also `--account` when no default account is configured | `--type market`, `--time-in-force DAY` | same as above |
+| `futu order buy <symbol> <qty>` | `symbol`, `qty` (decimal string); also `--account` when no default account is configured | `--type market`, `--time-in-force DAY` | `--account`, `--sub-acc-id`, `--price`, `--type`, `--time-in-force`, `--lot-type`, `--remark`, `--session`, `--aux-price`, `--order-class`, `--multi-leg-info` |
+| `futu order sell <symbol> <qty>` | `symbol`, `qty` (decimal string); also `--account` when no default account is configured | `--type market`, `--time-in-force DAY` | same as above |
+| `futu order place <qty>` | `qty` (decimal string), `--side`; a regular order also needs `--symbol`; also `--account` when no default account is configured | `--type market`, `--time-in-force DAY` | same as above |
 
-Field mapping: `<symbol>` / `--symbol` -> `code`, `BUY` / `SELL` / `--side` -> `side`, `--type` -> `order_type`, `<qty>` -> `qty`, `--price` -> `price`, `--time-in-force` -> `time_in_force`, `--lot-type` -> `lot_type`, `--remark` -> `remark`, `--session` -> `session`, `--aux-price` -> `aux_price`, `--order-class` -> `order_class`, `--multi-leg-info` -> `multi_leg_info`.
+Field mapping: `<symbol>` / `--symbol` -> `code`, `BUY` / `SELL` / `--side` -> `side`, `--type` -> `order_type`, `<qty>` -> `qty` as a decimal string, `--price` -> `price`, `--sub-acc-id` -> `sub_acc_id`, `--time-in-force` -> `time_in_force`, `--lot-type` -> `lot_type`, `--remark` -> `remark`, `--session` -> `session`, `--aux-price` -> `aux_price`, `--order-class` -> `order_class`, `--multi-leg-info` -> `multi_leg_info`.
+
+`--sub-acc-id` is for a JP account that has more than one tradable sub-account. When the account has exactly one, the CLI fills it in. When it has none, omit the flag.
 
 Order rules:
 
@@ -131,15 +133,15 @@ Order examples:
 
 | Command | Required | Default / omit | Optional parameters |
 | --- | --- | --- | --- |
-| `futu order modify <order-id>` | `order-id`, `--exchange`, `--qty`; also `--account` when no default account is configured | omitting `--price` means the price is unchanged; omitting `--aux-price` means the trigger price is unchanged | `--account`, `--exchange`, `--qty`, `--price`, `--aux-price` |
+| `futu order modify <order-id>` | `order-id`, `--exchange`, `--qty` (decimal string); also `--account` when no default account is configured | omitting `--price` means the price is unchanged; omitting `--aux-price` means the trigger price is unchanged | `--account`, `--exchange`, `--qty`, `--price`, `--aux-price` |
 | `futu order cancel <order-id>` | `order-id`, `--exchange`; also `--account` when no default account is configured | none | `--account`, `--exchange` |
-| `futu order list` | none if `default_account` is configured | `--market HK`, `--page-size 50` | `--account`, `--market`, `--page-size` |
-| `futu order history` | none if `default_account` is configured | `--market HK`, `--page-size 50`, `--start 0`, `--end 0`, no `--symbol` filter | `--account`, `--market`, `--start`, `--end`, `--symbol`, `--page-size` |
+| `futu order list` | none if `default_account` is configured | `--market HK`, `--page-size 50` | `--account`, `--market`, `--page-size`, `--page-flag` |
+| `futu order history` | none if `default_account` is configured | `--market HK`, `--page-size 50`, omitted `--start`/`--end` let the server use a 90-day window | `--account`, `--market`, `--start`, `--end`, `--symbol`, `--page-size`, `--page-flag` |
 | `futu order detail <order-id> [order-id...]` | `order-id`, `--exchange`; also `--account` when no default account is configured | none | `--account`, `--exchange` |
-| `futu order max-qty <symbol>` | `symbol`; also `--account` when no default account is configured | `--type market`, empty `--price`, empty `--order-id` | `--account`, `--price`, `--type`, `--order-id` |
+| `futu order max-qty <symbol>` | `symbol`; also `--account` when no default account is configured | `--type market`, empty `--price`, empty `--order-id` | `--account`, `--sub-acc-id`, `--price`, `--type`, `--order-id` |
 | `futu order fees <order-id>` | `order-id`; also `--account` when no default account is configured | none | `--account` |
-| `futu deal` | none if `default_account` is configured | `--market HK`, `--page-size 50` | `--account`, `--market`, `--page-size` |
-| `futu deal history` | none if `default_account` is configured | `--market HK`, `--page-size 50`, `--start 0`, `--end 0`, no `--symbol` filter | `--account`, `--market`, `--start`, `--end`, `--symbol`, `--page-size` |
+| `futu deal` | none if `default_account` is configured | `--market HK`, `--page-size 50` | `--account`, `--market`, `--page-size`, `--page-flag` |
+| `futu deal history` | none if `default_account` is configured | `--market HK`, `--page-size 50`, omitted `--start`/`--end` let the server use a 90-day window | `--account`, `--market`, `--start`, `--end`, `--symbol`, `--page-size`, `--page-flag` |
 
 Field mapping:
 
@@ -158,6 +160,8 @@ Field mapping:
 | `--end` | `end` |
 | `--symbol` | `code` |
 | `--page-size` | `page_size` |
+| `--page-flag` | `page_flag` |
+| `--sub-acc-id` | `sub_acc_id` |
 | `order detail --exchange` | body field `exchange` |
 | `order detail <order-id>...` | body field `order_ids` array |
 | `order max-qty <symbol>` | `code` |
@@ -167,9 +171,9 @@ Field mapping:
 
 Query and pagination rules:
 
-- Current orders, historical orders, today's fills, and historical fills automatically follow the backend `page_flag` and emit a merged array.
-- `--page-size` is sent to the backend only when it is in the range `10-100`. The default is `50`.
-- When historical orders and historical fills omit `--start` / `--end`, no lower or upper time bound is set.
+- Current orders, historical orders, today's fills, and historical fills automatically follow later `page_flag` values and emit a merged array. `--page-flag` only sets the first cursor.
+- `--page-size` is sent when it is in the range `1-100`. The default is `50`.
+- When historical orders and historical fills omit `--start` / `--end`, the server chooses a 90-day window.
 - `order detail` accepts at most 100 order IDs at once.
 - For `order modify`, omitting `--price` means the price is unchanged, and omitting `--aux-price` means the trigger price is unchanged. `--qty` must be greater than 0.
 

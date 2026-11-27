@@ -61,7 +61,7 @@ To update an already installed `futu` CLI, use `futu update --check` and, after 
 - Use the smallest parameter set when generating commands. If the CLI already has a default and the user did not specify a value, do not pass that flag explicitly.
 - Do not assume a default account is configured. Omit `--account` only when this turn has already confirmed a default account through `futu auth status` or config. Otherwise, list accounts or ask the user to choose one, and pass `--account` explicitly.
 - Add `--format json` when the output must be parsed, when extracting account, order, or fill fields, or when a follow-up action depends on the result. Commands meant only for the user to copy and run can use the default table output.
-- Securities order and fill lists are paginated and merged by the CLI. Do not pass `page_flag` manually. Adjust `--page-size` only when needed.
+- Securities order and fill lists are paginated and merged by the CLI. Pass `--page-flag` only to start from a known cursor. Adjust `--page-size` (1–100, default 50) only when needed.
 - `account cash-logs` returns one page per call. Use `--format json`, read `page_flag` and `completed`, and call again with `--page-flag` until `completed` is true or the user has enough rows.
 - `order fees` needs a concrete `order_id` (from `order list`, `order history`, or `order detail`). Open API does not support FX order fees yet.
 - `margin-ratio` requires `--security-firm` and `--codes` (up to 10 symbols). Prefer `security_firm` from `account list --format json` for the user's account.
